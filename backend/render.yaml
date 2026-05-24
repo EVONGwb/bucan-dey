@@ -16,6 +16,8 @@ services:
         value: "1440"
       - key: CLOUDINARY_UPLOAD_FOLDER
         value: bucan-dey
+      - key: PYTHON_VERSION
+        value: 3.11.9
       - key: MONGO_URL
         sync: false
       - key: JWT_SECRET_KEY

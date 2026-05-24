@@ -1,0 +1,18 @@
+{
+  "name": "BUCAN DEY",
+  "short_name": "BUCAN",
+  "description": "Tu mundo. Tu gente. Tu momento.",
+  "theme_color": "#08070d",
+  "background_color": "#08070d",
+  "display": "standalone",
+  "start_url": "/",
+  "scope": "/",
+  "icons": [
+    {
+      "src": "/icons/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

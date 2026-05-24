@@ -1,0 +1,35 @@
+from pydantic_settings import BaseSettings, SettingsConfigDict
+
+
+class Settings(BaseSettings):
+    APP_NAME: str = "BUCAN DEY"
+    APP_VERSION: str = "0.1.0"
+    API_PREFIX: str = "/api"
+
+    MONGO_URL: str = ""
+    DB_NAME: str = "bucan_dey"
+
+    JWT_SECRET_KEY: str = ""
+    JWT_ALGORITHM: str = "HS256"
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = 1440
+
+    CORS_ORIGINS: str = "http://localhost:5173,http://127.0.0.1:5173,http://127.0.0.1:5174,http://127.0.0.1:5175,https://bucan-dey.vercel.app,https://bucandey.com,https://www.bucandey.com"
+    CORS_ORIGIN_REGEX: str = r"^https?://(localhost|127\.0\.0\.1):\d+$|^https://[a-z0-9-]+\.vercel\.app$"
+
+    CLOUDINARY_CLOUD_NAME: str = ""
+    CLOUDINARY_API_KEY: str = ""
+    CLOUDINARY_API_SECRET: str = ""
+    CLOUDINARY_UPLOAD_FOLDER: str = "bucan-dey"
+
+    model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8")
+
+    @property
+    def cors_origins_list(self) -> list[str]:
+        return [
+            origin.strip()
+            for origin in self.CORS_ORIGINS.split(",")
+            if origin.strip()
+        ]
+
+
+settings = Settings()

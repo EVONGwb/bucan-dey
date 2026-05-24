@@ -1,0 +1,171 @@
+import { useEffect, useState } from "react";
+import { Bell } from "lucide-react";
+import { Link } from "react-router-dom";
+
+import apiClient from "../api/client.js";
+import PostCard from "../components/post/PostCard.jsx";
+import { useAuth } from "../context/AuthContext.jsx";
+import { getApiErrorMessage } from "../utils/errors.js";
+
+function Home() {
+  const { isAuthenticated } = useAuth();
+  const [posts, setPosts] = useState([]);
+  const [unreadCount, setUnreadCount] = useState(0);
+  const [nextCursor, setNextCursor] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const [error, setError] = useState("");
+
+  async function loadFeed(cursor = null) {
+    const params = { limit: 20 };
+    if (cursor) params.cursor = cursor;
+
+    const response = await apiClient.get("/feed/global", { params });
+    setPosts((current) => (cursor ? [...current, ...response.data.items] : response.data.items));
+    setNextCursor(response.data.next_cursor);
+  }
+
+  useEffect(() => {
+    async function initFeed() {
+      try {
+        setIsLoading(true);
+        setError("");
+        await loadFeed();
+      } catch (err) {
+        setError(getApiErrorMessage(err));
+      } finally {
+        setIsLoading(false);
+      }
+    }
+
+    initFeed();
+  }, []);
+
+  useEffect(() => {
+    async function loadUnreadCount() {
+      if (!isAuthenticated) {
+        setUnreadCount(0);
+        return;
+      }
+
+      try {
+        const response = await apiClient.get("/notifications/unread-count");
+        setUnreadCount(response.data.unread_count);
+      } catch {
+        setUnreadCount(0);
+      }
+    }
+
+    loadUnreadCount();
+  }, [isAuthenticated]);
+
+  async function handleLoadMore() {
+    if (!nextCursor) return;
+
+    try {
+      setIsLoadingMore(true);
+      await loadFeed(nextCursor);
+    } catch (err) {
+      setError(getApiErrorMessage(err));
+    } finally {
+      setIsLoadingMore(false);
+    }
+  }
+
+  return (
+    <section className="min-h-[calc(100vh-7rem)]">
+      <div>
+        <div className="mb-6 flex items-center justify-between">
+          <div>
+            <p className="text-xs font-bold uppercase tracking-[0.24em] text-neonGreen">
+              En vivo local
+            </p>
+            <h1 className="mt-3 text-5xl font-black leading-none text-white">
+              BUCAN DEY
+            </h1>
+          </div>
+          <Link
+            className="relative flex h-12 w-12 items-center justify-center rounded-2xl border border-white/10 bg-gradient-to-br from-neonGreen via-neonYellow to-neonPink text-xl shadow-neon"
+            to="/notifications"
+            aria-label="Notificaciones"
+          >
+            <Bell className="h-5 w-5 text-night" aria-hidden="true" />
+            {unreadCount > 0 ? (
+              <span className="absolute -right-1 -top-1 min-w-5 rounded-full bg-neonPink px-1.5 py-0.5 text-center text-[10px] font-black text-white">
+                {unreadCount > 9 ? "9+" : unreadCount}
+              </span>
+            ) : null}
+          </Link>
+        </div>
+
+        <p className="text-xl font-bold text-white">
+          Tu mundo. Tu gente. Tu momento.
+        </p>
+        <p className="mt-3 max-w-xs text-base leading-7 text-white/72">
+          Mira qué está pasando ahora mismo.
+        </p>
+      </div>
+
+      <div className="mt-7 flex items-center justify-between gap-3">
+        <p className="text-sm font-black uppercase tracking-[0.16em] text-white/48">
+          Feed global
+        </p>
+        <Link
+          className="rounded-lg bg-gradient-to-r from-neonGreen via-neonYellow to-neonPink px-4 py-2 text-sm font-black text-night"
+          to="/create"
+        >
+          Publicar
+        </Link>
+      </div>
+
+      {error ? (
+        <div className="mt-5 rounded-lg border border-neonPink/30 bg-neonPink/10 px-4 py-3 text-sm font-semibold text-white">
+          {error}
+        </div>
+      ) : null}
+
+      {isLoading ? (
+        <div className="mt-8 flex justify-center">
+          <div className="h-10 w-10 animate-spin rounded-full border-2 border-white/20 border-t-neonPink" />
+        </div>
+      ) : null}
+
+      {!isLoading && posts.length === 0 ? (
+        <div className="mt-8 rounded-lg border border-white/10 bg-surface p-5">
+          <p className="text-lg font-black text-white">
+            Todavía no hay movimiento. Sé el primero en publicar.
+          </p>
+          <Link
+            className="mt-5 inline-flex h-12 items-center rounded-lg bg-neonPink px-5 text-sm font-black text-white"
+            to="/create"
+          >
+            Publicar
+          </Link>
+        </div>
+      ) : null}
+
+      <div className="mt-5 space-y-4">
+        {posts.map((post) => (
+          <PostCard key={post.id} post={post} />
+        ))}
+      </div>
+
+      {nextCursor ? (
+        <button
+          className="mt-5 h-12 w-full rounded-lg border border-white/10 bg-white/5 text-sm font-black text-white"
+          type="button"
+          onClick={handleLoadMore}
+          disabled={isLoadingMore}
+        >
+          {isLoadingMore ? "Cargando..." : "Ver más"}
+        </button>
+      ) : null}
+
+      <div className="mt-6 space-y-3">
+        <div className="h-1 rounded-full bg-gradient-to-r from-neonGreen via-neonYellow to-neonPink" />
+      </div>
+    </section>
+  );
+}
+
+export default Home;

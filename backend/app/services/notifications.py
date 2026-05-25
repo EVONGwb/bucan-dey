@@ -91,7 +91,10 @@ async def create_notification(
         entity_id=entity_id,
     )
     result = await db.notifications.insert_one(document)
-    return await db.notifications.find_one({"_id": result.inserted_id})
+    notification = await db.notifications.find_one({"_id": result.inserted_id})
+    if notification:
+        await emit_notification(notification)
+    return notification
 
 
 async def list_notifications(user_id: str, limit: int, cursor: str | None = None) -> tuple[list[dict], str | None]:
@@ -127,6 +130,28 @@ async def unread_count(user_id: str) -> int:
     return await db.notifications.count_documents({"user_id": user_id, "is_read": False})
 
 
+async def emit_unread_count(user_id: str) -> None:
+    from app.core.realtime import realtime_manager
+
+    await realtime_manager.send_to_user(
+        user_id,
+        "unread_count_update",
+        {"unread_count": await unread_count(user_id)},
+    )
+
+
+async def emit_notification(notification: dict) -> None:
+    from app.core.realtime import realtime_manager
+
+    user_id = notification["user_id"]
+    await realtime_manager.send_to_user(
+        user_id,
+        "notification",
+        serialize_notification(notification),
+    )
+    await emit_unread_count(user_id)
+
+
 async def mark_notification_read(notification_id: str, user_id: str) -> bool:
     if not ObjectId.is_valid(notification_id):
         return False
@@ -136,6 +161,8 @@ async def mark_notification_read(notification_id: str, user_id: str) -> bool:
         {"_id": ObjectId(notification_id), "user_id": user_id},
         {"$set": {"is_read": True}},
     )
+    if result.matched_count > 0:
+        await emit_unread_count(user_id)
     return result.matched_count > 0
 
 
@@ -145,4 +172,6 @@ async def mark_all_read(user_id: str) -> int:
         {"user_id": user_id, "is_read": False},
         {"$set": {"is_read": True}},
     )
+    if result.modified_count > 0:
+        await emit_unread_count(user_id)
     return result.modified_count

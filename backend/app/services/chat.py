@@ -180,8 +180,24 @@ async def create_message(conversation: dict, sender: dict, text: str) -> dict:
     )
 
     await _notify_message_sent(conversation, sender, created)
+    await _emit_chat_message(conversation, sender, created)
 
     return created
+
+
+async def _emit_chat_message(conversation: dict, sender: dict, message: dict) -> None:
+    from app.core.realtime import realtime_manager
+
+    actor_id = str(sender["_id"])
+    payload = {
+        "conversation_id": str(conversation["_id"]),
+        "message": serialize_message(message),
+        "sender_id": actor_id,
+    }
+    recipients = [
+        user_id for user_id in conversation.get("participant_ids", []) if user_id != actor_id
+    ]
+    await realtime_manager.send_to_users(recipients, "chat_message", payload)
 
 
 async def _notify_conversation_created(actor: dict, recipient: dict, conversation: dict) -> None:
@@ -232,3 +248,20 @@ async def soft_delete_message(message: dict) -> None:
         {"_id": message["_id"]},
         {"$set": {"is_deleted": True}},
     )
+
+
+async def get_user_contact_ids(user_id: str) -> list[str]:
+    db = get_database()
+    conversations = await (
+        db.chat_conversations.find({"participant_ids": user_id}, {"participant_ids": 1})
+        .limit(500)
+        .to_list(500)
+    )
+    contact_ids: set[str] = set()
+    for conversation in conversations:
+        contact_ids.update(
+            participant_id
+            for participant_id in conversation.get("participant_ids", [])
+            if participant_id != user_id
+        )
+    return list(contact_ids)

@@ -3,6 +3,7 @@ import { useSearchParams } from "react-router-dom";
 
 import apiClient from "../api/client.js";
 import { useAuth } from "../context/AuthContext.jsx";
+import { useRealtime } from "../context/RealtimeContext.jsx";
 import { getApiErrorMessage } from "../utils/errors.js";
 
 function formatRelativeDate(value) {
@@ -23,6 +24,7 @@ function formatRelativeDate(value) {
 
 function Chat() {
   const { user } = useAuth();
+  const { onlineUserIds, sendEvent, subscribe } = useRealtime();
   const [searchParams, setSearchParams] = useSearchParams();
   const activeConversationId = searchParams.get("conversation");
   const [conversations, setConversations] = useState([]);
@@ -32,7 +34,9 @@ function Chat() {
   const [isLoadingMessages, setIsLoadingMessages] = useState(false);
   const [isSending, setIsSending] = useState(false);
   const [error, setError] = useState("");
+  const [typingByConversation, setTypingByConversation] = useState({});
   const messagesEndRef = useRef(null);
+  const typingTimerRef = useRef(null);
 
   const activeConversation = conversations.find(
     (conversation) => conversation.id === activeConversationId
@@ -84,6 +88,49 @@ function Chat() {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
+  useEffect(() => {
+    return () => window.clearTimeout(typingTimerRef.current);
+  }, []);
+
+  useEffect(() => {
+    const unsubscribeMessage = subscribe("chat_message", (payload) => {
+      const incomingMessage = payload.message;
+      if (!incomingMessage) return;
+
+      if (payload.conversation_id === activeConversationId) {
+        setMessages((current) => {
+          if (current.some((message) => message.id === incomingMessage.id)) {
+            return current;
+          }
+          return [...current, incomingMessage];
+        });
+      }
+
+      loadConversations();
+    });
+
+    const unsubscribeTypingStart = subscribe("typing_start", (payload) => {
+      setTypingByConversation((current) => ({
+        ...current,
+        [payload.conversation_id]: payload.display_name || "Alguien",
+      }));
+    });
+
+    const unsubscribeTypingStop = subscribe("typing_stop", (payload) => {
+      setTypingByConversation((current) => {
+        const next = { ...current };
+        delete next[payload.conversation_id];
+        return next;
+      });
+    });
+
+    return () => {
+      unsubscribeMessage();
+      unsubscribeTypingStart();
+      unsubscribeTypingStop();
+    };
+  }, [activeConversationId, subscribe]);
+
   async function handleSend(event) {
     event.preventDefault();
     if (!activeConversationId || !text.trim()) return;
@@ -97,12 +144,29 @@ function Chat() {
       );
       setMessages((current) => [...current, response.data]);
       setText("");
+      sendEvent("typing_stop", { conversation_id: activeConversationId });
       await loadConversations();
     } catch (err) {
       setError(getApiErrorMessage(err));
     } finally {
       setIsSending(false);
     }
+  }
+
+  function handleTextChange(event) {
+    const nextText = event.target.value;
+    setText(nextText);
+
+    if (!activeConversationId) return;
+
+    sendEvent(nextText.trim() ? "typing_start" : "typing_stop", {
+      conversation_id: activeConversationId,
+    });
+
+    window.clearTimeout(typingTimerRef.current);
+    typingTimerRef.current = window.setTimeout(() => {
+      sendEvent("typing_stop", { conversation_id: activeConversationId });
+    }, 1600);
   }
 
   async function handleDeleteMessage(messageId) {
@@ -154,9 +218,18 @@ function Chat() {
               >
                 <div className="flex items-center justify-between gap-3">
                   <div className="min-w-0">
-                    <p className="truncate text-base font-black text-white">
-                      {conversation.other_user.display_name}
-                    </p>
+                    <div className="flex min-w-0 items-center gap-2">
+                      <p className="truncate text-base font-black text-white">
+                        {conversation.other_user.display_name}
+                      </p>
+                      <span
+                        className={`h-2 w-2 shrink-0 rounded-full ${
+                          onlineUserIds.has(conversation.other_user.user_id)
+                            ? "bg-neonGreen"
+                            : "bg-white/20"
+                        }`}
+                      />
+                    </div>
                     <p className="truncate text-sm font-semibold text-white/48">
                       @{conversation.other_user.username}
                     </p>
@@ -187,9 +260,23 @@ function Chat() {
               {activeConversation?.other_user.display_name || "Conversación"}
             </p>
             {activeConversation?.other_user.username ? (
-              <p className="text-sm font-semibold text-neonPink">
-                @{activeConversation.other_user.username}
-              </p>
+              <div className="mt-1 flex items-center gap-2 text-sm font-semibold">
+                <span className="text-neonPink">
+                  @{activeConversation.other_user.username}
+                </span>
+                <span
+                  className={`h-2 w-2 rounded-full ${
+                    onlineUserIds.has(activeConversation.other_user.user_id)
+                      ? "bg-neonGreen"
+                      : "bg-white/24"
+                  }`}
+                />
+                <span className="text-white/45">
+                  {onlineUserIds.has(activeConversation.other_user.user_id)
+                    ? "online"
+                    : "offline"}
+                </span>
+              </div>
             ) : null}
           </div>
 
@@ -243,11 +330,17 @@ function Chat() {
             <div ref={messagesEndRef} />
           </div>
 
+          {typingByConversation[activeConversationId] ? (
+            <p className="mt-2 text-xs font-bold text-neonGreen">
+              {typingByConversation[activeConversationId]} está escribiendo...
+            </p>
+          ) : null}
+
           <form className="sticky bottom-20 mt-3 flex gap-2 bg-night py-2" onSubmit={handleSend}>
             <input
               className="min-w-0 flex-1 rounded-lg border border-white/10 bg-surface px-4 text-sm text-white outline-none placeholder:text-white/32 focus:border-neonPink"
               value={text}
-              onChange={(event) => setText(event.target.value)}
+              onChange={handleTextChange}
               maxLength={1000}
               placeholder="Escribe un mensaje..."
             />

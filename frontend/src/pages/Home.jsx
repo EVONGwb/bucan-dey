@@ -5,12 +5,13 @@ import { Link } from "react-router-dom";
 import apiClient from "../api/client.js";
 import PostCard from "../components/post/PostCard.jsx";
 import { useAuth } from "../context/AuthContext.jsx";
+import { useRealtime } from "../context/RealtimeContext.jsx";
 import { getApiErrorMessage } from "../utils/errors.js";
 
 function Home() {
   const { isAuthenticated } = useAuth();
+  const { unreadCount, setUnreadCount } = useRealtime();
   const [posts, setPosts] = useState([]);
-  const [unreadCount, setUnreadCount] = useState(0);
   const [nextCursor, setNextCursor] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isLoadingMore, setIsLoadingMore] = useState(false);

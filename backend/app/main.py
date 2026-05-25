@@ -5,7 +5,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.core.config import settings
 from app.core.database import close_mongo_connection, connect_to_mongo
-from app.routes import admin, auth, chat, comments, feed, health, map, media, notifications, posts, reports, users
+from app.routes import admin, auth, chat, comments, feed, health, map, media, notifications, posts, reports, users, ws
 
 
 @asynccontextmanager
@@ -42,3 +42,4 @@ app.include_router(chat.router, prefix=f"{settings.API_PREFIX}/chat", tags=["cha
 app.include_router(notifications.router, prefix=f"{settings.API_PREFIX}/notifications", tags=["notifications"])
 app.include_router(reports.router, prefix=f"{settings.API_PREFIX}/reports", tags=["reports"])
 app.include_router(admin.router, prefix=f"{settings.API_PREFIX}/admin", tags=["admin"])
+app.include_router(ws.router, prefix=settings.API_PREFIX, tags=["websocket"])

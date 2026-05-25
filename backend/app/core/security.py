@@ -33,6 +33,25 @@ def create_access_token(subject: str, extra_claims: dict[str, Any] | None = None
     return jwt.encode(payload, settings.JWT_SECRET_KEY, algorithm=settings.JWT_ALGORITHM)
 
 
+async def get_user_from_token(token: str) -> dict | None:
+    from app.services.users import get_user_by_id
+
+    try:
+        payload = jwt.decode(
+            token,
+            settings.JWT_SECRET_KEY,
+            algorithms=[settings.JWT_ALGORITHM],
+        )
+        user_id = payload.get("sub")
+    except JWTError:
+        return None
+
+    if not isinstance(user_id, str):
+        return None
+
+    return await get_user_by_id(user_id)
+
+
 async def get_current_user(
     credentials: HTTPAuthorizationCredentials | None = Depends(bearer_scheme),
 ) -> dict:
@@ -47,20 +66,7 @@ async def get_current_user(
     if credentials is None:
         raise auth_error
 
-    try:
-        payload = jwt.decode(
-            credentials.credentials,
-            settings.JWT_SECRET_KEY,
-            algorithms=[settings.JWT_ALGORITHM],
-        )
-        user_id = payload.get("sub")
-    except JWTError:
-        raise auth_error from None
-
-    if not isinstance(user_id, str):
-        raise auth_error
-
-    user = await get_user_by_id(user_id)
+    user = await get_user_from_token(credentials.credentials)
     if user is None:
         raise auth_error
 

@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 import apiClient from "../api/client.js";
+import { useRealtime } from "../context/RealtimeContext.jsx";
 import { getApiErrorMessage } from "../utils/errors.js";
 
 function formatRelativeDate(value) {
@@ -28,6 +29,7 @@ function destinationFor(notification) {
 
 function Notifications() {
   const navigate = useNavigate();
+  const { setUnreadCount, subscribe } = useRealtime();
   const [notifications, setNotifications] = useState([]);
   const [nextCursor, setNextCursor] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -60,9 +62,21 @@ function Notifications() {
     init();
   }, []);
 
+  useEffect(() => {
+    return subscribe("notification", (notification) => {
+      setNotifications((current) => {
+        if (current.some((item) => item.id === notification.id)) {
+          return current;
+        }
+        return [notification, ...current];
+      });
+    });
+  }, [subscribe]);
+
   async function handleReadAll() {
     try {
       await apiClient.patch("/notifications/read-all");
+      setUnreadCount(0);
       setNotifications((current) =>
         current.map((notification) => ({ ...notification, is_read: true }))
       );
@@ -75,6 +89,7 @@ function Notifications() {
     try {
       if (!notification.is_read) {
         await apiClient.patch(`/notifications/${notification.id}/read`);
+        setUnreadCount((current) => Math.max(0, current - 1));
       }
       navigate(destinationFor(notification));
     } catch (err) {

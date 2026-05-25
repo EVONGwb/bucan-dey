@@ -35,6 +35,8 @@ def build_user_document(
         "providers": providers or [auth_provider],
         "onboarding_completed": onboarding_completed,
         "onboarding_completed_at": now if onboarding_completed else None,
+        "followers_count": 0,
+        "following_count": 0,
         "role": "user",
         "is_verified": is_verified,
         "is_active": True,

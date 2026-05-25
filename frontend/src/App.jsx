@@ -10,12 +10,14 @@ import Home from "./pages/Home.jsx";
 const Admin = lazy(() => import("./pages/Admin.jsx"));
 const Chat = lazy(() => import("./pages/Chat.jsx"));
 const CreatePost = lazy(() => import("./pages/CreatePost.jsx"));
+const FollowList = lazy(() => import("./pages/FollowList.jsx"));
 const Login = lazy(() => import("./pages/Login.jsx"));
 const Map = lazy(() => import("./pages/Map.jsx"));
 const Notifications = lazy(() => import("./pages/Notifications.jsx"));
 const Onboarding = lazy(() => import("./pages/Onboarding.jsx"));
 const Profile = lazy(() => import("./pages/Profile.jsx"));
 const Register = lazy(() => import("./pages/Register.jsx"));
+const Trending = lazy(() => import("./pages/Trending.jsx"));
 
 function LazyPage({ children }) {
   return <Suspense fallback={<PageFallback />}>{children}</Suspense>;
@@ -98,6 +100,14 @@ const appRoutes = [
     ),
   },
   {
+    path: "/trending",
+    element: (
+      <LazyPage>
+        <Trending />
+      </LazyPage>
+    ),
+  },
+  {
     path: "/admin",
     element: (
       <ProtectedRoute>
@@ -114,6 +124,22 @@ const appRoutes = [
     element: (
       <LazyPage>
         <Profile />
+      </LazyPage>
+    ),
+  },
+  {
+    path: "/users/:username/followers",
+    element: (
+      <LazyPage>
+        <FollowList mode="followers" />
+      </LazyPage>
+    ),
+  },
+  {
+    path: "/users/:username/following",
+    element: (
+      <LazyPage>
+        <FollowList mode="following" />
       </LazyPage>
     ),
   },

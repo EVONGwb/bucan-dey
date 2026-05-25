@@ -114,12 +114,20 @@ function Home() {
         <p className="text-sm font-black uppercase tracking-[0.16em] text-white/48">
           Feed global
         </p>
-        <Link
-          className="rounded-lg bg-gradient-to-r from-neonGreen via-neonYellow to-neonPink px-4 py-2 text-sm font-black text-night"
-          to="/create"
-        >
-          Publicar
-        </Link>
+        <div className="flex items-center gap-2">
+          <Link
+            className="rounded-lg border border-neonYellow/30 bg-neonYellow/10 px-3 py-2 text-sm font-black text-neonYellow"
+            to="/trending"
+          >
+            Tendencias
+          </Link>
+          <Link
+            className="rounded-lg bg-gradient-to-r from-neonGreen via-neonYellow to-neonPink px-4 py-2 text-sm font-black text-night"
+            to="/create"
+          >
+            Publicar
+          </Link>
+        </div>
       </div>
 
       {isDataSaver ? (

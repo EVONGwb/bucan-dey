@@ -48,6 +48,7 @@ async def create_indexes() -> None:
     await database.users.create_index("email", unique=True)
     await database.users.create_index("username", unique=True)
     await database.users.create_index("google_id", unique=True, sparse=True)
+    await database.users.create_index([("followers_count", -1), ("created_at", -1)])
     await database.posts.create_index([("created_at", -1), ("_id", -1)])
     await database.posts.create_index([("visibility", 1), ("created_at", -1)])
     await database.posts.create_index(
@@ -69,6 +70,9 @@ async def create_indexes() -> None:
     )
     await database.posts.create_index([("location.geo", "2dsphere")], sparse=True)
     await database.likes.create_index([("post_id", 1), ("user_id", 1)], unique=True)
+    await database.follows.create_index([("follower_id", 1), ("following_id", 1)], unique=True)
+    await database.follows.create_index([("following_id", 1), ("created_at", -1)])
+    await database.follows.create_index([("follower_id", 1), ("created_at", -1)])
     await database.comments.create_index([("post_id", 1), ("created_at", -1)])
     await database.comments.create_index([("author_id", 1), ("created_at", -1)])
     await database.chat_conversations.create_index("participant_ids")

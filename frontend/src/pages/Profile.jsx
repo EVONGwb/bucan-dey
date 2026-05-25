@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { Link, useNavigate, useParams } from "react-router-dom";
 
 import apiClient from "../api/client.js";
 import PostCard from "../components/post/PostCard.jsx";
@@ -16,6 +16,7 @@ function Profile() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
   const [isStartingChat, setIsStartingChat] = useState(false);
+  const [isUpdatingFollow, setIsUpdatingFollow] = useState(false);
 
   const targetUsername = username || user?.username;
   const isOwnProfile = useMemo(
@@ -31,7 +32,7 @@ function Profile() {
         setIsLoading(true);
         setError("");
         const [profileResponse, postsResponse] = await Promise.all([
-          username ? apiClient.get(`/users/${targetUsername}`) : Promise.resolve({ data: user }),
+          apiClient.get(`/users/${targetUsername}`),
           apiClient.get(`/users/${targetUsername}/posts`),
         ]);
         setProfileUser(profileResponse.data);
@@ -62,6 +63,31 @@ function Profile() {
       setError(getApiErrorMessage(err));
     } finally {
       setIsStartingChat(false);
+    }
+  }
+
+  async function handleToggleFollow() {
+    if (!isAuthenticated) {
+      navigate("/login");
+      return;
+    }
+
+    try {
+      setIsUpdatingFollow(true);
+      setError("");
+      const response = profileUser.is_following
+        ? await apiClient.delete(`/users/${profileUser.id}/follow`)
+        : await apiClient.post(`/users/${profileUser.id}/follow`);
+
+      setProfileUser((current) => ({
+        ...current,
+        is_following: response.data.following,
+        followers_count: response.data.followers_count,
+      }));
+    } catch (err) {
+      setError(getApiErrorMessage(err));
+    } finally {
+      setIsUpdatingFollow(false);
     }
   }
 
@@ -118,6 +144,28 @@ function Profile() {
         </div>
 
         <div className="mt-6 grid grid-cols-2 gap-3">
+          <Link
+            className="rounded-lg border border-white/10 bg-white/5 p-3 transition active:scale-[0.99]"
+            to={`/users/${profileUser?.username}/followers`}
+          >
+            <p className="text-xs font-bold uppercase tracking-[0.16em] text-white/38">
+              Seguidores
+            </p>
+            <p className="mt-1 text-xl font-black text-white">
+              {profileUser?.followers_count || 0}
+            </p>
+          </Link>
+          <Link
+            className="rounded-lg border border-white/10 bg-white/5 p-3 transition active:scale-[0.99]"
+            to={`/users/${profileUser?.username}/following`}
+          >
+            <p className="text-xs font-bold uppercase tracking-[0.16em] text-white/38">
+              Seguidos
+            </p>
+            <p className="mt-1 text-xl font-black text-white">
+              {profileUser?.following_count || 0}
+            </p>
+          </Link>
           <div className="rounded-lg border border-white/10 bg-white/5 p-3">
             <p className="text-xs font-bold uppercase tracking-[0.16em] text-white/38">
               Ciudad
@@ -154,14 +202,32 @@ function Profile() {
             Cerrar sesión
           </button>
         ) : (
-          <button
-            className="mt-6 h-14 w-full rounded-lg bg-gradient-to-r from-neonGreen via-neonYellow to-neonPink text-sm font-black text-night shadow-neon transition active:scale-[0.99]"
-            type="button"
-            onClick={handleStartChat}
-            disabled={isStartingChat}
-          >
-            {isStartingChat ? "Abriendo..." : "Enviar mensaje"}
-          </button>
+          <div className="mt-6 grid grid-cols-2 gap-3">
+            <button
+              className={`h-14 rounded-lg text-sm font-black transition active:scale-[0.99] disabled:opacity-60 ${
+                profileUser?.is_following
+                  ? "border border-neonPink/40 bg-neonPink/10 text-white"
+                  : "bg-gradient-to-r from-neonGreen via-neonYellow to-neonPink text-night shadow-neon"
+              }`}
+              type="button"
+              onClick={handleToggleFollow}
+              disabled={isUpdatingFollow}
+            >
+              {isUpdatingFollow
+                ? "Guardando..."
+                : profileUser?.is_following
+                  ? "Dejar"
+                  : "Seguir"}
+            </button>
+            <button
+              className="h-14 rounded-lg border border-white/10 bg-white/5 text-sm font-black text-white transition active:scale-[0.99] disabled:opacity-60"
+              type="button"
+              onClick={handleStartChat}
+              disabled={isStartingChat}
+            >
+              {isStartingChat ? "Abriendo..." : "Mensaje"}
+            </button>
+          </div>
         )}
       </div>
 

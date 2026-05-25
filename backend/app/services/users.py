@@ -17,7 +17,7 @@ def has_complete_profile(user: dict) -> bool:
     )
 
 
-def serialize_user(user: dict) -> dict:
+def serialize_user(user: dict, is_following: bool = False) -> dict:
     onboarding_completed = user.get("onboarding_completed")
     if onboarding_completed is None:
         onboarding_completed = has_complete_profile(user)
@@ -37,6 +37,9 @@ def serialize_user(user: dict) -> dict:
         "providers": user.get("providers", [user.get("auth_provider", "local")]),
         "onboarding_completed": bool(onboarding_completed),
         "onboarding_completed_at": user.get("onboarding_completed_at"),
+        "followers_count": max(0, int(user.get("followers_count", 0))),
+        "following_count": max(0, int(user.get("following_count", 0))),
+        "is_following": is_following,
         "is_verified": user.get("is_verified", False),
         "is_active": user.get("is_active", True),
         "created_at": user["created_at"],

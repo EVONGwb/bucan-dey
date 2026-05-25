@@ -95,6 +95,9 @@ class UserOut(BaseModel):
     providers: list[str] = Field(default_factory=list)
     onboarding_completed: bool = False
     onboarding_completed_at: datetime | None = None
+    followers_count: int = 0
+    following_count: int = 0
+    is_following: bool = False
     is_verified: bool = False
     is_active: bool = True
     created_at: datetime
@@ -107,3 +110,25 @@ class TokenResponse(BaseModel):
     access_token: str
     token_type: str = "bearer"
     user: UserOut
+
+
+class FollowResponse(BaseModel):
+    following: bool
+    followers_count: int
+
+
+class FollowUserOut(BaseModel):
+    id: str
+    username: str
+    display_name: str
+    avatar_url: str | None = None
+    city: str = ""
+    country: str = ""
+    followers_count: int = 0
+    following_count: int = 0
+    is_following: bool = False
+
+
+class FollowListResponse(BaseModel):
+    items: list[FollowUserOut]
+    next_cursor: str | None = None

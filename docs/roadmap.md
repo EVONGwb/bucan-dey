@@ -60,3 +60,14 @@
 - Reportes.
 - Panel admin.
 - Bloqueo de usuarios y publicaciones.
+
+## Fase 18: Eventos reales
+
+- Eventos como entidad propia (`events`) con asistencia.
+- Estados de asistencia: `going` e `interested`.
+- Eventos públicos visibles en `/events`, mapa y feed mediante post automático.
+- Eventos `followers` visibles para creador y seguidores.
+- Recordatorios push preparados para cron futuro:
+  - 1 hora antes del evento.
+  - 15 minutos antes del evento.
+- Pendiente para fase posterior: job programado que consulte eventos próximos y envíe push a asistentes activos evitando duplicados.

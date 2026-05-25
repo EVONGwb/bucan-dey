@@ -16,6 +16,7 @@ function Home() {
   const { unreadCount, setUnreadCount } = useRealtime();
   const { isDataSaver } = useDataSaverMode();
   const [posts, setPosts] = useState([]);
+  const [events, setEvents] = useState([]);
   const [nextCursor, setNextCursor] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
@@ -35,7 +36,11 @@ function Home() {
       try {
         setIsLoading(true);
         setError("");
-        await loadFeed();
+        const [_, eventsResponse] = await Promise.all([
+          loadFeed(),
+          apiClient.get("/events", { params: { limit: 3 } }),
+        ]);
+        setEvents(eventsResponse.data.items);
       } catch (err) {
         setError(getApiErrorMessage(err));
       } finally {
@@ -113,6 +118,42 @@ function Home() {
 
       <StoriesBar />
 
+      {events.length ? (
+        <div className="mt-7">
+          <div className="flex items-center justify-between">
+            <p className="text-sm font-black uppercase tracking-[0.16em] text-white/48">
+              Próximos eventos
+            </p>
+            <Link className="text-sm font-black text-neonYellow" to="/events">
+              Ver todos
+            </Link>
+          </div>
+          <div className="mt-3 flex gap-3 overflow-x-auto pb-2">
+            {events.map((event) => (
+              <Link
+                className="min-w-64 rounded-lg border border-white/10 bg-surface p-4"
+                key={event.id}
+                to={`/events/${event.id}`}
+              >
+                <p className="text-xs font-black uppercase text-neonPink">{event.category}</p>
+                <p className="mt-2 text-lg font-black leading-tight text-white">{event.title}</p>
+                <p className="mt-2 text-xs font-semibold text-white/50">
+                  {new Date(event.start_at).toLocaleString("es-ES", {
+                    day: "2-digit",
+                    month: "short",
+                    hour: "2-digit",
+                    minute: "2-digit",
+                  })}
+                </p>
+                <p className="mt-2 text-xs font-bold text-neonGreen">
+                  {event.attendees_count} apuntados
+                </p>
+              </Link>
+            ))}
+          </div>
+        </div>
+      ) : null}
+
       <div className="mt-7 flex items-center justify-between gap-3">
         <p className="text-sm font-black uppercase tracking-[0.16em] text-white/48">
           Feed global
@@ -120,6 +161,12 @@ function Home() {
         <div className="flex items-center gap-2">
           <Link
             className="rounded-lg border border-neonYellow/30 bg-neonYellow/10 px-3 py-2 text-sm font-black text-neonYellow"
+            to="/events"
+          >
+            Eventos
+          </Link>
+          <Link
+            className="rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm font-black text-white"
             to="/trending"
           >
             Tendencias

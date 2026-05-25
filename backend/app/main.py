@@ -6,7 +6,7 @@ from fastapi.middleware.gzip import GZipMiddleware
 
 from app.core.config import settings
 from app.core.database import close_mongo_connection, connect_to_mongo
-from app.routes import admin, auth, chat, comments, feed, health, map, media, notifications, posts, push, reports, stories, trending, users, ws
+from app.routes import admin, auth, chat, comments, events, feed, health, map, media, notifications, posts, push, reports, stories, trending, users, ws
 
 
 @asynccontextmanager
@@ -40,6 +40,7 @@ app.include_router(media.router, prefix=f"{settings.API_PREFIX}/media", tags=["m
 app.include_router(map.router, prefix=f"{settings.API_PREFIX}/map", tags=["map"])
 app.include_router(trending.router, prefix=f"{settings.API_PREFIX}/trending", tags=["trending"])
 app.include_router(stories.router, prefix=f"{settings.API_PREFIX}/stories", tags=["stories"])
+app.include_router(events.router, prefix=f"{settings.API_PREFIX}/events", tags=["events"])
 app.include_router(users.router, prefix=f"{settings.API_PREFIX}/users", tags=["users"])
 app.include_router(posts.router, prefix=f"{settings.API_PREFIX}/posts", tags=["posts"])
 app.include_router(comments.router, prefix=f"{settings.API_PREFIX}/comments", tags=["comments"])

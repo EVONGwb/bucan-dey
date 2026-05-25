@@ -9,8 +9,11 @@ import Home from "./pages/Home.jsx";
 
 const Admin = lazy(() => import("./pages/Admin.jsx"));
 const Chat = lazy(() => import("./pages/Chat.jsx"));
+const CreateEvent = lazy(() => import("./pages/CreateEvent.jsx"));
 const CreatePost = lazy(() => import("./pages/CreatePost.jsx"));
 const CreateStory = lazy(() => import("./pages/CreateStory.jsx"));
+const EventPage = lazy(() => import("./pages/EventPage.jsx"));
+const Events = lazy(() => import("./pages/Events.jsx"));
 const FollowList = lazy(() => import("./pages/FollowList.jsx"));
 const Login = lazy(() => import("./pages/Login.jsx"));
 const Map = lazy(() => import("./pages/Map.jsx"));
@@ -33,6 +36,32 @@ const appRoutes = [
     element: (
       <LazyPage>
         <Map />
+      </LazyPage>
+    ),
+  },
+  {
+    path: "/events",
+    element: (
+      <LazyPage>
+        <Events />
+      </LazyPage>
+    ),
+  },
+  {
+    path: "/events/create",
+    element: (
+      <ProtectedRoute>
+        <LazyPage>
+          <CreateEvent />
+        </LazyPage>
+      </ProtectedRoute>
+    ),
+  },
+  {
+    path: "/events/:eventId",
+    element: (
+      <LazyPage>
+        <EventPage />
       </LazyPage>
     ),
   },

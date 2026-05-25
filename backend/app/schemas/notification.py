@@ -16,10 +16,10 @@ class NotificationOut(BaseModel):
     user_id: str
     actor_id: str
     actor_snapshot: ActorSnapshot
-    type: Literal["like", "comment", "message", "conversation", "follow", "repost"]
+    type: Literal["like", "comment", "message", "conversation", "follow", "repost", "event_attend"]
     title: str
     body: str
-    entity_type: Literal["post", "comment", "message", "conversation", "user"]
+    entity_type: Literal["post", "comment", "message", "conversation", "user", "event"]
     entity_id: str
     is_read: bool
     created_at: datetime

@@ -6,15 +6,33 @@ from pydantic import BaseModel
 from app.schemas.post import AuthorSnapshot, EventData, LiveData, LocationData, PostStats, PostType
 
 
+MapItemType = Literal[
+    "normal",
+    "video",
+    "fiesta",
+    "cumpleaños",
+    "evento",
+    "live",
+    "bar",
+    "ambiente",
+    "concierto",
+    "meetup",
+    "deporte",
+    "otro",
+]
+
+
 class MapPostOut(BaseModel):
     id: str
-    type: PostType
+    source_type: Literal["post", "event"] = "post"
+    type: MapItemType
     text: str
     author_snapshot: AuthorSnapshot
     location: LocationData
     event_data: EventData | None = None
     live_data: LiveData | None = None
     stats: PostStats
+    attendees_count: int = 0
     created_at: datetime
     distance_km: float | None = None
 

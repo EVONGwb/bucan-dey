@@ -30,6 +30,10 @@ const markerColors = {
   live: "#ff1478",
   bar: "#ffd21f",
   ambiente: "#17f56b",
+  concierto: "#ff1478",
+  meetup: "#17f56b",
+  deporte: "#ffffff",
+  otro: "#ffffff",
 };
 
 const typeLabels = {
@@ -41,6 +45,10 @@ const typeLabels = {
   live: "Live",
   bar: "Bar",
   ambiente: "Ambiente",
+  concierto: "Concierto",
+  meetup: "Meetup",
+  deporte: "Deporte",
+  otro: "Otro",
 };
 
 function createMarkerIcon(type) {
@@ -304,10 +312,15 @@ function Map() {
                       <p className="mt-1 text-xs font-bold">a {post.distance_km} km</p>
                     ) : null}
                     <p className="mt-2 text-xs">
-                      {post.stats.likes_count} likes · {post.stats.comments_count} comentarios
+                      {post.source_type === "event"
+                        ? `${post.attendees_count || 0} apuntados`
+                        : `${post.stats.likes_count} likes · ${post.stats.comments_count} comentarios`}
                     </p>
-                    <Link className="mt-2 inline-block text-sm font-bold" to="/">
-                      Ver publicación
+                    <Link
+                      className="mt-2 inline-block text-sm font-bold"
+                      to={post.source_type === "event" ? `/events/${post.id}` : `/posts/${post.id}`}
+                    >
+                      {post.source_type === "event" ? "Ver evento" : "Ver publicación"}
                     </Link>
                   </div>
                 </Popup>

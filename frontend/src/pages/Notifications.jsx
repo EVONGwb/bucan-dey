@@ -29,6 +29,10 @@ function destinationFor(notification) {
     return `/users/${notification.actor_snapshot.username}`;
   }
 
+  if (notification.entity_type === "event") {
+    return `/events/${notification.entity_id}`;
+  }
+
   if (notification.entity_type === "conversation" || notification.entity_type === "message") {
     return "/chat";
   }

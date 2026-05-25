@@ -239,7 +239,7 @@ const appRoutes = [
 function App() {
   return (
     <div className="min-h-screen bg-night text-white">
-      <main className="mx-auto min-h-screen w-full max-w-md px-4 pb-24 pt-5">
+      <main className="mx-auto min-h-screen w-full max-w-md px-4 pb-36 pt-5">
         <Routes>
           {appRoutes.map((route) => (
             <Route key={route.path} path={route.path} element={route.element} />

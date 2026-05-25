@@ -1,5 +1,9 @@
 function SkeletonBlock({ className = "" }) {
-  return <div className={`animate-pulse rounded-lg bg-white/8 ${className}`} />;
+  return (
+    <div
+      className={`animate-pulse rounded-2xl bg-gradient-to-r from-white/7 via-white/12 to-white/7 ${className}`}
+    />
+  );
 }
 
 export function PageFallback() {
@@ -18,7 +22,7 @@ export function FeedSkeleton({ count = 3 }) {
     <div className="mt-5 space-y-4">
       {Array.from({ length: count }).map((_, index) => (
         <div
-          className="rounded-lg border border-white/10 bg-surface p-4"
+          className="glass-panel rounded-[1.75rem] p-4"
           key={`feed-skeleton-${index}`}
         >
           <div className="flex items-center gap-3">
@@ -31,7 +35,7 @@ export function FeedSkeleton({ count = 3 }) {
           </div>
           <SkeletonBlock className="mt-5 h-4 w-2/3" />
           <SkeletonBlock className="mt-3 h-4 w-full" />
-          <SkeletonBlock className="mt-4 h-44 w-full" />
+          <SkeletonBlock className="mt-4 h-60 w-full rounded-[1.35rem]" />
           <div className="mt-4 flex gap-2 border-t border-white/10 pt-3">
             <SkeletonBlock className="h-9 w-12" />
             <SkeletonBlock className="h-9 w-12" />

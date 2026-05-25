@@ -1,4 +1,5 @@
 import { Home, Map, MessageCircle, PlusCircle, User } from "lucide-react";
+import { motion } from "framer-motion";
 import { NavLink } from "react-router-dom";
 
 const navItems = [
@@ -11,8 +12,8 @@ const navItems = [
 
 function BottomNav() {
   return (
-    <nav className="fixed inset-x-0 bottom-0 z-20 border-t border-white/10 bg-night/92 px-3 pb-[calc(0.5rem+env(safe-area-inset-bottom))] pt-2 backdrop-blur-xl">
-      <div className="mx-auto grid max-w-md grid-cols-5 gap-1">
+    <nav className="fixed inset-x-0 bottom-0 z-20 px-3 pb-[calc(0.7rem+env(safe-area-inset-bottom))] pt-2">
+      <div className="glass-panel mx-auto grid max-w-md grid-cols-5 gap-1 rounded-[1.7rem] p-1.5">
         {navItems.map((item) => {
           const Icon = item.icon;
 
@@ -22,15 +23,25 @@ function BottomNav() {
               to={item.to}
               className={({ isActive }) =>
                 [
-                  "flex min-h-14 touch-manipulation flex-col items-center justify-center rounded-lg text-[11px] font-semibold transition active:scale-[0.97]",
+                  "relative flex min-h-14 touch-manipulation flex-col items-center justify-center rounded-[1.2rem] text-[11px] font-extrabold transition active:scale-[0.96]",
                   isActive
-                    ? "bg-white/10 text-neonPink shadow-neon"
-                    : "text-white/62 hover:bg-white/5 hover:text-white",
+                    ? "bg-white/12 text-white shadow-cyan"
+                    : "text-white/56 hover:bg-white/7 hover:text-white",
                 ].join(" ")
               }
             >
-              <Icon aria-hidden="true" className="mb-1 h-5 w-5" strokeWidth={2.2} />
-              <span>{item.label}</span>
+              {({ isActive }) => (
+                <>
+                  {isActive ? (
+                    <motion.span
+                      className="absolute inset-x-4 top-1 h-0.5 rounded-full bg-gradient-to-r from-neonCyan to-neonPink"
+                      layoutId="bottom-nav-active"
+                    />
+                  ) : null}
+                  <Icon aria-hidden="true" className="mb-1 h-5 w-5" strokeWidth={2.3} />
+                  <span>{item.label}</span>
+                </>
+              )}
             </NavLink>
           );
         })}

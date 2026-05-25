@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { motion } from "framer-motion";
 import { Link, useNavigate } from "react-router-dom";
 
 import apiClient from "../../api/client.js";
@@ -9,11 +10,16 @@ function StoryAvatar({ group }) {
   const initial = (group.user.display_name || group.user.username || "B").charAt(0).toUpperCase();
 
   return (
-    <Link
-      className="w-20 shrink-0 text-left"
+    <motion.div
+      className="w-20 shrink-0"
+      whileTap={{ scale: 0.94 }}
+      whileHover={{ y: -2 }}
+    >
+      <Link
+      className="block text-left"
       to={firstStory ? `/stories/${firstStory.id}` : "/"}
     >
-      <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-neonGreen via-neonYellow to-neonPink p-0.5 shadow-neon">
+      <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-neonCyan via-fiestaPurple to-neonPink p-[2px] shadow-neon [animation:neon-border_7s_linear_infinite]">
         {group.user.avatar_url ? (
           <img
             alt={group.user.display_name}
@@ -32,6 +38,7 @@ function StoryAvatar({ group }) {
         {group.user.username}
       </p>
     </Link>
+    </motion.div>
   );
 }
 
@@ -63,19 +70,25 @@ function StoriesBar() {
   }
 
   return (
-    <div className="mt-7">
+    <section className="mt-7">
       <div className="flex items-center justify-between">
-        <p className="text-sm font-black uppercase tracking-[0.16em] text-white/48">
+        <p className="text-sm font-black uppercase tracking-[0.16em] text-white/54">
           Stories
         </p>
-        <Link className="text-xs font-black text-neonGreen" to="/stories/create">
+        <Link className="text-xs font-black text-neonCyan" to="/stories/create">
           Crear
         </Link>
       </div>
 
-      <div className="-mx-4 mt-3 flex gap-3 overflow-x-auto px-4 pb-2">
-        <button className="w-20 shrink-0 text-left" type="button" onClick={handleCreate}>
-          <div className="relative mx-auto flex h-16 w-16 items-center justify-center rounded-full border border-white/10 bg-surface">
+      <div className="scrollbar-none -mx-4 mt-3 flex gap-3 overflow-x-auto px-4 pb-2">
+        <motion.button
+          className="w-20 shrink-0 text-left"
+          type="button"
+          onClick={handleCreate}
+          whileTap={{ scale: 0.94 }}
+          whileHover={{ y: -2 }}
+        >
+          <div className="relative mx-auto flex h-16 w-16 items-center justify-center rounded-full border border-white/10 bg-white/8 shadow-cyan backdrop-blur-xl">
             {user?.avatar_url ? (
               <img
                 alt={user.display_name}
@@ -89,18 +102,18 @@ function StoriesBar() {
                 {(user?.display_name || "T").charAt(0).toUpperCase()}
               </span>
             )}
-            <span className="absolute -bottom-1 -right-1 flex h-7 w-7 items-center justify-center rounded-full bg-neonPink text-lg font-black text-white">
+            <span className="absolute -bottom-1 -right-1 flex h-7 w-7 items-center justify-center rounded-full bg-gradient-to-br from-neonCyan to-neonPink text-lg font-black text-white shadow-neon">
               +
             </span>
           </div>
           <p className="mt-2 truncate text-center text-xs font-bold text-white/70">Tu Story</p>
-        </button>
+        </motion.button>
 
         {groups.map((group) => (
           <StoryAvatar key={group.user.id} group={group} />
         ))}
       </div>
-    </div>
+    </section>
   );
 }
 

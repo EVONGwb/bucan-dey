@@ -1,4 +1,6 @@
 import { memo, useState } from "react";
+import { motion } from "framer-motion";
+import { Eye, Flag, Heart, MapPin, MessageCircle, Repeat2, Send } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 
 import apiClient from "../../api/client.js";
@@ -22,12 +24,12 @@ const TYPE_LABELS = {
 const TYPE_STYLES = {
   normal: "border-white/10 bg-white/8 text-white",
   video: "border-neonPink/30 bg-neonPink/12 text-neonPink",
-  fiesta: "border-neonOrange/30 bg-neonOrange/12 text-neonOrange",
+  fiesta: "border-fiestaPurple/40 bg-fiestaPurple/18 text-white",
   cumpleaños: "border-neonYellow/30 bg-neonYellow/12 text-neonYellow",
-  evento: "border-neonGreen/30 bg-neonGreen/12 text-neonGreen",
-  live: "border-neonPink/40 bg-neonPink/16 text-neonPink",
+  evento: "border-neonCyan/30 bg-neonCyan/12 text-neonCyan",
+  live: "border-liveRed/40 bg-liveRed/16 text-liveRed",
   bar: "border-neonYellow/30 bg-neonYellow/12 text-neonYellow",
-  ambiente: "border-neonGreen/30 bg-neonGreen/12 text-neonGreen",
+  ambiente: "border-neonCyan/30 bg-neonCyan/12 text-neonCyan",
 };
 
 const REPORT_REASONS = [
@@ -293,19 +295,25 @@ function PostCard({ post, isDataSaver = false }) {
   }
 
   return (
-    <article className="rounded-lg border border-white/10 bg-surface p-4 shadow-neon">
+    <motion.article
+      className="glass-panel overflow-hidden rounded-[1.75rem] p-4"
+      initial={{ opacity: 0, y: 18 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, margin: "120px" }}
+      transition={{ duration: 0.32 }}
+    >
       <div className="flex items-start justify-between gap-3">
         <div className="flex min-w-0 items-center gap-3">
-          {post.author_snapshot?.avatar_url ? (
+          {localPost.author_snapshot?.avatar_url ? (
             <img
               alt={localPost.author_snapshot.display_name}
-              className="h-11 w-11 rounded-full object-cover"
+              className="h-12 w-12 rounded-full border border-white/10 object-cover shadow-cyan"
               loading="lazy"
               decoding="async"
               src={localPost.author_snapshot.avatar_url}
             />
           ) : (
-            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-neonGreen via-neonYellow to-neonPink text-base font-black text-night">
+            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-neonCyan via-fiestaPurple to-neonPink text-base font-black text-white shadow-cyan">
               {(localPost.author_snapshot?.display_name || "B").charAt(0).toUpperCase()}
             </div>
           )}
@@ -323,13 +331,14 @@ function PostCard({ post, isDataSaver = false }) {
           </div>
         </div>
 
-        <span className={`rounded-full border px-3 py-1 text-xs font-black ${typeStyle}`}>
+        <span className={`rounded-full border px-3 py-1 text-xs font-black backdrop-blur-xl ${typeStyle}`}>
           {typeLabel}
         </span>
       </div>
 
       {location ? (
-        <p className="mt-4 text-xs font-bold uppercase tracking-[0.14em] text-neonGreen">
+        <p className="mt-4 flex items-center gap-1 text-xs font-bold uppercase tracking-[0.14em] text-neonCyan">
+          <MapPin className="h-3.5 w-3.5" />
           {location}
         </p>
       ) : null}
@@ -339,13 +348,13 @@ function PostCard({ post, isDataSaver = false }) {
       </p>
 
       {localPost.media?.length ? (
-        <div className="mt-4 space-y-3 overflow-hidden rounded-lg border border-white/10 bg-night">
+        <div className="mt-4 space-y-3 overflow-hidden rounded-[1.35rem] border border-white/10 bg-night">
           {localPost.media.map((item) =>
             item.type === "image" ? (
               <img
                 key={item.public_id || item.url}
                 alt="Contenido de la publicación"
-                className="max-h-[30rem] w-full object-cover"
+                className="max-h-[34rem] w-full object-cover"
                 decoding="async"
                 loading="lazy"
                 sizes="(max-width: 480px) 100vw, 448px"
@@ -390,51 +399,62 @@ function PostCard({ post, isDataSaver = false }) {
         </div>
       ) : null}
 
-      <div className="mt-4 flex items-center gap-2 border-t border-white/10 pt-3 text-xs font-bold text-white/60">
-        <button
-          className={`rounded-lg border px-3 py-2 transition ${
+      <div className="mt-4 flex flex-wrap items-center gap-2 border-t border-white/10 pt-3 text-xs font-bold text-white/60">
+        <motion.button
+          className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-2 transition ${
             localPost.liked_by_me
-              ? "border-neonPink bg-neonPink/16 text-neonPink"
+              ? "border-neonPink bg-neonPink/16 text-neonPink shadow-neon"
               : "border-white/10 bg-white/5 text-white/70"
           }`}
           type="button"
           onClick={handleLike}
+          whileTap={{ scale: 0.88 }}
         >
-          ♥ {postStats.likes_count || 0}
-        </button>
-        <button
-          className="rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-white/70"
+          <Heart className={`h-4 w-4 ${localPost.liked_by_me ? "fill-current" : ""}`} />
+          {postStats.likes_count || 0}
+        </motion.button>
+        <motion.button
+          className="inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/5 px-3 py-2 text-white/70"
           type="button"
           onClick={() => setShowComments((current) => !current)}
+          whileTap={{ scale: 0.92 }}
         >
-          💬 {postStats.comments_count || 0}
-        </button>
-        <button
-          className={`rounded-lg border px-3 py-2 transition ${
+          <MessageCircle className="h-4 w-4" />
+          {postStats.comments_count || 0}
+        </motion.button>
+        <motion.button
+          className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-2 transition ${
             localPost.reposted_by_me
-              ? "border-neonGreen bg-neonGreen/16 text-neonGreen"
+              ? "border-neonCyan bg-neonCyan/16 text-neonCyan shadow-cyan"
               : "border-white/10 bg-white/5 text-white/70"
           }`}
           type="button"
           onClick={handleRepost}
+          whileTap={{ scale: 0.9 }}
         >
-          ↻ {postStats.reposts_count || 0}
-        </button>
-        <button
-          className="rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-white/70"
+          <Repeat2 className="h-4 w-4" />
+          {postStats.reposts_count || 0}
+        </motion.button>
+        <motion.button
+          className="inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/5 px-3 py-2 text-white/70"
           type="button"
           onClick={openShareMenu}
+          whileTap={{ scale: 0.92 }}
         >
-          ↗ {postStats.shares_count || 0}
-        </button>
+          <Send className="h-4 w-4" />
+          {postStats.shares_count || 0}
+        </motion.button>
         <button
-          className="rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-white/70"
+          className="inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/5 px-3 py-2 text-white/70"
           type="button"
           onClick={openReportModal}
         >
-          Reportar
+          <Flag className="h-4 w-4" />
         </button>
-        <span className="ml-auto py-2 text-white/42">{postStats.views_count || 0} vistas</span>
+        <span className="ml-auto inline-flex items-center gap-1 py-2 text-white/42">
+          <Eye className="h-4 w-4" />
+          {postStats.views_count || 0}
+        </span>
       </div>
 
       <Link
@@ -601,7 +621,7 @@ function PostCard({ post, isDataSaver = false }) {
           </div>
         </div>
       ) : null}
-    </article>
+    </motion.article>
   );
 }
 

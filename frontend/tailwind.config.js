@@ -4,15 +4,21 @@ export default {
   theme: {
     extend: {
       colors: {
-        night: "#08070d",
-        surface: "#11101a",
-        neonPink: "#ff1478",
+        night: "#070B14",
+        surface: "#0F172A",
+        glass: "rgba(255,255,255,0.06)",
+        liveRed: "#FF3040",
+        neonCyan: "#00D9FF",
+        fiestaPurple: "#7C3AED",
+        neonPink: "#FF4FD8",
         neonGreen: "#17f56b",
-        neonYellow: "#ffd21f",
+        neonYellow: "#FFD84D",
         neonOrange: "#ff8a1f",
       },
       boxShadow: {
-        neon: "0 0 28px rgba(255, 20, 120, 0.22)",
+        neon: "0 0 28px rgba(255, 79, 216, 0.22)",
+        cyan: "0 0 30px rgba(0, 217, 255, 0.24)",
+        live: "0 0 26px rgba(255, 48, 64, 0.32)",
       },
     },
   },

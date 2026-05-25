@@ -7,10 +7,21 @@ from pymongo.errors import DuplicateKeyError
 from app.core.database import get_database
 from app.core.security import hash_password, verify_password
 from app.models.user import build_user_document
-from app.schemas.user import UserCreate
+from app.schemas.user import UserCreate, UserOnboardingUpdate
+
+
+def has_complete_profile(user: dict) -> bool:
+    return all(
+        str(user.get(field, "")).strip()
+        for field in ("username", "display_name", "city", "country")
+    )
 
 
 def serialize_user(user: dict) -> dict:
+    onboarding_completed = user.get("onboarding_completed")
+    if onboarding_completed is None:
+        onboarding_completed = has_complete_profile(user)
+
     return {
         "id": str(user["_id"]),
         "username": user["username"],
@@ -24,6 +35,8 @@ def serialize_user(user: dict) -> dict:
         "google_id": user.get("google_id"),
         "auth_provider": user.get("auth_provider", "local"),
         "providers": user.get("providers", [user.get("auth_provider", "local")]),
+        "onboarding_completed": bool(onboarding_completed),
+        "onboarding_completed_at": user.get("onboarding_completed_at"),
         "is_verified": user.get("is_verified", False),
         "is_active": user.get("is_active", True),
         "created_at": user["created_at"],
@@ -72,6 +85,12 @@ async def create_user(user_create: UserCreate) -> dict:
         password_hash=hash_password(user_create.password),
         city=user_create.city,
         country=user_create.country,
+        onboarding_completed=bool(
+            user_create.username
+            and user_create.display_name
+            and user_create.city
+            and user_create.country
+        ),
     )
 
     try:
@@ -84,6 +103,38 @@ async def create_user(user_create: UserCreate) -> dict:
         raise RuntimeError("User was created but could not be loaded.")
 
     return created_user
+
+
+async def complete_user_onboarding(user: dict, payload: UserOnboardingUpdate) -> dict:
+    db = get_database()
+    existing_username = await get_user_by_username(payload.username)
+
+    if existing_username and existing_username["_id"] != user["_id"]:
+        raise ValueError("Username is already registered.")
+
+    now = datetime.now(timezone.utc)
+    update_data = {
+        "username": payload.username,
+        "display_name": payload.display_name,
+        "city": payload.city,
+        "country": payload.country,
+        "bio": payload.bio,
+        "avatar_url": payload.avatar_url,
+        "onboarding_completed": True,
+        "onboarding_completed_at": now,
+        "updated_at": now,
+    }
+
+    try:
+        await db.users.update_one({"_id": user["_id"]}, {"$set": update_data})
+    except DuplicateKeyError:
+        raise ValueError("Username is already registered.") from None
+
+    updated_user = await db.users.find_one({"_id": user["_id"]})
+    if updated_user is None:
+        raise RuntimeError("User was updated but could not be loaded.")
+
+    return updated_user
 
 
 async def authenticate_user(identifier: str, password: str) -> dict | None:
@@ -132,6 +183,9 @@ async def upsert_google_user(profile: dict) -> dict:
             "updated_at": now,
             "google_id": existing.get("google_id") or google_id,
         }
+        if existing.get("onboarding_completed") is None:
+            update["onboarding_completed"] = has_complete_profile(existing)
+            update["onboarding_completed_at"] = now if update["onboarding_completed"] else None
         providers = existing.get("providers") or [existing.get("auth_provider", "local")]
         if "google" not in providers:
             providers.append("google")

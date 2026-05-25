@@ -18,6 +18,7 @@ def build_user_document(
     auth_provider: str = "local",
     providers: list[str] | None = None,
     is_verified: bool = False,
+    onboarding_completed: bool = False,
 ) -> dict:
     now = datetime.now(timezone.utc)
 
@@ -32,6 +33,8 @@ def build_user_document(
         "country": country or "",
         "auth_provider": auth_provider,
         "providers": providers or [auth_provider],
+        "onboarding_completed": onboarding_completed,
+        "onboarding_completed_at": now if onboarding_completed else None,
         "role": "user",
         "is_verified": is_verified,
         "is_active": True,

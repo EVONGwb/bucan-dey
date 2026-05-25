@@ -14,6 +14,14 @@ function Login() {
 
   const from = location.state?.from?.pathname || "/";
 
+  function getPostAuthPath(authUser) {
+    if (authUser?.onboarding_completed === false) {
+      return "/onboarding";
+    }
+
+    return from === "/onboarding" ? "/" : from;
+  }
+
   function updateField(event) {
     setForm((current) => ({
       ...current,
@@ -27,11 +35,11 @@ function Login() {
     setIsSubmitting(true);
 
     try {
-      await login({
+      const authUser = await login({
         identifier: form.identifier,
         password: form.password,
       });
-      navigate(from, { replace: true });
+      navigate(getPostAuthPath(authUser), { replace: true });
     } catch (err) {
       setError(err.message);
     } finally {
@@ -44,8 +52,8 @@ function Login() {
     setIsSubmitting(true);
 
     try {
-      await loginWithGoogle(idToken);
-      navigate(from, { replace: true });
+      const authUser = await loginWithGoogle(idToken);
+      navigate(getPostAuthPath(authUser), { replace: true });
     } catch (err) {
       setError(err.message);
     } finally {

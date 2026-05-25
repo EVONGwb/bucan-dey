@@ -20,6 +20,10 @@ function Register() {
   const [error, setError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  function getPostAuthPath(authUser) {
+    return authUser?.onboarding_completed === false ? "/onboarding" : "/";
+  }
+
   function updateField(event) {
     setForm((current) => ({
       ...current,
@@ -33,8 +37,8 @@ function Register() {
     setIsSubmitting(true);
 
     try {
-      await register(form);
-      navigate("/", { replace: true });
+      const authUser = await register(form);
+      navigate(getPostAuthPath(authUser), { replace: true });
     } catch (err) {
       setError(err.message);
     } finally {
@@ -47,8 +51,8 @@ function Register() {
     setIsSubmitting(true);
 
     try {
-      await loginWithGoogle(idToken);
-      navigate("/", { replace: true });
+      const authUser = await loginWithGoogle(idToken);
+      navigate(getPostAuthPath(authUser), { replace: true });
     } catch (err) {
       setError(err.message);
     } finally {

@@ -10,6 +10,7 @@ import Home from "./pages/Home.jsx";
 import Login from "./pages/Login.jsx";
 import Map from "./pages/Map.jsx";
 import Notifications from "./pages/Notifications.jsx";
+import Onboarding from "./pages/Onboarding.jsx";
 import Profile from "./pages/Profile.jsx";
 import Register from "./pages/Register.jsx";
 
@@ -42,6 +43,14 @@ const appRoutes = [
   },
   { path: "/login", element: <Login /> },
   { path: "/register", element: <Register /> },
+  {
+    path: "/onboarding",
+    element: (
+      <ProtectedRoute requireOnboarding={false}>
+        <Onboarding />
+      </ProtectedRoute>
+    ),
+  },
   {
     path: "/notifications",
     element: (

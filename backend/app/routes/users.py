@@ -1,12 +1,28 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 
-from app.core.security import get_optional_current_user
+from app.core.security import get_optional_current_user, require_active_user
 from app.schemas.post import PostOut
-from app.schemas.user import UserOut
+from app.schemas.user import UserOnboardingUpdate, UserOut
 from app.services.posts import add_like_flags, get_profile_posts, serialize_post
-from app.services.users import get_user_by_username, serialize_user
+from app.services.users import complete_user_onboarding, get_user_by_username, serialize_user
 
 router = APIRouter()
+
+
+@router.patch("/me/onboarding", response_model=UserOut)
+async def complete_onboarding(
+    payload: UserOnboardingUpdate,
+    current_user: dict = Depends(require_active_user),
+) -> UserOut:
+    try:
+        user = await complete_user_onboarding(current_user, payload)
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=str(exc),
+        ) from None
+
+    return UserOut(**serialize_user(user))
 
 
 @router.get("/{username}", response_model=UserOut)

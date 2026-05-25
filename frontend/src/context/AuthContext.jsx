@@ -97,6 +97,16 @@ export function AuthProvider({ children }) {
     }
   }, [saveSession]);
 
+  const completeOnboarding = useCallback(async (payload) => {
+    try {
+      const response = await apiClient.patch("/users/me/onboarding", payload);
+      setUser(response.data);
+      return response.data;
+    } catch (error) {
+      throw new Error(getErrorMessage(error));
+    }
+  }, []);
+
   const logout = useCallback(async () => {
     try {
       await apiClient.post("/auth/logout");
@@ -121,10 +131,21 @@ export function AuthProvider({ children }) {
       login,
       register,
       loginWithGoogle,
+      completeOnboarding,
       logout,
       loadMe,
     }),
-    [user, token, isLoading, login, register, loginWithGoogle, logout, loadMe]
+    [
+      user,
+      token,
+      isLoading,
+      login,
+      register,
+      loginWithGoogle,
+      completeOnboarding,
+      logout,
+      loadMe,
+    ]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

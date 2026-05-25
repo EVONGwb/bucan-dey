@@ -11,6 +11,15 @@ router = APIRouter()
 
 @router.websocket("/ws")
 async def websocket_endpoint(websocket: WebSocket, token: str | None = None) -> None:
+    await handle_websocket(websocket, token)
+
+
+@router.websocket("/ws/{token}")
+async def websocket_endpoint_with_path_token(websocket: WebSocket, token: str) -> None:
+    await handle_websocket(websocket, token)
+
+
+async def handle_websocket(websocket: WebSocket, token: str | None = None) -> None:
     if not token:
         await websocket.close(code=status.WS_1008_POLICY_VIOLATION)
         return

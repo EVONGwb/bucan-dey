@@ -16,8 +16,8 @@ function buildWebSocketUrl(token) {
   const apiUrl = import.meta.env.VITE_API_URL || "http://localhost:8000/api";
   const url = new URL(apiUrl);
   url.protocol = url.protocol === "https:" ? "wss:" : "ws:";
-  url.pathname = `${url.pathname.replace(/\/$/, "")}/ws`;
-  url.search = `token=${encodeURIComponent(token)}`;
+  url.pathname = `${url.pathname.replace(/\/$/, "")}/ws/${encodeURIComponent(token)}`;
+  url.search = "";
   return url.toString();
 }
 

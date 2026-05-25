@@ -69,6 +69,10 @@ async def create_indexes() -> None:
         ]
     )
     await database.posts.create_index([("location.geo", "2dsphere")], sparse=True)
+    await database.stories.create_index([("author_id", 1), ("created_at", -1)])
+    await database.stories.create_index([("visibility", 1), ("created_at", -1)])
+    await database.stories.create_index([("location.geo", "2dsphere")], sparse=True)
+    await database.stories.create_index([("expires_at", 1)], expireAfterSeconds=0)
     await database.likes.create_index([("post_id", 1), ("user_id", 1)], unique=True)
     await database.follows.create_index([("follower_id", 1), ("following_id", 1)], unique=True)
     await database.follows.create_index([("following_id", 1), ("created_at", -1)])

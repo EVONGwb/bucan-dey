@@ -4,6 +4,7 @@ import { Link } from "react-router-dom";
 
 import apiClient from "../api/client.js";
 import PostCard from "../components/post/PostCard.jsx";
+import StoriesBar from "../components/stories/StoriesBar.jsx";
 import { FeedSkeleton } from "../components/ui/Skeletons.jsx";
 import { useAuth } from "../context/AuthContext.jsx";
 import { useRealtime } from "../context/RealtimeContext.jsx";
@@ -109,6 +110,8 @@ function Home() {
           Mira qué está pasando ahora mismo.
         </p>
       </div>
+
+      <StoriesBar />
 
       <div className="mt-7 flex items-center justify-between gap-3">
         <p className="text-sm font-black uppercase tracking-[0.16em] text-white/48">

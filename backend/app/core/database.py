@@ -80,6 +80,13 @@ async def create_indexes() -> None:
     await database.events.create_index([("location.geo", "2dsphere")], sparse=True)
     await database.event_attendees.create_index([("event_id", 1), ("user_id", 1)], unique=True)
     await database.event_attendees.create_index([("user_id", 1), ("created_at", -1)])
+    await database.event_reminders.create_index(
+        [("event_id", 1), ("user_id", 1), ("reminder_type", 1)],
+        unique=True,
+    )
+    await database.event_reminders.create_index([("status", 1), ("scheduled_for", 1)])
+    await database.event_reminders.create_index([("event_id", 1), ("status", 1)])
+    await database.event_reminders.create_index([("user_id", 1), ("status", 1)])
     await database.likes.create_index([("post_id", 1), ("user_id", 1)], unique=True)
     await database.reposts.create_index([("user_id", 1), ("post_id", 1)], unique=True)
     await database.reposts.create_index([("post_id", 1), ("created_at", -1)])

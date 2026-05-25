@@ -59,6 +59,24 @@ def build_event_attendee_document(event_id: str, user_id: str, status: str) -> d
     }
 
 
+def build_event_reminder_document(
+    *,
+    event_id: str,
+    user_id: str,
+    reminder_type: str,
+    scheduled_for: datetime,
+) -> dict:
+    return {
+        "event_id": event_id,
+        "user_id": user_id,
+        "reminder_type": reminder_type,
+        "scheduled_for": scheduled_for,
+        "sent_at": None,
+        "status": "pending",
+        "created_at": datetime.now(timezone.utc),
+    }
+
+
 def build_event_post_payload(event: dict) -> dict:
     location = event.get("location") or {}
     return {

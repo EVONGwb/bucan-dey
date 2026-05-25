@@ -24,10 +24,18 @@ def _vapid_claims() -> dict[str, str]:
 
 
 def _notification_payload(notification: dict) -> dict:
+    url = "/notifications"
+    if notification.get("entity_type") == "event" and notification.get("entity_id"):
+        url = f"/events/{notification['entity_id']}"
+    elif notification.get("entity_type") == "post" and notification.get("entity_id"):
+        url = f"/posts/{notification['entity_id']}"
+    elif notification.get("entity_type") in {"conversation", "message"} and notification.get("entity_id"):
+        url = f"/chat?conversation={notification['entity_id']}"
+
     return {
         "title": notification.get("title", "BUCAN DEY"),
         "body": notification.get("body", "Tienes una nueva notificacion."),
-        "url": "/notifications",
+        "url": url,
         "type": notification.get("type", "notification"),
     }
 

@@ -10,11 +10,13 @@ const TABS = [
   { id: "users", label: "Usuarios" },
   { id: "posts", label: "Publicaciones" },
   { id: "reports", label: "Reportes" },
+  { id: "reminders", label: "Recordatorios" },
 ];
 
 const POST_TYPES = ["", "normal", "fiesta", "cumpleaños", "evento", "live", "bar", "ambiente", "video"];
 const VISIBILITIES = ["", "global", "profile_only", "private"];
 const REPORT_STATUSES = ["pending", "reviewed", "resolved", "dismissed"];
+const REMINDER_STATUSES = ["pending", "sent", "failed", "cancelled"];
 
 function formatDate(value) {
   if (!value) return "";
@@ -32,11 +34,13 @@ function Admin() {
   const [users, setUsers] = useState([]);
   const [posts, setPosts] = useState([]);
   const [reports, setReports] = useState([]);
+  const [reminders, setReminders] = useState([]);
   const [search, setSearch] = useState("");
   const [postType, setPostType] = useState("");
   const [visibility, setVisibility] = useState("");
   const [hidden, setHidden] = useState("");
   const [reportStatus, setReportStatus] = useState("");
+  const [reminderStatus, setReminderStatus] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
@@ -85,6 +89,13 @@ function Admin() {
     setReports(response.data.items || []);
   }
 
+  async function loadReminders() {
+    const response = await apiClient.get("/admin/event-reminders", {
+      params: { status: reminderStatus || undefined },
+    });
+    setReminders(response.data.items || []);
+  }
+
   async function refreshCurrentTab() {
     setIsLoading(true);
     setError("");
@@ -93,6 +104,7 @@ function Admin() {
       if (activeTab === "users") await loadUsers();
       if (activeTab === "posts") await loadPosts();
       if (activeTab === "reports") await loadReports();
+      if (activeTab === "reminders") await loadReminders();
     } catch (err) {
       setError(getApiErrorMessage(err));
     } finally {
@@ -102,7 +114,7 @@ function Admin() {
 
   useEffect(() => {
     refreshCurrentTab();
-  }, [activeTab, postType, visibility, hidden, reportStatus]);
+  }, [activeTab, postType, visibility, hidden, reportStatus, reminderStatus]);
 
   async function updateUser(userId, payload) {
     setError("");
@@ -318,6 +330,47 @@ function Admin() {
                 <button className="rounded-lg border border-neonPink/30 bg-neonPink/10 px-2 py-2 text-xs font-black text-neonPink" type="button" onClick={() => updateReport(report.id, "dismissed")}>
                   Descartar
                 </button>
+              </div>
+            </article>
+          ))}
+        </div>
+      ) : null}
+
+      {!isLoading && activeTab === "reminders" ? (
+        <div className="mt-6 space-y-4">
+          <select className="w-full rounded-lg border border-white/10 bg-night px-3 py-3 text-sm font-bold text-white" value={reminderStatus} onChange={(event) => setReminderStatus(event.target.value)}>
+            <option value="">Todos los recordatorios</option>
+            {REMINDER_STATUSES.map((item) => (
+              <option key={item} value={item}>{item}</option>
+            ))}
+          </select>
+          {reminders.length === 0 ? (
+            <article className="rounded-lg border border-white/10 bg-surface p-4">
+              <p className="text-sm font-bold text-white/62">No hay recordatorios con este filtro.</p>
+            </article>
+          ) : null}
+          {reminders.map((reminder) => (
+            <article className="rounded-lg border border-white/10 bg-surface p-4" key={reminder.id}>
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <p className="text-sm font-black text-white">
+                    {reminder.event_title || "Evento"}
+                  </p>
+                  <p className="mt-1 text-xs font-semibold text-white/48">
+                    @{reminder.username || "usuario"} · {reminder.reminder_type === "one_hour" ? "1 hora antes" : "15 min antes"}
+                  </p>
+                  <p className="mt-2 text-sm font-bold text-white/62">
+                    Programado: {formatDate(reminder.scheduled_for)}
+                  </p>
+                  {reminder.sent_at ? (
+                    <p className="mt-1 text-xs font-semibold text-white/42">
+                      Enviado: {formatDate(reminder.sent_at)}
+                    </p>
+                  ) : null}
+                </div>
+                <span className="rounded-full border border-neonYellow/30 bg-neonYellow/10 px-2 py-1 text-xs font-black text-neonYellow">
+                  {reminder.status}
+                </span>
               </div>
             </article>
           ))}

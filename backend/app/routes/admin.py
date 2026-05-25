@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 
 from app.core.security import require_admin_user
+from app.schemas.event_reminder import EventRemindersResponse, ReminderStatus
 from app.schemas.post import PostOut, PostType, PostVisibility
 from app.schemas.report import (
     AdminPostModerate,
@@ -22,6 +23,7 @@ from app.services.admin import (
     set_report_status,
     update_user_admin,
 )
+from app.services.event_reminders import list_event_reminders
 
 
 router = APIRouter()
@@ -106,6 +108,19 @@ async def admin_reports(
     _: dict = Depends(require_admin_user),
 ) -> dict:
     return {"items": await get_admin_reports(status, limit), "next_cursor": None}
+
+
+@router.get("/event-reminders", response_model=EventRemindersResponse)
+async def admin_event_reminders(
+    status: ReminderStatus | None = None,
+    event_id: str | None = None,
+    limit: int = Query(default=80, ge=1, le=100),
+    _: dict = Depends(require_admin_user),
+) -> EventRemindersResponse:
+    return EventRemindersResponse(
+        items=await list_event_reminders(status=status, event_id=event_id, limit=limit),
+        next_cursor=None,
+    )
 
 
 @router.patch("/reports/{report_id}", response_model=ReportOut)

@@ -61,9 +61,10 @@ async def create_notification(
     entity_type: str,
     entity_id: str,
     dedupe: bool = False,
+    skip_self: bool = True,
 ) -> dict | None:
     actor_id = str(actor["_id"])
-    if user_id == actor_id:
+    if skip_self and user_id == actor_id:
         return None
 
     db = get_database()

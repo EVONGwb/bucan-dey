@@ -207,6 +207,10 @@ async def update_event(event: dict, payload: EventUpdate) -> dict:
     updated = await db.events.find_one({"_id": event["_id"]})
     if updated is None:
         raise RuntimeError("Event was updated but could not be loaded.")
+    if "start_at" in data:
+        from app.services.event_reminders import reschedule_event_reminders
+
+        await reschedule_event_reminders(updated)
     return updated
 
 
@@ -216,6 +220,9 @@ async def cancel_event(event: dict) -> None:
         {"_id": event["_id"]},
         {"$set": {"is_cancelled": True, "updated_at": datetime.now(timezone.utc)}},
     )
+    from app.services.event_reminders import cancel_event_reminders
+
+    await cancel_event_reminders(str(event["_id"]))
 
 
 async def attendance_status(event_id: str, user_id: str) -> str | None:
@@ -238,6 +245,9 @@ async def add_attendance(event: dict, user: dict, status: str) -> dict:
                 {"$set": {"status": status, "updated_at": now}},
             )
             await _adjust_counts(event["_id"], previous["status"], status)
+        from app.services.event_reminders import ensure_event_reminders
+
+        await ensure_event_reminders(event, user_id)
     else:
         try:
             await db.event_attendees.insert_one(
@@ -245,6 +255,9 @@ async def add_attendance(event: dict, user: dict, status: str) -> dict:
             )
             await _adjust_counts(event["_id"], None, status)
             await _notify_event_attendance(event, user, status)
+            from app.services.event_reminders import ensure_event_reminders
+
+            await ensure_event_reminders(event, user_id)
         except DuplicateKeyError:
             pass
 
@@ -263,6 +276,9 @@ async def remove_attendance(event: dict, user: dict) -> dict:
     )
     if result:
         await _adjust_counts(event["_id"], result["status"], None)
+        from app.services.event_reminders import cancel_event_reminders
+
+        await cancel_event_reminders(str(event["_id"]), str(user["_id"]))
 
     updated = await db.events.find_one({"_id": event["_id"]})
     return {

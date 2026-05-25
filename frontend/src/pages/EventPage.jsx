@@ -186,6 +186,12 @@ function EventPage() {
               </button>
             </div>
 
+            {event.my_attendance_status ? (
+              <div className="mt-4 rounded-lg border border-neonGreen/25 bg-neonGreen/10 px-4 py-3 text-sm font-bold text-neonGreen">
+                Recibirás recordatorios antes del evento: 1 hora y 15 minutos antes.
+              </div>
+            ) : null}
+
             {position ? (
               <div className="mt-5 h-64 overflow-hidden rounded-lg border border-white/10">
                 <MapContainer center={position} className="h-full w-full" scrollWheelZoom={false} zoom={14}>

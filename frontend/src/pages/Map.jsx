@@ -53,12 +53,13 @@ const typeLabels = {
 
 function createMarkerIcon(type) {
   const color = markerColors[type] || markerColors.normal;
+  const size = type === "live" ? 30 : 24;
 
   return L.divIcon({
     className: "",
-    html: `<div style="width:24px;height:24px;border-radius:999px;background:${color};border:3px solid #08070d;box-shadow:0 0 18px ${color};"></div>`,
-    iconSize: [24, 24],
-    iconAnchor: [12, 12],
+    html: `<div style="width:${size}px;height:${size}px;border-radius:999px;background:${color};border:3px solid #08070d;box-shadow:0 0 24px ${color};display:flex;align-items:center;justify-content:center;color:white;font-size:12px;font-weight:900;">${type === "live" ? "●" : ""}</div>`,
+    iconSize: [size, size],
+    iconAnchor: [size / 2, size / 2],
     popupAnchor: [0, -12],
   });
 }
@@ -314,13 +315,25 @@ function Map() {
                     <p className="mt-2 text-xs">
                       {post.source_type === "event"
                         ? `${post.attendees_count || 0} apuntados`
+                        : post.source_type === "live"
+                          ? `${post.viewers_count || 0} viendo ahora`
                         : `${post.stats.likes_count} likes · ${post.stats.comments_count} comentarios`}
                     </p>
                     <Link
                       className="mt-2 inline-block text-sm font-bold"
-                      to={post.source_type === "event" ? `/events/${post.id}` : `/posts/${post.id}`}
+                      to={
+                        post.source_type === "event"
+                          ? `/events/${post.id}`
+                          : post.source_type === "live"
+                            ? `/lives/${post.id}`
+                            : `/posts/${post.id}`
+                      }
                     >
-                      {post.source_type === "event" ? "Ver evento" : "Ver publicación"}
+                      {post.source_type === "event"
+                        ? "Ver evento"
+                        : post.source_type === "live"
+                          ? "Ver live"
+                          : "Ver publicación"}
                     </Link>
                   </div>
                 </Popup>

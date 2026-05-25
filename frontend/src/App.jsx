@@ -15,6 +15,7 @@ const CreateStory = lazy(() => import("./pages/CreateStory.jsx"));
 const EventPage = lazy(() => import("./pages/EventPage.jsx"));
 const Events = lazy(() => import("./pages/Events.jsx"));
 const FollowList = lazy(() => import("./pages/FollowList.jsx"));
+const LivePage = lazy(() => import("./pages/LivePage.jsx"));
 const Login = lazy(() => import("./pages/Login.jsx"));
 const Map = lazy(() => import("./pages/Map.jsx"));
 const Notifications = lazy(() => import("./pages/Notifications.jsx"));
@@ -23,6 +24,7 @@ const PostPage = lazy(() => import("./pages/PostPage.jsx"));
 const Profile = lazy(() => import("./pages/Profile.jsx"));
 const Register = lazy(() => import("./pages/Register.jsx"));
 const StoryViewer = lazy(() => import("./pages/StoryViewer.jsx"));
+const StartLive = lazy(() => import("./pages/StartLive.jsx"));
 const Trending = lazy(() => import("./pages/Trending.jsx"));
 
 function LazyPage({ children }) {
@@ -62,6 +64,24 @@ const appRoutes = [
     element: (
       <LazyPage>
         <EventPage />
+      </LazyPage>
+    ),
+  },
+  {
+    path: "/lives/start",
+    element: (
+      <ProtectedRoute>
+        <LazyPage>
+          <StartLive />
+        </LazyPage>
+      </ProtectedRoute>
+    ),
+  },
+  {
+    path: "/lives/:liveId",
+    element: (
+      <LazyPage>
+        <LivePage />
       </LazyPage>
     ),
   },

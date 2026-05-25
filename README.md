@@ -82,6 +82,10 @@ GOOGLE_CLIENT_SECRET=
 VAPID_PUBLIC_KEY=
 VAPID_PRIVATE_KEY=
 VAPID_SUBJECT=mailto:evongorecords@gmail.com
+LIVE_PROVIDER=livekit
+LIVEKIT_URL=
+LIVEKIT_API_KEY=
+LIVEKIT_API_SECRET=
 ```
 
 Frontend (`frontend/.env` local o Vercel):

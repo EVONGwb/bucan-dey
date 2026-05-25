@@ -154,4 +154,32 @@ async def trending_places(limit: int = 20) -> list[dict]:
         {"$sort": {"score": -1, "posts_count": -1}},
         {"$limit": output_limit},
     ]
-    return await db.posts.aggregate(pipeline).to_list(output_limit)
+    places = await db.posts.aggregate(pipeline).to_list(output_limit)
+    by_key = {(item.get("city", ""), item.get("area", "")): item for item in places}
+    lives = await db.lives.find(
+        {
+            "visibility": "public",
+            "is_live": True,
+            "started_at": {"$gte": since},
+            "location.show_on_map": True,
+            "location.city": {"$ne": ""},
+        }
+    ).to_list(200)
+    for live in lives:
+        location = live.get("location") or {}
+        key = (location.get("city", ""), location.get("area", ""))
+        if key not in by_key:
+            by_key[key] = {
+                "city": key[0],
+                "area": key[1],
+                "posts_count": 0,
+                "score": 0,
+            }
+        by_key[key]["posts_count"] += 1
+        by_key[key]["score"] += 8 + int(live.get("viewers_count", 0)) * 2
+
+    return sorted(
+        by_key.values(),
+        key=lambda item: (item["score"], item["posts_count"]),
+        reverse=True,
+    )[:output_limit]

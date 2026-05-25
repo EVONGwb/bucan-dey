@@ -25,10 +25,11 @@ class NotificationOut(BaseModel):
         "repost",
         "event_attend",
         "event_reminder",
+        "live_started",
     ]
     title: str
     body: str
-    entity_type: Literal["post", "comment", "message", "conversation", "user", "event"]
+    entity_type: Literal["post", "comment", "message", "conversation", "user", "event", "live"]
     entity_id: str
     is_read: bool
     created_at: datetime

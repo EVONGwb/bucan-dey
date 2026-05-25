@@ -67,7 +67,16 @@
 - Estados de asistencia: `going` e `interested`.
 - Eventos públicos visibles en `/events`, mapa y feed mediante post automático.
 - Eventos `followers` visibles para creador y seguidores.
-- Recordatorios push preparados para cron futuro:
+- Recordatorios push:
   - 1 hora antes del evento.
   - 15 minutos antes del evento.
-- Pendiente para fase posterior: job programado que consulte eventos próximos y envíe push a asistentes activos evitando duplicados.
+- Scheduler backend compatible con Render, con control de duplicados mediante MongoDB.
+
+## Fase 20: Lives reales
+
+- Proveedor elegido: LiveKit.
+- Backend crea salas/tokens y registra lives en MongoDB.
+- Frontend emite y reproduce con WebRTC mediante `livekit-client`.
+- Lives públicos visibles en Home y mapa.
+- Viewers, heartbeat y chat live por WebSocket.
+- Notificaciones push/internas cuando alguien seguido inicia live.

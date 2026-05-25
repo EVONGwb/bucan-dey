@@ -24,7 +24,7 @@ MapItemType = Literal[
 
 class MapPostOut(BaseModel):
     id: str
-    source_type: Literal["post", "event"] = "post"
+    source_type: Literal["post", "event", "live"] = "post"
     type: MapItemType
     text: str
     author_snapshot: AuthorSnapshot
@@ -33,6 +33,7 @@ class MapPostOut(BaseModel):
     live_data: LiveData | None = None
     stats: PostStats
     attendees_count: int = 0
+    viewers_count: int = 0
     created_at: datetime
     distance_km: float | None = None
 

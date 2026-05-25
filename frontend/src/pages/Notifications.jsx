@@ -33,6 +33,10 @@ function destinationFor(notification) {
     return `/events/${notification.entity_id}`;
   }
 
+  if (notification.entity_type === "live") {
+    return `/lives/${notification.entity_id}`;
+  }
+
   if (notification.entity_type === "conversation" || notification.entity_type === "message") {
     return "/chat";
   }

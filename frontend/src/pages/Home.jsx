@@ -3,6 +3,7 @@ import { Bell } from "lucide-react";
 import { Link } from "react-router-dom";
 
 import apiClient from "../api/client.js";
+import LiveCard from "../components/lives/LiveCard.jsx";
 import PostCard from "../components/post/PostCard.jsx";
 import StoriesBar from "../components/stories/StoriesBar.jsx";
 import { FeedSkeleton } from "../components/ui/Skeletons.jsx";
@@ -13,10 +14,11 @@ import { getApiErrorMessage } from "../utils/errors.js";
 
 function Home() {
   const { isAuthenticated } = useAuth();
-  const { unreadCount, setUnreadCount } = useRealtime();
+  const { subscribe, unreadCount, setUnreadCount } = useRealtime();
   const { isDataSaver } = useDataSaverMode();
   const [posts, setPosts] = useState([]);
   const [events, setEvents] = useState([]);
+  const [lives, setLives] = useState([]);
   const [nextCursor, setNextCursor] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
@@ -36,11 +38,13 @@ function Home() {
       try {
         setIsLoading(true);
         setError("");
-        const [_, eventsResponse] = await Promise.all([
+        const [, eventsResponse, livesResponse] = await Promise.all([
           loadFeed(),
           apiClient.get("/events", { params: { limit: 3 } }),
+          apiClient.get("/lives", { params: { limit: 5 } }),
         ]);
         setEvents(eventsResponse.data.items);
+        setLives(livesResponse.data.items);
       } catch (err) {
         setError(getApiErrorMessage(err));
       } finally {
@@ -68,6 +72,15 @@ function Home() {
 
     loadUnreadCount();
   }, [isAuthenticated]);
+
+  useEffect(() => {
+    return subscribe("live_started", (live) => {
+      setLives((current) => {
+        if (current.some((item) => item.id === live.id)) return current;
+        return [live, ...current].slice(0, 8);
+      });
+    });
+  }, [subscribe]);
 
   async function handleLoadMore() {
     if (!nextCursor) return;
@@ -117,6 +130,30 @@ function Home() {
       </div>
 
       <StoriesBar />
+
+      <div className="mt-7">
+        <div className="flex items-center justify-between">
+          <p className="text-sm font-black uppercase tracking-[0.16em] text-white/48">
+            En directo ahora
+          </p>
+          <Link className="text-sm font-black text-neonPink" to="/lives/start">
+            Empezar live
+          </Link>
+        </div>
+        {lives.length ? (
+          <div className="mt-3 flex gap-3 overflow-x-auto pb-2">
+            {lives.map((live) => (
+              <LiveCard compact key={live.id} live={live} />
+            ))}
+          </div>
+        ) : (
+          <div className="mt-3 rounded-lg border border-white/10 bg-surface p-4">
+            <p className="text-sm font-bold text-white/58">
+              No hay directos activos ahora.
+            </p>
+          </div>
+        )}
+      </div>
 
       {events.length ? (
         <div className="mt-7">

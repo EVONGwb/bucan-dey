@@ -78,6 +78,13 @@ async def create_indexes() -> None:
     await database.events.create_index([("category", 1), ("start_at", 1)])
     await database.events.create_index([("location.city", 1), ("start_at", 1)])
     await database.events.create_index([("location.geo", "2dsphere")], sparse=True)
+    await database.lives.create_index([("is_live", 1), ("started_at", -1)])
+    await database.lives.create_index([("visibility", 1), ("is_live", 1), ("started_at", -1)])
+    await database.lives.create_index([("category", 1), ("is_live", 1), ("started_at", -1)])
+    await database.lives.create_index([("location.city", 1), ("is_live", 1)])
+    await database.lives.create_index([("location.geo", "2dsphere")], sparse=True)
+    await database.live_viewers.create_index([("live_id", 1), ("user_id", 1)], unique=True)
+    await database.live_viewers.create_index([("live_id", 1), ("last_seen_at", -1)])
     await database.event_attendees.create_index([("event_id", 1), ("user_id", 1)], unique=True)
     await database.event_attendees.create_index([("user_id", 1), ("created_at", -1)])
     await database.event_reminders.create_index(

@@ -27,6 +27,8 @@ def _notification_payload(notification: dict) -> dict:
     url = "/notifications"
     if notification.get("entity_type") == "event" and notification.get("entity_id"):
         url = f"/events/{notification['entity_id']}"
+    elif notification.get("entity_type") == "live" and notification.get("entity_id"):
+        url = f"/lives/{notification['entity_id']}"
     elif notification.get("entity_type") == "post" and notification.get("entity_id"):
         url = f"/posts/{notification['entity_id']}"
     elif notification.get("entity_type") in {"conversation", "message"} and notification.get("entity_id"):

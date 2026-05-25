@@ -46,6 +46,42 @@ def haversine_km(lat1: float, lng1: float, lat2: float, lng2: float) -> float:
 
 
 def to_map_post_out(post: dict) -> MapPostOut:
+    if post.get("source_type") == "live":
+        location = post.get("location") or {}
+        distance_km = post.get("distance_km")
+        return MapPostOut(
+            id=str(post["_id"]),
+            source_type="live",
+            type="live",
+            text=post.get("description") or post.get("title", ""),
+            author_snapshot=post["creator_snapshot"],
+            location={
+                "city": location.get("city", ""),
+                "area": location.get("area", ""),
+                "lat": location.get("lat"),
+                "lng": location.get("lng"),
+                "show_on_map": bool(location.get("show_on_map", True)),
+            },
+            event_data=None,
+            live_data={
+                "is_live": True,
+                "started_at": post.get("started_at"),
+                "ended_at": post.get("ended_at"),
+                "stream_url": post.get("playback_url"),
+            },
+            stats={
+                "likes_count": 0,
+                "comments_count": 0,
+                "views_count": max(0, int(post.get("viewers_count", 0))),
+                "reposts_count": 0,
+                "shares_count": 0,
+            },
+            attendees_count=0,
+            viewers_count=max(0, int(post.get("viewers_count", 0))),
+            created_at=post["created_at"],
+            distance_km=round(float(distance_km), 1) if distance_km is not None else None,
+        )
+
     if post.get("source_type") == "event":
         location = post.get("location") or {}
         distance_km = post.get("distance_km")
@@ -79,6 +115,7 @@ def to_map_post_out(post: dict) -> MapPostOut:
                 "shares_count": max(0, int(post.get("shares_count", 0))),
             },
             attendees_count=max(0, int(post.get("attendees_count", 0))),
+            viewers_count=0,
             created_at=post["created_at"],
             distance_km=round(float(distance_km), 1) if distance_km is not None else None,
         )
@@ -96,6 +133,7 @@ def to_map_post_out(post: dict) -> MapPostOut:
         live_data=data["live_data"],
         stats=data["stats"],
         attendees_count=0,
+        viewers_count=0,
         created_at=data["created_at"],
         distance_km=round(float(distance_km), 1) if distance_km is not None else None,
     )
@@ -145,6 +183,29 @@ async def get_map_posts(
         event["source_type"] = "event"
 
     combined = posts + events
+
+    live_query: dict[str, Any] = {
+        "visibility": "public",
+        "is_live": True,
+        "location.lat": {"$type": "number"},
+        "location.lng": {"$type": "number"},
+        "location.show_on_map": True,
+    }
+    if city:
+        live_query["location.city"] = {"$regex": f"^{city.strip()}$", "$options": "i"}
+    if post_type and post_type != "live":
+        live_query["_id"] = None
+
+    lives = await (
+        db.lives.find(live_query)
+        .sort([("viewers_count", -1), ("started_at", -1)])
+        .limit(fetch_limit if not has_nearby else min(fetch_limit * 4, 400))
+        .to_list(fetch_limit if not has_nearby else min(fetch_limit * 4, 400))
+    )
+    for live in lives:
+        live["source_type"] = "live"
+
+    combined += lives
 
     if not has_nearby:
         combined.sort(key=lambda item: item.get("created_at"), reverse=True)

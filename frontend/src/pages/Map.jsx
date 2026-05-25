@@ -5,6 +5,7 @@ import { Link } from "react-router-dom";
 import { MapContainer, Marker, Popup, TileLayer, useMap } from "react-leaflet";
 
 import apiClient from "../api/client.js";
+import { ListSkeleton } from "../components/ui/Skeletons.jsx";
 import { getApiErrorMessage } from "../utils/errors.js";
 
 const MALABO_CENTER = [3.7523, 8.7741];
@@ -199,9 +200,7 @@ function Map() {
       </div>
 
       {isLoading ? (
-        <div className="mt-5 flex justify-center">
-          <div className="h-9 w-9 animate-spin rounded-full border-2 border-white/20 border-t-neonPink" />
-        </div>
+        <ListSkeleton count={2} />
       ) : null}
 
       {!isLoading && markers.length === 0 ? (

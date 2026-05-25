@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 
 import apiClient from "../api/client.js";
 import PostCard from "../components/post/PostCard.jsx";
+import { ListSkeleton } from "../components/ui/Skeletons.jsx";
 import { getApiErrorMessage } from "../utils/errors.js";
 
 const TABS = [
@@ -187,9 +188,7 @@ function Admin() {
       ) : null}
 
       {isLoading ? (
-        <div className="mt-8 flex justify-center">
-          <div className="h-10 w-10 animate-spin rounded-full border-2 border-white/20 border-t-neonPink" />
-        </div>
+        <ListSkeleton count={5} />
       ) : null}
 
       {!isLoading && activeTab === "summary" ? (

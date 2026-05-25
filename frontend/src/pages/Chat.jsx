@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 
 import apiClient from "../api/client.js";
+import { ChatSkeleton } from "../components/ui/Skeletons.jsx";
 import { useAuth } from "../context/AuthContext.jsx";
 import { useRealtime } from "../context/RealtimeContext.jsx";
 import { getApiErrorMessage } from "../utils/errors.js";
@@ -195,9 +196,7 @@ function Chat() {
       {!activeConversationId ? (
         <div className="mt-6 flex-1">
           {isLoadingConversations ? (
-            <div className="flex justify-center">
-              <div className="h-10 w-10 animate-spin rounded-full border-2 border-white/20 border-t-neonPink" />
-            </div>
+            <ChatSkeleton />
           ) : null}
 
           {!isLoadingConversations && conversations.length === 0 ? (
@@ -282,9 +281,7 @@ function Chat() {
 
           <div className="min-h-[22rem] flex-1 space-y-3 overflow-y-auto rounded-lg border border-white/10 bg-surface p-3">
             {isLoadingMessages ? (
-              <div className="flex justify-center py-6">
-                <div className="h-8 w-8 animate-spin rounded-full border-2 border-white/20 border-t-neonPink" />
-              </div>
+              <ChatSkeleton />
             ) : null}
 
             {!isLoadingMessages && messages.length === 0 ? (

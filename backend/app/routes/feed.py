@@ -10,7 +10,7 @@ router = APIRouter()
 
 @router.get("/global", response_model=FeedResponse)
 async def get_global_feed_endpoint(
-    limit: int = Query(default=20, ge=1, le=50),
+    limit: int = Query(default=12, ge=1, le=30),
     cursor: str | None = None,
     current_user: dict | None = Depends(get_optional_current_user),
 ) -> FeedResponse:

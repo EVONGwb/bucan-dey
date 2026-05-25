@@ -11,7 +11,7 @@ const navItems = [
 
 function BottomNav() {
   return (
-    <nav className="fixed inset-x-0 bottom-0 z-20 border-t border-white/10 bg-night/92 px-3 py-2 backdrop-blur-xl">
+    <nav className="fixed inset-x-0 bottom-0 z-20 border-t border-white/10 bg-night/92 px-3 pb-[calc(0.5rem+env(safe-area-inset-bottom))] pt-2 backdrop-blur-xl">
       <div className="mx-auto grid max-w-md grid-cols-5 gap-1">
         {navItems.map((item) => {
           const Icon = item.icon;
@@ -22,7 +22,7 @@ function BottomNav() {
               to={item.to}
               className={({ isActive }) =>
                 [
-                  "flex min-h-14 flex-col items-center justify-center rounded-lg text-[11px] font-semibold transition",
+                  "flex min-h-14 touch-manipulation flex-col items-center justify-center rounded-lg text-[11px] font-semibold transition active:scale-[0.97]",
                   isActive
                     ? "bg-white/10 text-neonPink shadow-neon"
                     : "text-white/62 hover:bg-white/5 hover:text-white",

@@ -65,7 +65,7 @@ async def get_conversations_endpoint(
 @router.get("/conversations/{conversation_id}/messages", response_model=MessagesResponse)
 async def get_messages_endpoint(
     conversation_id: str,
-    limit: int = Query(default=30, ge=1, le=50),
+    limit: int = Query(default=24, ge=1, le=40),
     cursor: str | None = None,
     current_user: dict = Depends(require_active_user),
 ) -> MessagesResponse:

@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import apiClient from "../../api/client.js";
 import { useAuth } from "../../context/AuthContext.jsx";
 import { getApiErrorMessage } from "../../utils/errors.js";
+import { CommentsSkeleton } from "../ui/Skeletons.jsx";
 
 function formatRelativeDate(value) {
   const date = new Date(value);
@@ -121,9 +122,7 @@ function CommentsPanel({ postId, onCommentCreated, onCommentDeleted }) {
       ) : null}
 
       {isLoading ? (
-        <div className="mt-4 flex justify-center">
-          <div className="h-7 w-7 animate-spin rounded-full border-2 border-white/20 border-t-neonPink" />
-        </div>
+        <CommentsSkeleton />
       ) : null}
 
       {!isLoading && comments.length === 0 ? (

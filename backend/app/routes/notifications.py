@@ -16,7 +16,7 @@ router = APIRouter()
 
 @router.get("", response_model=NotificationsResponse)
 async def get_notifications_endpoint(
-    limit: int = Query(default=30, ge=1, le=50),
+    limit: int = Query(default=20, ge=1, le=40),
     cursor: str | None = None,
     current_user: dict = Depends(require_active_user),
 ) -> NotificationsResponse:

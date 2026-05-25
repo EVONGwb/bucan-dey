@@ -1,9 +1,11 @@
-import { useState } from "react";
+import { memo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 import apiClient from "../../api/client.js";
 import { useAuth } from "../../context/AuthContext.jsx";
+import { useInViewport } from "../../hooks/useInViewport.js";
 import { getApiErrorMessage } from "../../utils/errors.js";
+import { buildResponsiveSrcSet, optimizeCloudinaryImage } from "../../utils/media.js";
 import CommentsPanel from "./CommentsPanel.jsx";
 
 const TYPE_LABELS = {
@@ -57,7 +59,30 @@ function formatRelativeDate(value) {
   });
 }
 
-function PostCard({ post }) {
+function LazyVideo({ item }) {
+  const [containerRef, isVisible] = useInViewport("420px");
+
+  return (
+    <div ref={containerRef} className="min-h-52 bg-black">
+      {isVisible ? (
+        <video
+          className="max-h-[30rem] w-full bg-black"
+          controls
+          playsInline
+          preload="metadata"
+          poster={item.thumbnail_url || undefined}
+          src={item.url}
+        />
+      ) : (
+        <div className="flex h-52 items-center justify-center text-sm font-bold text-white/48">
+          Vídeo listo para cargar
+        </div>
+      )}
+    </div>
+  );
+}
+
+function PostCard({ post, isDataSaver = false }) {
   const navigate = useNavigate();
   const { isAuthenticated } = useAuth();
   const [localPost, setLocalPost] = useState(post);
@@ -153,6 +178,8 @@ function PostCard({ post }) {
             <img
               alt={localPost.author_snapshot.display_name}
               className="h-11 w-11 rounded-full object-cover"
+              loading="lazy"
+              decoding="async"
               src={localPost.author_snapshot.avatar_url}
             />
           ) : (
@@ -193,19 +220,18 @@ function PostCard({ post }) {
               <img
                 key={item.public_id || item.url}
                 alt="Contenido de la publicación"
-                className="max-h-[34rem] w-full object-cover"
+                className="max-h-[30rem] w-full object-cover"
+                decoding="async"
                 loading="lazy"
-                src={item.url}
+                sizes="(max-width: 480px) 100vw, 448px"
+                src={optimizeCloudinaryImage(item.url, {
+                  width: isDataSaver ? 540 : 720,
+                  quality: isDataSaver ? "auto:eco" : "auto",
+                })}
+                srcSet={buildResponsiveSrcSet(item.url)}
               />
             ) : (
-              <video
-                key={item.public_id || item.url}
-                className="max-h-[34rem] w-full bg-black"
-                controls
-                preload="metadata"
-                poster={item.thumbnail_url || undefined}
-                src={item.url}
-              />
+              <LazyVideo key={item.public_id || item.url} item={item} />
             )
           )}
         </div>
@@ -338,4 +364,4 @@ function PostCard({ post }) {
   );
 }
 
-export default PostCard;
+export default memo(PostCard);

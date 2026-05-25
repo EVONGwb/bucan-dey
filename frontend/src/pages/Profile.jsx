@@ -3,6 +3,7 @@ import { useNavigate, useParams } from "react-router-dom";
 
 import apiClient from "../api/client.js";
 import PostCard from "../components/post/PostCard.jsx";
+import { ProfileSkeleton } from "../components/ui/Skeletons.jsx";
 import { useAuth } from "../context/AuthContext.jsx";
 import { getApiErrorMessage } from "../utils/errors.js";
 
@@ -69,9 +70,13 @@ function Profile() {
 
   if (isLoading) {
     return (
-      <div className="flex min-h-[calc(100vh-7rem)] items-center justify-center">
-        <div className="h-10 w-10 animate-spin rounded-full border-2 border-white/20 border-t-neonPink" />
-      </div>
+      <section className="min-h-[calc(100vh-7rem)]">
+        <p className="text-xs font-bold uppercase tracking-[0.24em] text-neonGreen">
+          Usuario
+        </p>
+        <h1 className="mt-3 text-4xl font-black text-white">Perfil</h1>
+        <ProfileSkeleton />
+      </section>
     );
   }
 

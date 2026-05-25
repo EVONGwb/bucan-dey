@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 import apiClient from "../api/client.js";
+import { ListSkeleton } from "../components/ui/Skeletons.jsx";
 import { useRealtime } from "../context/RealtimeContext.jsx";
 import { getApiErrorMessage } from "../utils/errors.js";
 
@@ -135,9 +136,7 @@ function Notifications() {
       ) : null}
 
       {isLoading ? (
-        <div className="mt-8 flex justify-center">
-          <div className="h-10 w-10 animate-spin rounded-full border-2 border-white/20 border-t-neonPink" />
-        </div>
+        <ListSkeleton count={4} />
       ) : null}
 
       {!isLoading && notifications.length === 0 ? (

@@ -4,13 +4,16 @@ import { Link } from "react-router-dom";
 
 import apiClient from "../api/client.js";
 import PostCard from "../components/post/PostCard.jsx";
+import { FeedSkeleton } from "../components/ui/Skeletons.jsx";
 import { useAuth } from "../context/AuthContext.jsx";
 import { useRealtime } from "../context/RealtimeContext.jsx";
+import { useDataSaverMode } from "../hooks/useDataSaverMode.js";
 import { getApiErrorMessage } from "../utils/errors.js";
 
 function Home() {
   const { isAuthenticated } = useAuth();
   const { unreadCount, setUnreadCount } = useRealtime();
+  const { isDataSaver } = useDataSaverMode();
   const [posts, setPosts] = useState([]);
   const [nextCursor, setNextCursor] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -18,7 +21,7 @@ function Home() {
   const [error, setError] = useState("");
 
   async function loadFeed(cursor = null) {
-    const params = { limit: 20 };
+    const params = { limit: isDataSaver ? 8 : 12 };
     if (cursor) params.cursor = cursor;
 
     const response = await apiClient.get("/feed/global", { params });
@@ -40,7 +43,7 @@ function Home() {
     }
 
     initFeed();
-  }, []);
+  }, [isDataSaver]);
 
   useEffect(() => {
     async function loadUnreadCount() {
@@ -119,6 +122,12 @@ function Home() {
         </Link>
       </div>
 
+      {isDataSaver ? (
+        <div className="mt-4 rounded-lg border border-neonYellow/30 bg-neonYellow/10 px-4 py-3 text-sm font-bold text-white">
+          Modo ahorro de datos activado
+        </div>
+      ) : null}
+
       {error ? (
         <div className="mt-5 rounded-lg border border-neonPink/30 bg-neonPink/10 px-4 py-3 text-sm font-semibold text-white">
           {error}
@@ -126,9 +135,7 @@ function Home() {
       ) : null}
 
       {isLoading ? (
-        <div className="mt-8 flex justify-center">
-          <div className="h-10 w-10 animate-spin rounded-full border-2 border-white/20 border-t-neonPink" />
-        </div>
+        <FeedSkeleton count={2} />
       ) : null}
 
       {!isLoading && posts.length === 0 ? (
@@ -147,7 +154,7 @@ function Home() {
 
       <div className="mt-5 space-y-4">
         {posts.map((post) => (
-          <PostCard key={post.id} post={post} />
+          <PostCard key={post.id} post={post} isDataSaver={isDataSaver} />
         ))}
       </div>
 

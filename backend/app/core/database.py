@@ -50,8 +50,23 @@ async def create_indexes() -> None:
     await database.users.create_index("google_id", unique=True, sparse=True)
     await database.posts.create_index([("created_at", -1), ("_id", -1)])
     await database.posts.create_index([("visibility", 1), ("created_at", -1)])
+    await database.posts.create_index(
+        [("visibility", 1), ("is_deleted", 1), ("is_hidden", 1), ("created_at", -1), ("_id", -1)]
+    )
+    await database.posts.create_index(
+        [("author_id", 1), ("visibility", 1), ("is_deleted", 1), ("is_hidden", 1), ("created_at", -1)]
+    )
     await database.posts.create_index([("author_id", 1), ("created_at", -1)])
     await database.posts.create_index([("type", 1), ("created_at", -1)])
+    await database.posts.create_index(
+        [
+            ("location.show_on_map", 1),
+            ("visibility", 1),
+            ("is_deleted", 1),
+            ("is_hidden", 1),
+            ("created_at", -1),
+        ]
+    )
     await database.likes.create_index([("post_id", 1), ("user_id", 1)], unique=True)
     await database.comments.create_index([("post_id", 1), ("created_at", -1)])
     await database.comments.create_index([("author_id", 1), ("created_at", -1)])

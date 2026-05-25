@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 
 from app.core.security import get_optional_current_user, require_active_user
 from app.schemas.post import PostCreate, PostOut, PostUpdate
@@ -131,7 +131,7 @@ async def create_comment_endpoint(
 @router.get("/{post_id}/comments", response_model=CommentsResponse)
 async def get_comments_endpoint(
     post_id: str,
-    limit: int = 20,
+    limit: int = Query(default=15, ge=1, le=30),
     cursor: str | None = None,
 ) -> CommentsResponse:
     post = await get_post_by_id(post_id)

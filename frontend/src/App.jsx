@@ -1,27 +1,43 @@
+import { lazy, Suspense } from "react";
 import { Navigate, Route, Routes } from "react-router-dom";
 
 import AdminRoute from "./components/layout/AdminRoute.jsx";
 import BottomNav from "./components/layout/BottomNav.jsx";
 import ProtectedRoute from "./components/layout/ProtectedRoute.jsx";
-import Admin from "./pages/Admin.jsx";
-import Chat from "./pages/Chat.jsx";
-import CreatePost from "./pages/CreatePost.jsx";
+import { PageFallback } from "./components/ui/Skeletons.jsx";
 import Home from "./pages/Home.jsx";
-import Login from "./pages/Login.jsx";
-import Map from "./pages/Map.jsx";
-import Notifications from "./pages/Notifications.jsx";
-import Onboarding from "./pages/Onboarding.jsx";
-import Profile from "./pages/Profile.jsx";
-import Register from "./pages/Register.jsx";
+
+const Admin = lazy(() => import("./pages/Admin.jsx"));
+const Chat = lazy(() => import("./pages/Chat.jsx"));
+const CreatePost = lazy(() => import("./pages/CreatePost.jsx"));
+const Login = lazy(() => import("./pages/Login.jsx"));
+const Map = lazy(() => import("./pages/Map.jsx"));
+const Notifications = lazy(() => import("./pages/Notifications.jsx"));
+const Onboarding = lazy(() => import("./pages/Onboarding.jsx"));
+const Profile = lazy(() => import("./pages/Profile.jsx"));
+const Register = lazy(() => import("./pages/Register.jsx"));
+
+function LazyPage({ children }) {
+  return <Suspense fallback={<PageFallback />}>{children}</Suspense>;
+}
 
 const appRoutes = [
   { path: "/", element: <Home /> },
-  { path: "/map", element: <Map /> },
+  {
+    path: "/map",
+    element: (
+      <LazyPage>
+        <Map />
+      </LazyPage>
+    ),
+  },
   {
     path: "/create",
     element: (
       <ProtectedRoute>
-        <CreatePost />
+        <LazyPage>
+          <CreatePost />
+        </LazyPage>
       </ProtectedRoute>
     ),
   },
@@ -29,7 +45,9 @@ const appRoutes = [
     path: "/chat",
     element: (
       <ProtectedRoute>
-        <Chat />
+        <LazyPage>
+          <Chat />
+        </LazyPage>
       </ProtectedRoute>
     ),
   },
@@ -37,17 +55,35 @@ const appRoutes = [
     path: "/profile",
     element: (
       <ProtectedRoute>
-        <Profile />
+        <LazyPage>
+          <Profile />
+        </LazyPage>
       </ProtectedRoute>
     ),
   },
-  { path: "/login", element: <Login /> },
-  { path: "/register", element: <Register /> },
+  {
+    path: "/login",
+    element: (
+      <LazyPage>
+        <Login />
+      </LazyPage>
+    ),
+  },
+  {
+    path: "/register",
+    element: (
+      <LazyPage>
+        <Register />
+      </LazyPage>
+    ),
+  },
   {
     path: "/onboarding",
     element: (
       <ProtectedRoute requireOnboarding={false}>
-        <Onboarding />
+        <LazyPage>
+          <Onboarding />
+        </LazyPage>
       </ProtectedRoute>
     ),
   },
@@ -55,7 +91,9 @@ const appRoutes = [
     path: "/notifications",
     element: (
       <ProtectedRoute>
-        <Notifications />
+        <LazyPage>
+          <Notifications />
+        </LazyPage>
       </ProtectedRoute>
     ),
   },
@@ -64,12 +102,21 @@ const appRoutes = [
     element: (
       <ProtectedRoute>
         <AdminRoute>
-          <Admin />
+          <LazyPage>
+            <Admin />
+          </LazyPage>
         </AdminRoute>
       </ProtectedRoute>
     ),
   },
-  { path: "/users/:username", element: <Profile /> },
+  {
+    path: "/users/:username",
+    element: (
+      <LazyPage>
+        <Profile />
+      </LazyPage>
+    ),
+  },
 ];
 
 function App() {

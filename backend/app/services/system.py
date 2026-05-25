@@ -246,33 +246,53 @@ async def run_cloudinary_manifest_backup() -> dict:
     result = await db.system_backups.insert_one(metadata)
     try:
         resources = []
+        api_error = ""
         if settings.CLOUDINARY_CLOUD_NAME and settings.CLOUDINARY_API_KEY and settings.CLOUDINARY_API_SECRET:
-            cloudinary.config(
-                cloud_name=settings.CLOUDINARY_CLOUD_NAME,
-                api_key=settings.CLOUDINARY_API_KEY,
-                api_secret=settings.CLOUDINARY_API_SECRET,
-                secure=True,
-            )
-            next_cursor = None
-            for _ in range(10):
-                response = cloudinary.api.resources(
-                    type="upload",
-                    prefix=settings.CLOUDINARY_UPLOAD_FOLDER,
-                    max_results=500,
-                    next_cursor=next_cursor,
+            try:
+                cloudinary.config(
+                    cloud_name=settings.CLOUDINARY_CLOUD_NAME,
+                    api_key=settings.CLOUDINARY_API_KEY,
+                    api_secret=settings.CLOUDINARY_API_SECRET,
+                    secure=True,
                 )
-                resources.extend(response.get("resources", []))
-                next_cursor = response.get("next_cursor")
-                if not next_cursor:
-                    break
+                next_cursor = None
+                for _ in range(10):
+                    response = cloudinary.api.resources(
+                        type="upload",
+                        prefix=settings.CLOUDINARY_UPLOAD_FOLDER,
+                        max_results=500,
+                        next_cursor=next_cursor,
+                    )
+                    resources.extend(response.get("resources", []))
+                    next_cursor = response.get("next_cursor")
+                    if not next_cursor:
+                        break
+            except Exception as exc:
+                api_error = str(exc)[:300]
+                await log_system_event(
+                    level="warning",
+                    source="backend",
+                    message="Cloudinary API manifest fallback used",
+                    details={"error": api_error},
+                )
+                resources = await collect_cloudinary_references_from_mongo()
         with gzip.open(path, "wt", encoding="utf-8") as output:
-            json.dump({"generated_at": started_at.isoformat(), "resources": resources}, output, default=_json_default)
+            json.dump(
+                {
+                    "generated_at": started_at.isoformat(),
+                    "source": "cloudinary_api" if not api_error else "mongodb_media_references",
+                    "api_error": api_error,
+                    "resources": resources,
+                },
+                output,
+                default=_json_default,
+            )
         size_bytes = path.stat().st_size
         update = {
             "finished_at": now_utc(),
             "status": "success",
             "size_bytes": size_bytes,
-            "notes": f"assets={len(resources)}; path={path}",
+            "notes": f"assets={len(resources)}; source={'cloudinary_api' if not api_error else 'mongodb_media_references'}; path={path}",
         }
         await db.system_backups.update_one({"_id": result.inserted_id}, {"$set": update})
         return public_document({**metadata, **update, "id": str(result.inserted_id)})
@@ -283,6 +303,55 @@ async def run_cloudinary_manifest_backup() -> dict:
         )
         await log_system_event(level="critical", source="backend", message="Cloudinary manifest backup failed", details={"error": str(exc)})
         return public_document({**metadata, "status": "failed", "notes": str(exc)[:500], "id": str(result.inserted_id)})
+
+
+async def collect_cloudinary_references_from_mongo() -> list[dict]:
+    db = get_database()
+    references: list[dict] = []
+
+    async def add_ref(source: str, owner_id: str, media: dict | None) -> None:
+        if not media:
+            return
+        url = media.get("url") or media.get("thumbnail_url")
+        public_id = media.get("public_id")
+        if not url and not public_id:
+            return
+        references.append(
+            {
+                "source": source,
+                "owner_id": owner_id,
+                "url": url,
+                "thumbnail_url": media.get("thumbnail_url"),
+                "public_id": public_id,
+                "type": media.get("type"),
+            }
+        )
+
+    async for post in db.posts.find({"media.url": {"$exists": True}}, {"media": 1}):
+        media_items = post.get("media") or []
+        if isinstance(media_items, dict):
+            media_items = [media_items]
+        for media in media_items:
+            await add_ref("post", str(post["_id"]), media)
+
+    async for story in db.stories.find({"media.url": {"$exists": True}}, {"media": 1}):
+        await add_ref("story", str(story["_id"]), story.get("media"))
+
+    async for event in db.events.find({"cover_media.url": {"$exists": True}}, {"cover_media": 1}):
+        await add_ref("event", str(event["_id"]), event.get("cover_media"))
+
+    async for live in db.lives.find({"thumbnail_url": {"$nin": [None, ""]}}, {"thumbnail_url": 1}):
+        references.append(
+            {
+                "source": "live",
+                "owner_id": str(live["_id"]),
+                "url": live.get("thumbnail_url"),
+                "thumbnail_url": live.get("thumbnail_url"),
+                "public_id": None,
+                "type": "image",
+            }
+        )
+    return references
 
 
 async def run_github_metadata_backup() -> dict:

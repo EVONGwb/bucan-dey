@@ -3,10 +3,13 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 from app.core.security import get_optional_current_user, require_active_user
 from app.schemas.live import (
     LiveCommentIn,
+    LiveHeartbeatIn,
     LiveOut,
+    LiveReportIn,
     LivesResponse,
     LiveStartRequest,
     LiveStartResponse,
+    LiveStatsOut,
     LiveViewerResponse,
 )
 from app.services.lives import (
@@ -14,8 +17,10 @@ from app.services.lives import (
     end_live,
     get_join_token,
     get_live_by_id,
+    get_live_stats,
     heartbeat_viewer,
     list_lives,
+    report_live,
     register_viewer,
     send_live_comment,
     start_live,
@@ -75,7 +80,7 @@ async def join_live_endpoint(
     current_user: dict = Depends(require_active_user),
 ) -> dict:
     live = await get_live_by_id(live_id)
-    if live is None or not await can_view_live(live, current_user):
+    if live is None or not live.get("is_live") or not await can_view_live(live, current_user):
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Live not found.")
     return await get_join_token(live, current_user)
 
@@ -97,7 +102,7 @@ async def register_viewer_endpoint(
     current_user: dict = Depends(require_active_user),
 ) -> LiveViewerResponse:
     live = await get_live_by_id(live_id)
-    if live is None or not await can_view_live(live, current_user):
+    if live is None or not live.get("is_live") or not await can_view_live(live, current_user):
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Live not found.")
     return LiveViewerResponse(**await register_viewer(live, current_user))
 
@@ -105,12 +110,37 @@ async def register_viewer_endpoint(
 @router.post("/{live_id}/heartbeat", response_model=LiveViewerResponse)
 async def heartbeat_live_endpoint(
     live_id: str,
+    payload: LiveHeartbeatIn | None = None,
     current_user: dict = Depends(require_active_user),
 ) -> LiveViewerResponse:
     live = await get_live_by_id(live_id)
+    if live is None or not live.get("is_live") or not await can_view_live(live, current_user):
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Live not found.")
+    role = payload.role if payload else "viewer"
+    return LiveViewerResponse(**await heartbeat_viewer(live, current_user, role))
+
+
+@router.get("/{live_id}/stats", response_model=LiveStatsOut)
+async def live_stats_endpoint(
+    live_id: str,
+    current_user: dict | None = Depends(get_optional_current_user),
+) -> LiveStatsOut:
+    live = await get_live_by_id(live_id)
     if live is None or not await can_view_live(live, current_user):
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Live not found.")
-    return LiveViewerResponse(**await heartbeat_viewer(live, current_user))
+    return LiveStatsOut(**await get_live_stats(live))
+
+
+@router.post("/{live_id}/report")
+async def report_live_endpoint(
+    live_id: str,
+    payload: LiveReportIn,
+    current_user: dict = Depends(require_active_user),
+) -> dict:
+    live = await get_live_by_id(live_id)
+    if live is None or not await can_view_live(live, current_user):
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Live not found.")
+    return await report_live(live, current_user, payload.reason, payload.details)
 
 
 @router.post("/{live_id}/comments")
@@ -120,6 +150,6 @@ async def live_comment_endpoint(
     current_user: dict = Depends(require_active_user),
 ) -> dict:
     live = await get_live_by_id(live_id)
-    if live is None or not await can_view_live(live, current_user):
+    if live is None or not live.get("is_live") or not await can_view_live(live, current_user):
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Live not found.")
     return await send_live_comment(live, current_user, payload.text)

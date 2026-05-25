@@ -12,11 +12,13 @@ function StartLive() {
   const videoRef = useRef(null);
   const roomRef = useRef(null);
   const tracksRef = useRef([]);
+  const heartbeatRef = useRef(null);
   const [form, setForm] = useState({
     title: "",
     description: "",
     category: "ambiente",
     visibility: "public",
+    bitrate_mode: "auto",
     city: "Malabo",
     area: "",
     lat: null,
@@ -29,7 +31,12 @@ function StartLive() {
   const [error, setError] = useState("");
 
   useEffect(() => {
+    const connection = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
+    if (connection?.saveData || ["slow-2g", "2g"].includes(connection?.effectiveType)) {
+      setForm((current) => ({ ...current, bitrate_mode: "low" }));
+    }
     return () => {
+      window.clearInterval(heartbeatRef.current);
       tracksRef.current.forEach((track) => track.stop());
       roomRef.current?.disconnect();
     };
@@ -50,6 +57,7 @@ function StartLive() {
         description: form.description,
         category: form.category,
         visibility: form.visibility,
+        bitrate_mode: form.bitrate_mode,
         location: {
           city: form.city,
           area: form.area,
@@ -64,7 +72,16 @@ function StartLive() {
       room.on(RoomEvent.Disconnected, () => setViewersCount(0));
 
       await room.connect(response.data.livekit_url, response.data.token);
-      const tracks = await createLocalTracks({ audio: true, video: true });
+      const videoOptions = {
+        low: { resolution: { width: 360, height: 640 }, frameRate: 15 },
+        medium: { resolution: { width: 540, height: 960 }, frameRate: 24 },
+        high: { resolution: { width: 720, height: 1280 }, frameRate: 30 },
+        auto: true,
+      };
+      const tracks = await createLocalTracks({
+        audio: true,
+        video: videoOptions[form.bitrate_mode] || true,
+      });
       tracksRef.current = tracks;
       for (const track of tracks) {
         await room.localParticipant.publishTrack(track);
@@ -75,6 +92,9 @@ function StartLive() {
 
       setLive(response.data.live);
       setViewersCount(response.data.live.viewers_count || 0);
+      heartbeatRef.current = window.setInterval(() => {
+        apiClient.post(`/lives/${response.data.live.id}/heartbeat`, { role: "streamer" }).catch(() => {});
+      }, 20000);
     } catch (err) {
       setError(getApiErrorMessage(err));
     } finally {
@@ -102,6 +122,7 @@ function StartLive() {
     if (!live) return;
     try {
       await apiClient.post(`/lives/${live.id}/end`);
+      window.clearInterval(heartbeatRef.current);
       tracksRef.current.forEach((track) => track.stop());
       roomRef.current?.disconnect();
       navigate(`/lives/${live.id}`);
@@ -163,6 +184,12 @@ function StartLive() {
           <select className="w-full rounded-lg border border-white/10 bg-night px-4 py-4 text-base font-bold text-white" value={form.visibility} onChange={(event) => updateField("visibility", event.target.value)}>
             <option value="public">Público</option>
             <option value="followers">Solo seguidores</option>
+          </select>
+          <select className="w-full rounded-lg border border-white/10 bg-night px-4 py-4 text-base font-bold text-white" value={form.bitrate_mode} onChange={(event) => updateField("bitrate_mode", event.target.value)}>
+            <option value="auto">Calidad auto</option>
+            <option value="low">Ahorro datos</option>
+            <option value="medium">Media</option>
+            <option value="high">Alta calidad</option>
           </select>
           <label className="flex items-center gap-3 rounded-lg border border-white/10 bg-surface p-4 text-sm font-bold text-white">
             <input type="checkbox" checked={form.show_on_map} onChange={(event) => updateField("show_on_map", event.target.checked)} />

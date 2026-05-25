@@ -8,6 +8,7 @@ from app.core.config import settings
 from app.core.database import close_mongo_connection, connect_to_mongo
 from app.routes import admin, auth, chat, comments, events, feed, health, lives, map, media, notifications, posts, push, reports, stories, trending, users, ws
 from app.services.event_reminders import start_event_reminder_scheduler, stop_event_reminder_scheduler
+from app.services.lives import start_live_control_scheduler, stop_live_control_scheduler
 
 
 @asynccontextmanager
@@ -15,7 +16,9 @@ async def lifespan(app: FastAPI):
     await connect_to_mongo()
     if settings.MONGO_URL:
         start_event_reminder_scheduler()
+        start_live_control_scheduler()
     yield
+    await stop_live_control_scheduler()
     await stop_event_reminder_scheduler()
     await close_mongo_connection()
 

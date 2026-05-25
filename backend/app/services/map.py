@@ -187,6 +187,7 @@ async def get_map_posts(
     live_query: dict[str, Any] = {
         "visibility": "public",
         "is_live": True,
+        "moderation_status": {"$ne": "blocked"},
         "location.lat": {"$type": "number"},
         "location.lng": {"$type": "number"},
         "location.show_on_map": True,

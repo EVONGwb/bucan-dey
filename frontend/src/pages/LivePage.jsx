@@ -14,12 +14,26 @@ function LivePage() {
   const videoContainerRef = useRef(null);
   const roomRef = useRef(null);
   const heartbeatRef = useRef(null);
+  const statsRef = useRef(null);
   const [live, setLive] = useState(null);
+  const [stats, setStats] = useState(null);
   const [comments, setComments] = useState([]);
   const [commentText, setCommentText] = useState("");
+  const [qualityMode, setQualityMode] = useState("auto");
+  const [reportReason, setReportReason] = useState("spam");
+  const [reportDetails, setReportDetails] = useState("");
+  const [showReport, setShowReport] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [isJoining, setIsJoining] = useState(false);
   const [error, setError] = useState("");
+  const [notice, setNotice] = useState("");
+
+  useEffect(() => {
+    const connection = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
+    if (connection?.saveData || ["slow-2g", "2g"].includes(connection?.effectiveType)) {
+      setQualityMode("low");
+    }
+  }, []);
 
   useEffect(() => {
     async function init() {
@@ -27,6 +41,8 @@ function LivePage() {
         setIsLoading(true);
         const response = await apiClient.get(`/lives/${liveId}`);
         setLive(response.data);
+        const statsResponse = await apiClient.get(`/lives/${liveId}/stats`);
+        setStats(statsResponse.data);
       } catch (err) {
         setError(getApiErrorMessage(err));
       } finally {
@@ -70,6 +86,7 @@ function LivePage() {
   useEffect(() => {
     return () => {
       window.clearInterval(heartbeatRef.current);
+      window.clearInterval(statsRef.current);
       roomRef.current?.disconnect();
     };
   }, []);
@@ -99,7 +116,10 @@ function LivePage() {
       const tokenResponse = await apiClient.post(`/lives/${liveId}/join`);
       await apiClient.post(`/lives/${liveId}/viewer`);
 
-      const room = new Room({ adaptiveStream: true, dynacast: true });
+      const room = new Room({
+        adaptiveStream: qualityMode !== "high",
+        dynacast: true,
+      });
       roomRef.current = room;
       room.on(RoomEvent.TrackSubscribed, (track) => attachTrack(track));
       room.on(RoomEvent.ParticipantConnected, () => {});
@@ -109,12 +129,41 @@ function LivePage() {
       });
 
       heartbeatRef.current = window.setInterval(() => {
-        apiClient.post(`/lives/${liveId}/heartbeat`).catch(() => {});
+        apiClient.post(`/lives/${liveId}/heartbeat`, { role: "viewer" }).catch(() => {});
       }, 20000);
+      statsRef.current = window.setInterval(async () => {
+        try {
+          const response = await apiClient.get(`/lives/${liveId}/stats`);
+          setStats(response.data);
+        } catch {
+          window.clearInterval(statsRef.current);
+        }
+      }, 30000);
     } catch (err) {
       setError(getApiErrorMessage(err));
     } finally {
       setIsJoining(false);
+    }
+  }
+
+  async function submitReport(event) {
+    event.preventDefault();
+    if (!isAuthenticated) {
+      window.location.href = "/login";
+      return;
+    }
+    setError("");
+    setNotice("");
+    try {
+      await apiClient.post(`/lives/${liveId}/report`, {
+        reason: reportReason,
+        details: reportDetails,
+      });
+      setNotice("Reporte enviado. El equipo revisará este live.");
+      setShowReport(false);
+      setReportDetails("");
+    } catch (err) {
+      setError(getApiErrorMessage(err));
     }
   }
 
@@ -163,6 +212,11 @@ function LivePage() {
           {error}
         </div>
       ) : null}
+      {notice ? (
+        <div className="mt-4 rounded-lg border border-neonGreen/30 bg-neonGreen/10 px-4 py-3 text-sm font-bold text-white">
+          {notice}
+        </div>
+      ) : null}
 
       {isLoading ? (
         <div className="mt-6 h-96 animate-pulse rounded-lg bg-white/8" />
@@ -182,6 +236,20 @@ function LivePage() {
                 {live.viewers_count || 0} viendo · pico {live.peak_viewers || 0}
               </span>
             </div>
+            <div className="mt-3 grid grid-cols-3 gap-2 text-center">
+              <div className="rounded-lg bg-white/5 p-2">
+                <p className="text-xs font-bold text-white/42">Actuales</p>
+                <p className="text-lg font-black text-white">{stats?.current_viewers ?? live.viewers_count ?? 0}</p>
+              </div>
+              <div className="rounded-lg bg-white/5 p-2">
+                <p className="text-xs font-bold text-white/42">Únicos</p>
+                <p className="text-lg font-black text-white">{stats?.total_unique_viewers ?? live.total_unique_viewers ?? 0}</p>
+              </div>
+              <div className="rounded-lg bg-white/5 p-2">
+                <p className="text-xs font-bold text-white/42">Duración</p>
+                <p className="text-lg font-black text-white">{Math.floor((stats?.duration_seconds || 0) / 60)}m</p>
+              </div>
+            </div>
             <p className="mt-3 text-sm font-semibold text-white/62">
               @{live.creator_snapshot.username}
               {live.location?.city ? ` · ${live.location.city}` : ""}
@@ -190,6 +258,11 @@ function LivePage() {
               {live.description || "Directo en BUCAN DEY."}
             </p>
             <div className="mt-4 grid grid-cols-2 gap-2">
+              <select className="col-span-2 rounded-lg border border-white/10 bg-night px-3 py-3 text-sm font-bold text-white" value={qualityMode} onChange={(event) => setQualityMode(event.target.value)}>
+                <option value="auto">Calidad auto</option>
+                <option value="low">Ahorro datos</option>
+                <option value="high">Alta calidad</option>
+              </select>
               <button className="h-12 rounded-lg bg-gradient-to-r from-neonGreen via-neonYellow to-neonPink text-sm font-black text-night disabled:opacity-60" type="button" onClick={joinLive} disabled={!live.is_live || isJoining}>
                 {isJoining ? "Entrando..." : "Entrar al live"}
               </button>
@@ -203,6 +276,32 @@ function LivePage() {
                 </button>
               )}
             </div>
+            {!live.is_live ? (
+              <p className="mt-4 rounded-lg border border-white/10 bg-white/5 px-4 py-3 text-sm font-bold text-white/68">
+                El directo ha terminado.
+              </p>
+            ) : null}
+            {!isCreator ? (
+              <button className="mt-3 h-11 w-full rounded-lg border border-neonPink/30 bg-neonPink/10 text-sm font-black text-neonPink" type="button" onClick={() => setShowReport((current) => !current)}>
+                Reportar live
+              </button>
+            ) : null}
+            {showReport ? (
+              <form className="mt-3 space-y-2 rounded-lg border border-white/10 bg-white/5 p-3" onSubmit={submitReport}>
+                <select className="w-full rounded-lg border border-white/10 bg-night px-3 py-3 text-sm font-bold text-white" value={reportReason} onChange={(event) => setReportReason(event.target.value)}>
+                  <option value="spam">Spam</option>
+                  <option value="contenido ofensivo">Contenido ofensivo</option>
+                  <option value="violencia">Violencia</option>
+                  <option value="desnudos">Desnudos</option>
+                  <option value="acoso">Acoso</option>
+                  <option value="otro">Otro</option>
+                </select>
+                <textarea className="min-h-20 w-full rounded-lg border border-white/10 bg-night px-3 py-3 text-sm font-semibold text-white outline-none focus:border-neonPink" placeholder="Detalles opcionales" value={reportDetails} onChange={(event) => setReportDetails(event.target.value)} />
+                <button className="h-11 w-full rounded-lg bg-neonPink text-sm font-black text-white" type="submit">
+                  Enviar reporte
+                </button>
+              </form>
+            ) : null}
           </div>
         </article>
       ) : null}

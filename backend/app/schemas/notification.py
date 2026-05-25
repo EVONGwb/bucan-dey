@@ -26,6 +26,7 @@ class NotificationOut(BaseModel):
         "event_attend",
         "event_reminder",
         "live_started",
+        "live_ended_auto",
     ]
     title: str
     body: str

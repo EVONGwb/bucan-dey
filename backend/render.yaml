@@ -50,3 +50,11 @@ services:
         sync: false
       - key: LIVEKIT_API_SECRET
         sync: false
+      - key: LIVE_MAX_DURATION_MINUTES
+        value: "120"
+      - key: LIVE_STREAMER_INACTIVE_MINUTES
+        value: "3"
+      - key: LIVE_VIEWER_INACTIVE_SECONDS
+        value: "60"
+      - key: LIVE_CONTROL_INTERVAL_SECONDS
+        value: "30"

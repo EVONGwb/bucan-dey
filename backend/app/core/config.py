@@ -32,6 +32,10 @@ class Settings(BaseSettings):
     LIVEKIT_URL: str = ""
     LIVEKIT_API_KEY: str = ""
     LIVEKIT_API_SECRET: str = ""
+    LIVE_MAX_DURATION_MINUTES: int = 120
+    LIVE_STREAMER_INACTIVE_MINUTES: int = 3
+    LIVE_VIEWER_INACTIVE_SECONDS: int = 60
+    LIVE_CONTROL_INTERVAL_SECONDS: int = 30
 
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8")
 

@@ -160,6 +160,7 @@ async def trending_places(limit: int = 20) -> list[dict]:
         {
             "visibility": "public",
             "is_live": True,
+            "moderation_status": {"$ne": "blocked"},
             "started_at": {"$gte": since},
             "location.show_on_map": True,
             "location.city": {"$ne": ""},

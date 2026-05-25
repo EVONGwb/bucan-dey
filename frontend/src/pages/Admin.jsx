@@ -11,12 +11,14 @@ const TABS = [
   { id: "posts", label: "Publicaciones" },
   { id: "reports", label: "Reportes" },
   { id: "reminders", label: "Recordatorios" },
+  { id: "lives", label: "Lives" },
 ];
 
 const POST_TYPES = ["", "normal", "fiesta", "cumpleaños", "evento", "live", "bar", "ambiente", "video"];
 const VISIBILITIES = ["", "global", "profile_only", "private"];
 const REPORT_STATUSES = ["pending", "reviewed", "resolved", "dismissed"];
 const REMINDER_STATUSES = ["pending", "sent", "failed", "cancelled"];
+const LIVE_STATUSES = ["active", "flagged", "blocked"];
 
 function formatDate(value) {
   if (!value) return "";
@@ -35,12 +37,15 @@ function Admin() {
   const [posts, setPosts] = useState([]);
   const [reports, setReports] = useState([]);
   const [reminders, setReminders] = useState([]);
+  const [lives, setLives] = useState([]);
   const [search, setSearch] = useState("");
   const [postType, setPostType] = useState("");
   const [visibility, setVisibility] = useState("");
   const [hidden, setHidden] = useState("");
   const [reportStatus, setReportStatus] = useState("");
   const [reminderStatus, setReminderStatus] = useState("");
+  const [liveStatus, setLiveStatus] = useState("");
+  const [liveActive, setLiveActive] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
@@ -96,6 +101,16 @@ function Admin() {
     setReminders(response.data.items || []);
   }
 
+  async function loadLives() {
+    const response = await apiClient.get("/admin/lives", {
+      params: {
+        status: liveStatus || undefined,
+        active: liveActive === "" ? undefined : liveActive === "true",
+      },
+    });
+    setLives(response.data.items || []);
+  }
+
   async function refreshCurrentTab() {
     setIsLoading(true);
     setError("");
@@ -105,6 +120,7 @@ function Admin() {
       if (activeTab === "posts") await loadPosts();
       if (activeTab === "reports") await loadReports();
       if (activeTab === "reminders") await loadReminders();
+      if (activeTab === "lives") await loadLives();
     } catch (err) {
       setError(getApiErrorMessage(err));
     } finally {
@@ -114,7 +130,7 @@ function Admin() {
 
   useEffect(() => {
     refreshCurrentTab();
-  }, [activeTab, postType, visibility, hidden, reportStatus, reminderStatus]);
+  }, [activeTab, postType, visibility, hidden, reportStatus, reminderStatus, liveStatus, liveActive]);
 
   async function updateUser(userId, payload) {
     setError("");
@@ -150,6 +166,18 @@ function Admin() {
       await apiClient.patch(`/admin/reports/${reportId}`, { status });
       setNotice("Reporte actualizado.");
       await Promise.all([loadReports(), loadStats()]);
+    } catch (err) {
+      setError(getApiErrorMessage(err));
+    }
+  }
+
+  async function updateLive(liveId, payload) {
+    setError("");
+    setNotice("");
+    try {
+      await apiClient.patch(`/admin/lives/${liveId}`, payload);
+      setNotice("Live actualizado.");
+      await loadLives();
     } catch (err) {
       setError(getApiErrorMessage(err));
     }
@@ -371,6 +399,61 @@ function Admin() {
                 <span className="rounded-full border border-neonYellow/30 bg-neonYellow/10 px-2 py-1 text-xs font-black text-neonYellow">
                   {reminder.status}
                 </span>
+              </div>
+            </article>
+          ))}
+        </div>
+      ) : null}
+
+      {!isLoading && activeTab === "lives" ? (
+        <div className="mt-6 space-y-4">
+          <div className="grid grid-cols-2 gap-2">
+            <select className="rounded-lg border border-white/10 bg-night px-3 py-3 text-sm font-bold text-white" value={liveStatus} onChange={(event) => setLiveStatus(event.target.value)}>
+              <option value="">Todos los estados</option>
+              {LIVE_STATUSES.map((item) => (
+                <option key={item} value={item}>{item}</option>
+              ))}
+            </select>
+            <select className="rounded-lg border border-white/10 bg-night px-3 py-3 text-sm font-bold text-white" value={liveActive} onChange={(event) => setLiveActive(event.target.value)}>
+              <option value="">Todos</option>
+              <option value="true">Activos</option>
+              <option value="false">Finalizados</option>
+            </select>
+          </div>
+          {lives.length === 0 ? (
+            <article className="rounded-lg border border-white/10 bg-surface p-4">
+              <p className="text-sm font-bold text-white/62">No hay lives con este filtro.</p>
+            </article>
+          ) : null}
+          {lives.map((live) => (
+            <article className="rounded-lg border border-white/10 bg-surface p-4" key={live.id}>
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <p className="truncate text-base font-black text-white">{live.title}</p>
+                  <p className="mt-1 text-xs font-semibold text-white/48">
+                    @{live.creator_snapshot?.username} · {live.category} · {formatDate(live.started_at)}
+                  </p>
+                  <p className="mt-2 text-xs font-bold text-white/48">
+                    {live.viewers_count || 0} viewers · pico {live.peak_viewers || 0} · reportes {live.reports_count || 0}
+                  </p>
+                  <p className="mt-1 text-xs font-bold text-white/42">
+                    calidad {live.bitrate_mode || "auto"} · motivo fin {live.ended_reason || "sin finalizar"}
+                  </p>
+                </div>
+                <span className={`rounded-full border px-2 py-1 text-xs font-black ${live.is_live ? "border-neonPink/30 bg-neonPink/10 text-neonPink" : "border-white/10 bg-white/5 text-white/54"}`}>
+                  {live.is_live ? "live" : live.moderation_status}
+                </span>
+              </div>
+              <div className="mt-4 grid grid-cols-3 gap-2">
+                <button className="rounded-lg border border-white/10 bg-white/5 px-2 py-2 text-xs font-black text-white/74 disabled:opacity-40" type="button" disabled={!live.is_live} onClick={() => updateLive(live.id, { end_live: true, ended_reason: "admin" })}>
+                  Finalizar
+                </button>
+                <button className="rounded-lg border border-neonYellow/30 bg-neonYellow/10 px-2 py-2 text-xs font-black text-neonYellow" type="button" onClick={() => updateLive(live.id, { moderation_status: "flagged" })}>
+                  Marcar
+                </button>
+                <button className="rounded-lg border border-neonPink/30 bg-neonPink/10 px-2 py-2 text-xs font-black text-neonPink" type="button" onClick={() => updateLive(live.id, { moderation_status: "blocked" })}>
+                  Bloquear
+                </button>
               </div>
             </article>
           ))}

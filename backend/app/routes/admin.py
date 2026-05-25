@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 
 from app.core.security import require_admin_user
 from app.schemas.event_reminder import EventRemindersResponse, ReminderStatus
+from app.schemas.live import LiveAdminUpdate, LiveOut, LiveModerationStatus
 from app.schemas.post import PostOut, PostType, PostVisibility
 from app.schemas.report import (
     AdminPostModerate,
@@ -24,6 +25,7 @@ from app.services.admin import (
     update_user_admin,
 )
 from app.services.event_reminders import list_event_reminders
+from app.services.lives import get_live_by_id, list_admin_lives, to_live_out, update_live_admin
 
 
 router = APIRouter()
@@ -121,6 +123,32 @@ async def admin_event_reminders(
         items=await list_event_reminders(status=status, event_id=event_id, limit=limit),
         next_cursor=None,
     )
+
+
+@router.get("/lives")
+async def admin_lives(
+    status: LiveModerationStatus | None = None,
+    active: bool | None = None,
+    limit: int = Query(default=80, ge=1, le=100),
+    _: dict = Depends(require_admin_user),
+) -> dict:
+    return {
+        "items": await list_admin_lives(status_filter=status, active=active, limit=limit),
+        "next_cursor": None,
+    }
+
+
+@router.patch("/lives/{live_id}", response_model=LiveOut)
+async def admin_update_live(
+    live_id: str,
+    payload: LiveAdminUpdate,
+    current_admin: dict = Depends(require_admin_user),
+) -> LiveOut:
+    live = await get_live_by_id(live_id)
+    if live is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Live not found.")
+    updated = await update_live_admin(live, payload.model_dump(exclude_unset=True), current_admin)
+    return to_live_out(updated)
 
 
 @router.patch("/reports/{report_id}", response_model=ReportOut)

@@ -2,7 +2,7 @@ from datetime import datetime, timedelta, timezone
 
 from app.core.database import get_database
 from app.services.follows import serialize_follow_user
-from app.services.posts import add_like_flags, serialize_post
+from app.services.posts import add_interaction_flags, serialize_post
 
 
 def _utc_now() -> datetime:
@@ -22,6 +22,8 @@ def _post_score(post: dict) -> float:
     return (
         float(stats.get("likes_count", 0)) * 2
         + float(stats.get("comments_count", 0)) * 3
+        + float(stats.get("reposts_count", 0)) * 4
+        + float(stats.get("shares_count", 0)) * 2
         + float(stats.get("views_count", 0))
         + recency
     )
@@ -46,13 +48,13 @@ async def trending_posts(viewer: dict | None = None, limit: int = 20) -> list[di
     )
     posts.sort(key=_post_score, reverse=True)
     posts = posts[:fetch_limit]
-    posts_with_likes = await add_like_flags(posts, viewer)
+    posts_with_flags = await add_interaction_flags(posts, viewer)
     return [
         {
-            **serialize_post(post, liked_by_me=liked_by_me),
+            **serialize_post(post, liked_by_me=liked_by_me, reposted_by_me=reposted_by_me),
             "trend_score": round(_post_score(post), 2),
         }
-        for post, liked_by_me in posts_with_likes
+        for post, liked_by_me, reposted_by_me in posts_with_flags
     ]
 
 

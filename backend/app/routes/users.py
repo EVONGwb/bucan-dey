@@ -11,7 +11,7 @@ from app.services.follows import (
     suggested_users,
     unfollow_user,
 )
-from app.services.posts import add_like_flags, get_profile_posts, serialize_post
+from app.services.posts import add_interaction_flags, get_profile_posts, serialize_post
 from app.services.users import (
     complete_user_onboarding,
     get_user_by_id,
@@ -137,8 +137,8 @@ async def get_user_posts_endpoint(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found.")
 
     posts = await get_profile_posts(username, current_user)
-    posts_with_likes = await add_like_flags(posts, current_user)
+    posts_with_flags = await add_interaction_flags(posts, current_user)
     return [
-        PostOut(**serialize_post(post, liked_by_me=liked_by_me))
-        for post, liked_by_me in posts_with_likes
+        PostOut(**serialize_post(post, liked_by_me=liked_by_me, reposted_by_me=reposted_by_me))
+        for post, liked_by_me, reposted_by_me in posts_with_flags
     ]

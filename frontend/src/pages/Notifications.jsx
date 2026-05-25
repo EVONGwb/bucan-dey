@@ -21,6 +21,10 @@ function formatRelativeDate(value) {
 }
 
 function destinationFor(notification) {
+  if (notification.entity_type === "post") {
+    return `/posts/${notification.entity_id}`;
+  }
+
   if (notification.entity_type === "user" && notification.actor_snapshot?.username) {
     return `/users/${notification.actor_snapshot.username}`;
   }

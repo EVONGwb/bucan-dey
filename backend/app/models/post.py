@@ -43,6 +43,8 @@ def build_post_document(payload: dict, author: dict) -> dict:
             "likes_count": 0,
             "comments_count": 0,
             "views_count": 0,
+            "reposts_count": 0,
+            "shares_count": 0,
         },
         "is_deleted": False,
         "is_hidden": False,

@@ -1,13 +1,25 @@
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 
 from app.core.security import get_optional_current_user, require_active_user
-from app.schemas.post import PostCreate, PostOut, PostUpdate
+from app.schemas.post import (
+    PostCreate,
+    PostOut,
+    PostUpdate,
+    RepostResponse,
+    RepostUserOut,
+    ShareRequest,
+    ShareResponse,
+)
 from app.schemas.comment import CommentCreate, CommentOut, CommentsResponse, LikeResponse
 from app.services.interactions import (
     add_like,
+    add_repost,
     create_comment,
     get_comments,
+    list_repost_users,
     remove_like,
+    remove_repost,
+    share_post,
     to_comment_out,
 )
 from app.services.posts import (
@@ -111,6 +123,66 @@ async def unlike_post_endpoint(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Post not found.")
 
     return LikeResponse(**await remove_like(post, current_user))
+
+
+@router.post("/{post_id}/repost", response_model=RepostResponse)
+async def repost_endpoint(
+    post_id: str,
+    current_user: dict = Depends(require_active_user),
+) -> RepostResponse:
+    post = await get_post_by_id(post_id)
+
+    if post is None or post.get("is_deleted") or post.get("is_hidden"):
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Post not found.")
+
+    return RepostResponse(**await add_repost(post, current_user))
+
+
+@router.delete("/{post_id}/repost", response_model=RepostResponse)
+async def undo_repost_endpoint(
+    post_id: str,
+    current_user: dict = Depends(require_active_user),
+) -> RepostResponse:
+    post = await get_post_by_id(post_id)
+
+    if post is None or post.get("is_deleted") or post.get("is_hidden"):
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Post not found.")
+
+    return RepostResponse(**await remove_repost(post, current_user))
+
+
+@router.post("/{post_id}/share", response_model=ShareResponse)
+async def share_post_endpoint(
+    post_id: str,
+    payload: ShareRequest,
+    current_user: dict = Depends(require_active_user),
+) -> ShareResponse:
+    post = await get_post_by_id(post_id)
+
+    if post is None or post.get("is_deleted") or post.get("is_hidden"):
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Post not found.")
+
+    try:
+        result = await share_post(post, current_user, payload.target, payload.conversation_id)
+    except ValueError as exc:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from None
+    except PermissionError:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Conversation not found.") from None
+
+    return ShareResponse(**result)
+
+
+@router.get("/{post_id}/reposts", response_model=list[RepostUserOut])
+async def reposts_endpoint(
+    post_id: str,
+    limit: int = Query(default=50, ge=1, le=100),
+) -> list[RepostUserOut]:
+    post = await get_post_by_id(post_id)
+
+    if post is None or post.get("is_deleted") or post.get("is_hidden"):
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Post not found.")
+
+    return [RepostUserOut(**item) for item in await list_repost_users(post_id, limit=limit)]
 
 
 @router.post("/{post_id}/comments", response_model=CommentOut, status_code=status.HTTP_201_CREATED)

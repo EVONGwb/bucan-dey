@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, Query
 
 from app.core.security import get_optional_current_user
 from app.schemas.post import FeedResponse
-from app.services.posts import add_like_flags, get_global_feed, serialize_post
+from app.services.posts import add_interaction_flags, get_global_feed, serialize_post
 
 
 router = APIRouter()
@@ -15,11 +15,11 @@ async def get_global_feed_endpoint(
     current_user: dict | None = Depends(get_optional_current_user),
 ) -> FeedResponse:
     posts, next_cursor = await get_global_feed(limit=limit, cursor=cursor)
-    posts_with_likes = await add_like_flags(posts, current_user)
+    posts_with_flags = await add_interaction_flags(posts, current_user)
     return FeedResponse(
         items=[
-            serialize_post(post, liked_by_me=liked_by_me)
-            for post, liked_by_me in posts_with_likes
+            serialize_post(post, liked_by_me=liked_by_me, reposted_by_me=reposted_by_me)
+            for post, liked_by_me, reposted_by_me in posts_with_flags
         ],
         next_cursor=next_cursor,
     )

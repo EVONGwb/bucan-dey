@@ -16,6 +16,7 @@ const Login = lazy(() => import("./pages/Login.jsx"));
 const Map = lazy(() => import("./pages/Map.jsx"));
 const Notifications = lazy(() => import("./pages/Notifications.jsx"));
 const Onboarding = lazy(() => import("./pages/Onboarding.jsx"));
+const PostPage = lazy(() => import("./pages/PostPage.jsx"));
 const Profile = lazy(() => import("./pages/Profile.jsx"));
 const Register = lazy(() => import("./pages/Register.jsx"));
 const StoryViewer = lazy(() => import("./pages/StoryViewer.jsx"));
@@ -117,6 +118,14 @@ const appRoutes = [
           <Notifications />
         </LazyPage>
       </ProtectedRoute>
+    ),
+  },
+  {
+    path: "/posts/:postId",
+    element: (
+      <LazyPage>
+        <PostPage />
+      </LazyPage>
     ),
   },
   {

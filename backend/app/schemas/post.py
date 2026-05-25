@@ -71,6 +71,33 @@ class PostStats(BaseModel):
     likes_count: int = 0
     comments_count: int = 0
     views_count: int = 0
+    reposts_count: int = 0
+    shares_count: int = 0
+
+
+class RepostResponse(BaseModel):
+    reposted: bool
+    reposts_count: int
+
+
+class ShareRequest(BaseModel):
+    target: Literal["chat", "external"]
+    conversation_id: str | None = None
+
+
+class ShareResponse(BaseModel):
+    shared: bool
+    shares_count: int
+    message_id: str | None = None
+
+
+class RepostUserOut(BaseModel):
+    id: str
+    username: str
+    display_name: str
+    avatar_url: str | None = None
+    city: str = ""
+    reposted_at: datetime
 
 
 class PostCreate(BaseModel):
@@ -124,6 +151,7 @@ class PostOut(BaseModel):
     is_deleted: bool
     is_hidden: bool
     liked_by_me: bool = False
+    reposted_by_me: bool = False
     created_at: datetime
     updated_at: datetime
 

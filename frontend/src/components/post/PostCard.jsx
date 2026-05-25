@@ -1,5 +1,5 @@
 import { memo, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 
 import apiClient from "../../api/client.js";
 import { useAuth } from "../../context/AuthContext.jsx";
@@ -88,6 +88,9 @@ function PostCard({ post, isDataSaver = false }) {
   const [localPost, setLocalPost] = useState(post);
   const [showComments, setShowComments] = useState(false);
   const [showReportModal, setShowReportModal] = useState(false);
+  const [showShareMenu, setShowShareMenu] = useState(false);
+  const [conversations, setConversations] = useState([]);
+  const [isLoadingConversations, setIsLoadingConversations] = useState(false);
   const [reportReason, setReportReason] = useState("spam");
   const [reportDetails, setReportDetails] = useState("");
   const [isReporting, setIsReporting] = useState(false);
@@ -99,6 +102,7 @@ function PostCard({ post, isDataSaver = false }) {
   const location = [localPost.location?.city, localPost.location?.area]
     .filter(Boolean)
     .join(" · ");
+  const postUrl = `${window.location.origin}/posts/${localPost.id}`;
 
   async function handleLike() {
     if (!isAuthenticated) {
@@ -133,6 +137,124 @@ function PostCard({ post, isDataSaver = false }) {
         comments_count: Math.max(0, (current.stats?.comments_count || 0) + delta),
       },
     }));
+  }
+
+  async function handleRepost() {
+    if (!isAuthenticated) {
+      navigate("/login");
+      return;
+    }
+
+    try {
+      setInteractionError("");
+      const response = localPost.reposted_by_me
+        ? await apiClient.delete(`/posts/${localPost.id}/repost`)
+        : await apiClient.post(`/posts/${localPost.id}/repost`);
+
+      setLocalPost((current) => ({
+        ...current,
+        reposted_by_me: response.data.reposted,
+        stats: {
+          ...current.stats,
+          reposts_count: response.data.reposts_count,
+        },
+      }));
+    } catch {
+      setInteractionError("No se pudo actualizar el repost.");
+    }
+  }
+
+  async function incrementExternalShare() {
+    if (!isAuthenticated) return;
+
+    try {
+      const response = await apiClient.post(`/posts/${localPost.id}/share`, {
+        target: "external",
+      });
+      setLocalPost((current) => ({
+        ...current,
+        stats: {
+          ...current.stats,
+          shares_count: response.data.shares_count,
+        },
+      }));
+    } catch {
+      // Sharing should still work even if the counter update fails.
+    }
+  }
+
+  async function handleCopyLink() {
+    try {
+      await navigator.clipboard.writeText(postUrl);
+      await incrementExternalShare();
+      setInteractionNotice("Enlace copiado.");
+      setShowShareMenu(false);
+    } catch {
+      setInteractionError("No se pudo copiar el enlace.");
+    }
+  }
+
+  async function handleExternalShare() {
+    try {
+      if (navigator.share) {
+        await navigator.share({
+          title: "BUCAN DEY",
+          text: localPost.text || "Mira esta publicación en BUCAN DEY",
+          url: postUrl,
+        });
+      } else {
+        await navigator.clipboard.writeText(postUrl);
+        setInteractionNotice("Enlace copiado.");
+      }
+      await incrementExternalShare();
+      setShowShareMenu(false);
+    } catch (error) {
+      if (error?.name !== "AbortError") {
+        setInteractionError("No se pudo compartir.");
+      }
+    }
+  }
+
+  async function openShareMenu() {
+    setInteractionError("");
+    setInteractionNotice("");
+    setShowShareMenu(true);
+    if (!isAuthenticated || conversations.length > 0 || isLoadingConversations) return;
+
+    try {
+      setIsLoadingConversations(true);
+      const response = await apiClient.get("/chat/conversations");
+      setConversations(response.data.items || []);
+    } catch {
+      setConversations([]);
+    } finally {
+      setIsLoadingConversations(false);
+    }
+  }
+
+  async function shareToChat(conversationId) {
+    if (!isAuthenticated) {
+      navigate("/login");
+      return;
+    }
+
+    try {
+      const response = await apiClient.post(`/posts/${localPost.id}/share`, {
+        target: "chat",
+        conversation_id: conversationId,
+      });
+      setLocalPost((current) => ({
+        ...current,
+        stats: {
+          ...current.stats,
+          shares_count: response.data.shares_count,
+        },
+      }));
+      setInteractionNotice("Publicación enviada por chat.");
+      setShowShareMenu(false);
+    } catch (error) {
+      setInteractionError(getApiErrorMessage(error));
+    }
   }
 
   function openReportModal() {
@@ -189,9 +311,12 @@ function PostCard({ post, isDataSaver = false }) {
           )}
 
           <div className="min-w-0">
-            <p className="truncate text-sm font-black text-white">
+            <Link
+              className="block truncate text-sm font-black text-white"
+              to={`/users/${localPost.author_snapshot?.username}`}
+            >
               {localPost.author_snapshot?.display_name}
-            </p>
+            </Link>
             <p className="truncate text-xs font-semibold text-white/48">
               @{localPost.author_snapshot?.username} · {formatRelativeDate(localPost.created_at)}
             </p>
@@ -285,6 +410,24 @@ function PostCard({ post, isDataSaver = false }) {
           💬 {postStats.comments_count || 0}
         </button>
         <button
+          className={`rounded-lg border px-3 py-2 transition ${
+            localPost.reposted_by_me
+              ? "border-neonGreen bg-neonGreen/16 text-neonGreen"
+              : "border-white/10 bg-white/5 text-white/70"
+          }`}
+          type="button"
+          onClick={handleRepost}
+        >
+          ↻ {postStats.reposts_count || 0}
+        </button>
+        <button
+          className="rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-white/70"
+          type="button"
+          onClick={openShareMenu}
+        >
+          ↗ {postStats.shares_count || 0}
+        </button>
+        <button
           className="rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-white/70"
           type="button"
           onClick={openReportModal}
@@ -293,6 +436,13 @@ function PostCard({ post, isDataSaver = false }) {
         </button>
         <span className="ml-auto py-2 text-white/42">{postStats.views_count || 0} vistas</span>
       </div>
+
+      <Link
+        className="mt-3 inline-flex text-xs font-black text-neonGreen"
+        to={`/posts/${localPost.id}`}
+      >
+        Abrir publicación
+      </Link>
 
       {showComments ? (
         <CommentsPanel
@@ -358,6 +508,97 @@ function PostCard({ post, isDataSaver = false }) {
               {isReporting ? "Enviando..." : "Enviar reporte"}
             </button>
           </form>
+        </div>
+      ) : null}
+
+      {showShareMenu ? (
+        <div className="fixed inset-0 z-40 flex items-end bg-black/72 px-4 pb-4">
+          <div className="mx-auto w-full max-w-md rounded-lg border border-white/10 bg-night p-4 shadow-neon">
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <h2 className="text-lg font-black text-white">Compartir</h2>
+                <p className="mt-1 text-sm text-white/56">
+                  Envía esta publicación dentro o fuera de BUCAN DEY.
+                </p>
+              </div>
+              <button
+                className="rounded-lg border border-white/10 px-3 py-2 text-sm font-black text-white/70"
+                type="button"
+                onClick={() => setShowShareMenu(false)}
+              >
+                Cerrar
+              </button>
+            </div>
+
+            <div className="mt-4 grid grid-cols-2 gap-3">
+              <button
+                className="h-12 rounded-lg border border-white/10 bg-white/5 text-sm font-black text-white"
+                type="button"
+                onClick={handleCopyLink}
+              >
+                Copiar enlace
+              </button>
+              <button
+                className="h-12 rounded-lg bg-gradient-to-r from-neonGreen via-neonYellow to-neonPink text-sm font-black text-night"
+                type="button"
+                onClick={handleExternalShare}
+              >
+                Compartir externo
+              </button>
+            </div>
+
+            <div className="mt-5">
+              <p className="text-xs font-black uppercase tracking-[0.14em] text-white/48">
+                Compartir en chat
+              </p>
+              {!isAuthenticated ? (
+                <button
+                  className="mt-3 h-12 w-full rounded-lg border border-neonPink/30 bg-neonPink/10 text-sm font-black text-white"
+                  type="button"
+                  onClick={() => navigate("/login")}
+                >
+                  Iniciar sesión
+                </button>
+              ) : isLoadingConversations ? (
+                <p className="mt-3 text-sm font-semibold text-white/54">Cargando chats...</p>
+              ) : conversations.length === 0 ? (
+                <p className="mt-3 text-sm font-semibold text-white/54">
+                  Todavía no tienes conversaciones.
+                </p>
+              ) : (
+                <div className="mt-3 max-h-64 space-y-2 overflow-y-auto">
+                  {conversations.map((conversation) => (
+                    <button
+                      className="flex w-full items-center gap-3 rounded-lg border border-white/10 bg-surface p-3 text-left"
+                      key={conversation.id}
+                      type="button"
+                      onClick={() => shareToChat(conversation.id)}
+                    >
+                      {conversation.other_user?.avatar_url ? (
+                        <img
+                          alt={conversation.other_user.display_name}
+                          className="h-10 w-10 rounded-full object-cover"
+                          src={conversation.other_user.avatar_url}
+                        />
+                      ) : (
+                        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-sm font-black text-white">
+                          {(conversation.other_user?.display_name || "B").charAt(0).toUpperCase()}
+                        </div>
+                      )}
+                      <div className="min-w-0">
+                        <p className="truncate text-sm font-black text-white">
+                          {conversation.other_user?.display_name}
+                        </p>
+                        <p className="truncate text-xs font-semibold text-white/48">
+                          @{conversation.other_user?.username}
+                        </p>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
         </div>
       ) : null}
     </article>

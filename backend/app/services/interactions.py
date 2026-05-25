@@ -8,6 +8,7 @@ from pymongo.errors import DuplicateKeyError
 
 from app.core.database import get_database
 from app.models.comment import build_comment_document
+from app.models.repost import build_repost_document
 from app.schemas.comment import CommentOut
 
 
@@ -58,6 +59,15 @@ async def has_user_liked_post(post_id: str, user_id: str | None) -> bool:
     db = get_database()
     like = await db.likes.find_one({"post_id": post_id, "user_id": user_id})
     return like is not None
+
+
+async def has_user_reposted_post(post_id: str, user_id: str | None) -> bool:
+    if not user_id:
+        return False
+
+    db = get_database()
+    repost = await db.reposts.find_one({"post_id": post_id, "user_id": user_id})
+    return repost is not None
 
 
 async def add_like(post: dict, user: dict) -> dict:
@@ -112,6 +122,118 @@ async def remove_like(post: dict, user: dict) -> dict:
     }
 
 
+async def add_repost(post: dict, user: dict) -> dict:
+    db = get_database()
+    post_id = str(post["_id"])
+    user_id = str(user["_id"])
+
+    try:
+        await db.reposts.insert_one(build_repost_document(user_id=user_id, post_id=post_id))
+        updated_post = await db.posts.find_one_and_update(
+            _post_query(post),
+            {"$inc": {"stats.reposts_count": 1}},
+            return_document=ReturnDocument.AFTER,
+        )
+        await _notify_post_repost(post, user)
+    except DuplicateKeyError:
+        updated_post = await db.posts.find_one(_post_query(post))
+
+    return {
+        "reposted": True,
+        "reposts_count": max(0, (updated_post or post).get("stats", {}).get("reposts_count", 0)),
+    }
+
+
+async def remove_repost(post: dict, user: dict) -> dict:
+    db = get_database()
+    post_id = str(post["_id"])
+    user_id = str(user["_id"])
+    result = await db.reposts.delete_one({"post_id": post_id, "user_id": user_id})
+
+    if result.deleted_count:
+        updated_post = await db.posts.find_one_and_update(
+            {"_id": post["_id"], "stats.reposts_count": {"$gt": 0}},
+            {"$inc": {"stats.reposts_count": -1}},
+            return_document=ReturnDocument.AFTER,
+        )
+    else:
+        updated_post = await db.posts.find_one(_post_query(post))
+
+    return {
+        "reposted": False,
+        "reposts_count": max(0, (updated_post or post).get("stats", {}).get("reposts_count", 0)),
+    }
+
+
+async def share_post(post: dict, user: dict, target: str, conversation_id: str | None = None) -> dict:
+    db = get_database()
+    message_id = None
+
+    if target == "chat":
+        if not conversation_id:
+            raise ValueError("conversation_id is required for chat sharing.")
+
+        from app.services.chat import (
+            create_message,
+            get_conversation_by_id,
+            user_in_conversation,
+        )
+
+        conversation = await get_conversation_by_id(conversation_id)
+        if conversation is None or not user_in_conversation(conversation, user):
+            raise PermissionError("Conversation not found.")
+
+        post_url = f"/posts/{post['_id']}"
+        text = (
+            f"Compartió una publicación de @{post['author_snapshot']['username']}: "
+            f"{post.get('text', '')[:120]} {post_url}"
+        ).strip()
+        message = await create_message(conversation, user, text)
+        message_id = str(message["_id"])
+
+    updated_post = await db.posts.find_one_and_update(
+        _post_query(post),
+        {"$inc": {"stats.shares_count": 1}},
+        return_document=ReturnDocument.AFTER,
+    )
+
+    return {
+        "shared": True,
+        "shares_count": max(0, (updated_post or post).get("stats", {}).get("shares_count", 0)),
+        "message_id": message_id,
+    }
+
+
+async def list_repost_users(post_id: str, limit: int = 50) -> list[dict]:
+    db = get_database()
+    fetch_limit = min(max(limit, 1), 100)
+    reposts = await (
+        db.reposts.find({"post_id": post_id})
+        .sort([("created_at", -1), ("_id", -1)])
+        .limit(fetch_limit)
+        .to_list(fetch_limit)
+    )
+    user_ids = [ObjectId(repost["user_id"]) for repost in reposts if ObjectId.is_valid(repost["user_id"])]
+    users = await db.users.find({"_id": {"$in": user_ids}}).to_list(len(user_ids)) if user_ids else []
+    users_by_id = {str(user["_id"]): user for user in users}
+    items = []
+    for repost in reposts:
+        user_data = users_by_id.get(repost["user_id"])
+        if not user_data:
+            continue
+        items.append(
+            {
+                "id": str(user_data["_id"]),
+                "username": user_data["username"],
+                "display_name": user_data["display_name"],
+                "avatar_url": user_data.get("avatar_url"),
+                "city": user_data.get("city", ""),
+                "reposted_at": repost["created_at"],
+            }
+        )
+    return items
+
+
 async def create_comment(post: dict, user: dict, text: str) -> dict:
     db = get_database()
     post_id = str(post["_id"])
@@ -151,6 +273,21 @@ async def _notify_post_comment(post: dict, actor: dict, comment: dict) -> None:
         body=f"{actor['display_name']} comentó tu publicación",
         entity_type="comment",
         entity_id=str(comment["_id"]),
+    )
+
+
+async def _notify_post_repost(post: dict, actor: dict) -> None:
+    from app.services.notifications import create_notification
+
+    await create_notification(
+        user_id=post["author_id"],
+        actor=actor,
+        type="repost",
+        title="Nueva publicación compartida",
+        body=f"{actor['display_name']} compartió tu publicación",
+        entity_type="post",
+        entity_id=str(post["_id"]),
+        dedupe=True,
     )
 
 

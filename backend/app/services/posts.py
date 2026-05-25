@@ -20,7 +20,18 @@ def _model_dump(model: Any) -> Any:
     return model
 
 
-def serialize_post(post: dict, liked_by_me: bool = False) -> dict:
+def _serialize_stats(post: dict) -> dict:
+    stats = post.get("stats") or {}
+    return {
+        "likes_count": max(0, int(stats.get("likes_count", 0))),
+        "comments_count": max(0, int(stats.get("comments_count", 0))),
+        "views_count": max(0, int(stats.get("views_count", 0))),
+        "reposts_count": max(0, int(stats.get("reposts_count", 0))),
+        "shares_count": max(0, int(stats.get("shares_count", 0))),
+    }
+
+
+def serialize_post(post: dict, liked_by_me: bool = False, reposted_by_me: bool = False) -> dict:
     return {
         "id": str(post["_id"]),
         "author_id": post["author_id"],
@@ -32,13 +43,11 @@ def serialize_post(post: dict, liked_by_me: bool = False) -> dict:
         "location": post.get("location", {}),
         "event_data": post.get("event_data"),
         "live_data": post.get("live_data"),
-        "stats": post.get(
-            "stats",
-            {"likes_count": 0, "comments_count": 0, "views_count": 0},
-        ),
+        "stats": _serialize_stats(post),
         "is_deleted": post.get("is_deleted", False),
         "is_hidden": post.get("is_hidden", False),
         "liked_by_me": liked_by_me,
+        "reposted_by_me": reposted_by_me,
         "created_at": post["created_at"],
         "updated_at": post["updated_at"],
     }
@@ -194,11 +203,39 @@ async def add_like_flags(posts: list[dict], viewer: dict | None = None) -> list[
     return [(post, str(post["_id"]) in liked_post_ids) for post in posts]
 
 
+async def add_interaction_flags(posts: list[dict], viewer: dict | None = None) -> list[tuple[dict, bool, bool]]:
+    if not viewer or not posts:
+        return [(post, False, False) for post in posts]
+
+    db = get_database()
+    user_id = str(viewer["_id"])
+    post_ids = [str(post["_id"]) for post in posts]
+    likes = await db.likes.find(
+        {"post_id": {"$in": post_ids}, "user_id": user_id},
+        {"post_id": 1},
+    ).to_list(len(post_ids))
+    reposts = await db.reposts.find(
+        {"post_id": {"$in": post_ids}, "user_id": user_id},
+        {"post_id": 1},
+    ).to_list(len(post_ids))
+    liked_post_ids = {like["post_id"] for like in likes}
+    reposted_post_ids = {repost["post_id"] for repost in reposts}
+
+    return [
+        (post, str(post["_id"]) in liked_post_ids, str(post["_id"]) in reposted_post_ids)
+        for post in posts
+    ]
+
+
 async def to_post_out(post: dict, viewer: dict | None = None) -> PostOut:
     liked_by_me = False
+    reposted_by_me = False
     if viewer is not None:
-        from app.services.interactions import has_user_liked_post
+        from app.services.interactions import has_user_liked_post, has_user_reposted_post
 
         liked_by_me = await has_user_liked_post(str(post["_id"]), str(viewer["_id"]))
+        reposted_by_me = await has_user_reposted_post(str(post["_id"]), str(viewer["_id"]))
 
-    return PostOut(**serialize_post(post, liked_by_me=liked_by_me))
+    return PostOut(
+        **serialize_post(post, liked_by_me=liked_by_me, reposted_by_me=reposted_by_me)
+    )

@@ -41,6 +41,10 @@ class UserLogin(BaseModel):
         return value.strip().lower()
 
 
+class GoogleLogin(BaseModel):
+    id_token: str = Field(..., min_length=20)
+
+
 class UserUpdate(BaseModel):
     display_name: str | None = Field(default=None, min_length=1, max_length=80)
     avatar_url: str | None = Field(default=None, max_length=400)
@@ -59,6 +63,9 @@ class UserOut(BaseModel):
     city: str = ""
     country: str = ""
     role: Literal["user", "admin"] = "user"
+    google_id: str | None = None
+    auth_provider: Literal["local", "google", "apple"] = "local"
+    providers: list[str] = Field(default_factory=list)
     is_verified: bool = False
     is_active: bool = True
     created_at: datetime

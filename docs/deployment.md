@@ -32,6 +32,8 @@ CLOUDINARY_CLOUD_NAME=
 CLOUDINARY_API_KEY=
 CLOUDINARY_API_SECRET=
 CLOUDINARY_UPLOAD_FOLDER=bucan-dey
+GOOGLE_CLIENT_ID=
+GOOGLE_CLIENT_SECRET=
 ```
 
 Ejemplo de CORS para producción:
@@ -56,7 +58,7 @@ http://localhost:5173,http://127.0.0.1:5173
    - Install Command: `npm install`
    - Build Command: `npm run build`
    - Output Directory: `dist`
-4. Añade la variable `VITE_API_URL`.
+4. Añade las variables `VITE_API_URL` y `VITE_GOOGLE_CLIENT_ID`.
 5. Despliega.
 
 `frontend/vercel.json` redirige todas las rutas a `index.html`, necesario para React Router.
@@ -65,9 +67,25 @@ http://localhost:5173,http://127.0.0.1:5173
 
 ```txt
 VITE_API_URL=https://TU-BACKEND-RENDER.onrender.com/api
+VITE_GOOGLE_CLIENT_ID=TU_GOOGLE_CLIENT_ID
 ```
 
-`VITE_API_URL` es pública porque se usa en el navegador. Las claves privadas no deben estar en Vercel para esta arquitectura.
+`VITE_API_URL` y `VITE_GOOGLE_CLIENT_ID` son públicas porque se usan en el navegador. Las claves privadas no deben estar en Vercel para esta arquitectura.
+
+## Google OAuth
+
+1. Abre Google Cloud Console.
+2. Crea o selecciona el proyecto de BUCAN DEY.
+3. Configura OAuth consent screen.
+4. Crea un OAuth Client ID de tipo `Web application`.
+5. Añade estos Authorized JavaScript origins:
+   - `http://localhost:5173`
+   - `https://bucan-dey-vercel.vercel.app`
+6. Si Google pide redirect URIs, deja documentado el dominio de producción; el flujo actual usa popup/credential y no requiere una ruta callback propia.
+7. Copia el Client ID:
+   - Render: `GOOGLE_CLIENT_ID`
+   - Vercel: `VITE_GOOGLE_CLIENT_ID`
+8. No pongas `GOOGLE_CLIENT_SECRET` en Vercel. Si se usa en el futuro, debe vivir solo en Render.
 
 ## Pruebas post-despliegue
 

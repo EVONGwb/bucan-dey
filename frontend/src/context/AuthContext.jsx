@@ -88,6 +88,15 @@ export function AuthProvider({ children }) {
     }
   }, [saveSession]);
 
+  const loginWithGoogle = useCallback(async (idToken) => {
+    try {
+      const response = await apiClient.post("/auth/google", { id_token: idToken });
+      return saveSession(response.data);
+    } catch (error) {
+      throw new Error(getErrorMessage(error));
+    }
+  }, [saveSession]);
+
   const logout = useCallback(async () => {
     try {
       await apiClient.post("/auth/logout");
@@ -111,10 +120,11 @@ export function AuthProvider({ children }) {
       isLoading,
       login,
       register,
+      loginWithGoogle,
       logout,
       loadMe,
     }),
-    [user, token, isLoading, login, register, logout, loadMe]
+    [user, token, isLoading, login, register, loginWithGoogle, logout, loadMe]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

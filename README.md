@@ -77,18 +77,22 @@ CLOUDINARY_CLOUD_NAME=
 CLOUDINARY_API_KEY=
 CLOUDINARY_API_SECRET=
 CLOUDINARY_UPLOAD_FOLDER=bucan-dey
+GOOGLE_CLIENT_ID=
+GOOGLE_CLIENT_SECRET=
 ```
 
 Frontend (`frontend/.env` local o Vercel):
 
 ```txt
 VITE_API_URL=http://localhost:8000/api
+VITE_GOOGLE_CLIENT_ID=
 ```
 
 En producción:
 
 ```txt
 VITE_API_URL=https://TU-BACKEND-RENDER.onrender.com/api
+VITE_GOOGLE_CLIENT_ID=TU_GOOGLE_CLIENT_ID
 ```
 
 ## Despliegue
@@ -97,6 +101,7 @@ VITE_API_URL=https://TU-BACKEND-RENDER.onrender.com/api
 - Frontend: Vercel, usando Root Directory `frontend`.
 - MongoDB: MongoDB Atlas.
 - Medios: Cloudinary.
+- OAuth: Google Identity Services con verificación de ID Token en backend.
 
 Guía completa: [docs/deployment.md](docs/deployment.md).
 

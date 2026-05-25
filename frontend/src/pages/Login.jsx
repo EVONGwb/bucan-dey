@@ -1,12 +1,13 @@
 import { useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 
+import GoogleAuthButton from "../components/auth/GoogleAuthButton.jsx";
 import { useAuth } from "../context/AuthContext.jsx";
 
 function Login() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { login } = useAuth();
+  const { login, loginWithGoogle } = useAuth();
   const [form, setForm] = useState({ identifier: "", password: "" });
   const [error, setError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -38,6 +39,20 @@ function Login() {
     }
   }
 
+  async function handleGoogleLogin(idToken) {
+    setError("");
+    setIsSubmitting(true);
+
+    try {
+      await loginWithGoogle(idToken);
+      navigate(from, { replace: true });
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setIsSubmitting(false);
+    }
+  }
+
   return (
     <section className="min-h-[calc(100vh-7rem)]">
       <p className="text-xs font-bold uppercase tracking-[0.24em] text-neonGreen">
@@ -48,7 +63,23 @@ function Login() {
         Entra para ver tu perfil y preparar tu mundo social en BUCAN DEY.
       </p>
 
-      <form className="mt-8 space-y-5" onSubmit={handleSubmit}>
+      <div className="mt-8">
+        <GoogleAuthButton
+          disabled={isSubmitting}
+          onError={setError}
+          onSuccess={handleGoogleLogin}
+        />
+      </div>
+
+      <div className="my-6 flex items-center gap-3">
+        <div className="h-px flex-1 bg-white/10" />
+        <span className="text-xs font-black uppercase tracking-[0.2em] text-white/38">
+          o
+        </span>
+        <div className="h-px flex-1 bg-white/10" />
+      </div>
+
+      <form className="space-y-5" onSubmit={handleSubmit}>
         <label className="block">
           <span className="text-sm font-semibold text-white/78">Email o username</span>
           <input

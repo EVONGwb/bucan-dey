@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 
+import GoogleAuthButton from "../components/auth/GoogleAuthButton.jsx";
 import { useAuth } from "../context/AuthContext.jsx";
 
 const initialForm = {
@@ -14,7 +15,7 @@ const initialForm = {
 
 function Register() {
   const navigate = useNavigate();
-  const { register } = useAuth();
+  const { register, loginWithGoogle } = useAuth();
   const [form, setForm] = useState(initialForm);
   const [error, setError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -41,6 +42,20 @@ function Register() {
     }
   }
 
+  async function handleGoogleRegister(idToken) {
+    setError("");
+    setIsSubmitting(true);
+
+    try {
+      await loginWithGoogle(idToken);
+      navigate("/", { replace: true });
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setIsSubmitting(false);
+    }
+  }
+
   return (
     <section className="min-h-[calc(100vh-7rem)]">
       <p className="text-xs font-bold uppercase tracking-[0.24em] text-neonGreen">
@@ -51,7 +66,23 @@ function Register() {
         Crea tu perfil local para participar en BUCAN DEY.
       </p>
 
-      <form className="mt-8 space-y-4" onSubmit={handleSubmit}>
+      <div className="mt-8">
+        <GoogleAuthButton
+          disabled={isSubmitting}
+          onError={setError}
+          onSuccess={handleGoogleRegister}
+        />
+      </div>
+
+      <div className="my-6 flex items-center gap-3">
+        <div className="h-px flex-1 bg-white/10" />
+        <span className="text-xs font-black uppercase tracking-[0.2em] text-white/38">
+          o
+        </span>
+        <div className="h-px flex-1 bg-white/10" />
+      </div>
+
+      <form className="space-y-4" onSubmit={handleSubmit}>
         <label className="block">
           <span className="text-sm font-semibold text-white/78">Username</span>
           <input

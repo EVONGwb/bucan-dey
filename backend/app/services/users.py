@@ -1,3 +1,6 @@
+import re
+from datetime import datetime, timezone
+
 from bson import ObjectId
 from pymongo.errors import DuplicateKeyError
 
@@ -18,6 +21,9 @@ def serialize_user(user: dict) -> dict:
         "city": user.get("city", ""),
         "country": user.get("country", ""),
         "role": user.get("role", "user"),
+        "google_id": user.get("google_id"),
+        "auth_provider": user.get("auth_provider", "local"),
+        "providers": user.get("providers", [user.get("auth_provider", "local")]),
         "is_verified": user.get("is_verified", False),
         "is_active": user.get("is_active", True),
         "created_at": user["created_at"],
@@ -41,6 +47,11 @@ async def get_user_by_email(email: str) -> dict | None:
 async def get_user_by_username(username: str) -> dict | None:
     db = get_database()
     return await db.users.find_one({"username": username.lower()})
+
+
+async def get_user_by_google_id(google_id: str) -> dict | None:
+    db = get_database()
+    return await db.users.find_one({"google_id": google_id})
 
 
 async def get_user_by_identifier(identifier: str) -> dict | None:
@@ -81,7 +92,81 @@ async def authenticate_user(identifier: str, password: str) -> dict | None:
     if user is None:
         return None
 
-    if not verify_password(password, user["password_hash"]):
+    password_hash = user.get("password_hash")
+    if not password_hash or not verify_password(password, password_hash):
         return None
 
     return user
+
+
+def normalize_google_username(email: str) -> str:
+    raw = email.split("@", 1)[0].lower()
+    username = re.sub(r"[^a-z0-9._]", "", raw)
+    username = username.strip("._") or "bucan"
+    return username[:28]
+
+
+async def generate_unique_username(email: str) -> str:
+    db = get_database()
+    base = normalize_google_username(email)
+    username = base
+    suffix = 1
+
+    while await db.users.find_one({"username": username}):
+        suffix_text = str(suffix)
+        username = f"{base[: max(3, 32 - len(suffix_text))]}{suffix_text}"
+        suffix += 1
+
+    return username
+
+
+async def upsert_google_user(profile: dict) -> dict:
+    db = get_database()
+    email = profile["email"].lower()
+    google_id = profile["sub"]
+    now = datetime.now(timezone.utc)
+
+    existing = await get_user_by_email(email)
+    if existing:
+        update: dict = {
+            "updated_at": now,
+            "google_id": existing.get("google_id") or google_id,
+        }
+        providers = existing.get("providers") or [existing.get("auth_provider", "local")]
+        if "google" not in providers:
+            providers.append("google")
+        update["providers"] = providers
+        if not existing.get("avatar_url") and profile.get("picture"):
+            update["avatar_url"] = profile["picture"]
+        if profile.get("email_verified"):
+            update["is_verified"] = True
+
+        await db.users.update_one({"_id": existing["_id"]}, {"$set": update})
+        return await db.users.find_one({"_id": existing["_id"]})
+
+    username = await generate_unique_username(email)
+    user_doc = build_user_document(
+        username=username,
+        display_name=profile.get("name") or username,
+        email=email,
+        password_hash="",
+        avatar_url=profile.get("picture"),
+        google_id=google_id,
+        auth_provider="google",
+        providers=["google"],
+        is_verified=bool(profile.get("email_verified")),
+    )
+
+    try:
+        result = await db.users.insert_one(user_doc)
+    except DuplicateKeyError:
+        existing = await get_user_by_email(email)
+        if existing:
+            return await upsert_google_user(profile)
+        raise ValueError("User already exists.") from None
+
+    created_user = await db.users.find_one({"_id": result.inserted_id})
+    if created_user is None:
+        raise RuntimeError("User was created but could not be loaded.")
+
+    return created_user

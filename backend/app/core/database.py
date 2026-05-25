@@ -47,6 +47,7 @@ async def create_indexes() -> None:
 
     await database.users.create_index("email", unique=True)
     await database.users.create_index("username", unique=True)
+    await database.users.create_index("google_id", unique=True, sparse=True)
     await database.posts.create_index([("created_at", -1), ("_id", -1)])
     await database.posts.create_index([("visibility", 1), ("created_at", -1)])
     await database.posts.create_index([("author_id", 1), ("created_at", -1)])

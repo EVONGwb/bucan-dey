@@ -16,6 +16,7 @@ class MapPostOut(BaseModel):
     live_data: LiveData | None = None
     stats: PostStats
     created_at: datetime
+    distance_km: float | None = None
 
 
 class MapPostsResponse(BaseModel):

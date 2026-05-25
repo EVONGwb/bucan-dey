@@ -27,6 +27,7 @@ def build_author_snapshot(user: dict) -> dict:
 
 def build_post_document(payload: dict, author: dict) -> dict:
     now = datetime.now(timezone.utc)
+    location = normalize_location(payload.get("location") or {})
 
     return {
         "author_id": str(author["_id"]),
@@ -35,7 +36,7 @@ def build_post_document(payload: dict, author: dict) -> dict:
         "visibility": payload.get("visibility", "global"),
         "text": payload.get("text", ""),
         "media": payload.get("media", []),
-        "location": payload.get("location") or {},
+        "location": location,
         "event_data": payload.get("event_data"),
         "live_data": payload.get("live_data"),
         "stats": {
@@ -48,3 +49,24 @@ def build_post_document(payload: dict, author: dict) -> dict:
         "created_at": now,
         "updated_at": now,
     }
+
+
+def normalize_location(location: dict) -> dict:
+    if not location.get("show_on_map"):
+        location["lat"] = None
+        location["lng"] = None
+        location.pop("geo", None)
+        return location
+
+    lat = location.get("lat")
+    lng = location.get("lng")
+
+    if isinstance(lat, (int, float)) and isinstance(lng, (int, float)):
+        location["geo"] = {
+            "type": "Point",
+            "coordinates": [float(lng), float(lat)],
+        }
+    else:
+        location.pop("geo", None)
+
+    return location

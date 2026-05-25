@@ -67,6 +67,7 @@ async def create_indexes() -> None:
             ("created_at", -1),
         ]
     )
+    await database.posts.create_index([("location.geo", "2dsphere")], sparse=True)
     await database.likes.create_index([("post_id", 1), ("user_id", 1)], unique=True)
     await database.comments.create_index([("post_id", 1), ("created_at", -1)])
     await database.comments.create_index([("author_id", 1), ("created_at", -1)])

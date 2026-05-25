@@ -9,6 +9,7 @@ import { ListSkeleton } from "../components/ui/Skeletons.jsx";
 import { getApiErrorMessage } from "../utils/errors.js";
 
 const MALABO_CENTER = [3.7523, 8.7741];
+const radiusOptions = [2, 5, 10, 25];
 
 const filters = [
   { value: "", label: "Todos" },
@@ -54,6 +55,16 @@ function createMarkerIcon(type) {
   });
 }
 
+function createUserIcon() {
+  return L.divIcon({
+    className: "",
+    html: '<div style="width:22px;height:22px;border-radius:999px;background:#17f56b;border:4px solid #08070d;box-shadow:0 0 20px #17f56b;"></div>',
+    iconSize: [22, 22],
+    iconAnchor: [11, 11],
+    popupAnchor: [0, -10],
+  });
+}
+
 function formatRelativeDate(value) {
   const date = new Date(value);
   const diffMs = Date.now() - date.getTime();
@@ -83,11 +94,26 @@ function FitMarkers({ posts }) {
   return null;
 }
 
+function CenterOnUser({ userLocation }) {
+  const map = useMap();
+
+  useEffect(() => {
+    if (!userLocation) return;
+    map.setView([userLocation.lat, userLocation.lng], 14);
+  }, [map, userLocation]);
+
+  return null;
+}
+
 function Map() {
   const [posts, setPosts] = useState([]);
   const [zones, setZones] = useState([]);
   const [activeType, setActiveType] = useState("");
+  const [radiusKm, setRadiusKm] = useState(5);
+  const [userLocation, setUserLocation] = useState(null);
+  const [nearbyMode, setNearbyMode] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [isLocating, setIsLocating] = useState(false);
   const [error, setError] = useState("");
 
   const markers = useMemo(
@@ -107,6 +133,11 @@ function Map() {
         setError("");
         const params = { limit: 100 };
         if (activeType) params.type = activeType;
+        if (nearbyMode && userLocation) {
+          params.lat = userLocation.lat;
+          params.lng = userLocation.lng;
+          params.radius_km = radiusKm;
+        }
 
         const [postsResponse, ambientResponse] = await Promise.all([
           apiClient.get("/map/posts", { params }),
@@ -122,7 +153,34 @@ function Map() {
     }
 
     loadMap();
-  }, [activeType]);
+  }, [activeType, nearbyMode, radiusKm, userLocation]);
+
+  function handleNearMe() {
+    setError("");
+
+    if (!navigator.geolocation) {
+      setError("Tu navegador no permite obtener ubicación.");
+      return;
+    }
+
+    setIsLocating(true);
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        setUserLocation({
+          lat: position.coords.latitude,
+          lng: position.coords.longitude,
+        });
+        setNearbyMode(true);
+        setIsLocating(false);
+      },
+      () => {
+        setError("No se pudo obtener tu ubicación. El mapa seguirá mostrando el ambiente general.");
+        setNearbyMode(false);
+        setIsLocating(false);
+      },
+      { enableHighAccuracy: false, maximumAge: 60000, timeout: 10000 }
+    );
+  }
 
   return (
     <section className="min-h-[calc(100vh-7rem)]">
@@ -151,6 +209,54 @@ function Map() {
         ))}
       </div>
 
+      <div className="mt-3 rounded-lg border border-white/10 bg-surface p-3">
+        <div className="flex gap-2">
+          <button
+            className="min-h-12 flex-1 rounded-lg bg-gradient-to-r from-neonGreen via-neonYellow to-neonPink px-4 text-sm font-black text-night transition active:scale-[0.99] disabled:opacity-60"
+            type="button"
+            onClick={handleNearMe}
+            disabled={isLocating}
+          >
+            {isLocating ? "Buscando..." : "Cerca de mí"}
+          </button>
+          {nearbyMode ? (
+            <button
+              className="min-h-12 rounded-lg border border-white/10 bg-white/5 px-4 text-sm font-black text-white"
+              type="button"
+              onClick={() => {
+                setNearbyMode(false);
+                setUserLocation(null);
+              }}
+            >
+              Ver todo
+            </button>
+          ) : null}
+        </div>
+
+        <div className="mt-3 flex gap-2 overflow-x-auto pb-1">
+          {radiusOptions.map((radius) => (
+            <button
+              className={`shrink-0 rounded-full border px-4 py-2 text-xs font-black ${
+                radiusKm === radius
+                  ? "border-neonGreen bg-neonGreen/12 text-neonGreen"
+                  : "border-white/10 bg-white/5 text-white/62"
+              }`}
+              key={radius}
+              type="button"
+              onClick={() => setRadiusKm(radius)}
+            >
+              {radius} km
+            </button>
+          ))}
+        </div>
+
+        {nearbyMode ? (
+          <p className="mt-2 text-xs font-semibold text-white/54">
+            Mostrando publicaciones a {radiusKm} km de tu ubicación aproximada.
+          </p>
+        ) : null}
+      </div>
+
       {error ? (
         <div className="mt-3 rounded-lg border border-neonPink/30 bg-neonPink/10 px-4 py-3 text-sm font-semibold text-white">
           {error}
@@ -170,6 +276,15 @@ function Map() {
               url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
             />
             <FitMarkers posts={markers} />
+            <CenterOnUser userLocation={userLocation} />
+            {userLocation ? (
+              <Marker
+                icon={createUserIcon()}
+                position={[userLocation.lat, userLocation.lng]}
+              >
+                <Popup>Tú estás aquí, aproximadamente</Popup>
+              </Marker>
+            ) : null}
             {markers.map((post) => (
               <Marker
                 key={post.id}
@@ -185,6 +300,9 @@ function Map() {
                       {[post.location.city, post.location.area].filter(Boolean).join(" · ")}
                     </p>
                     <p className="mt-1 text-xs">{formatRelativeDate(post.created_at)}</p>
+                    {post.distance_km !== null && post.distance_km !== undefined ? (
+                      <p className="mt-1 text-xs font-bold">a {post.distance_km} km</p>
+                    ) : null}
                     <p className="mt-2 text-xs">
                       {post.stats.likes_count} likes · {post.stats.comments_count} comentarios
                     </p>

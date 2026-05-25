@@ -35,9 +35,10 @@ class MediaItem(BaseModel):
 class LocationData(BaseModel):
     city: str | None = Field(default="", max_length=80)
     area: str | None = Field(default="", max_length=80)
-    lat: float | None = None
-    lng: float | None = None
+    lat: float | None = Field(default=None, ge=-90, le=90)
+    lng: float | None = Field(default=None, ge=-180, le=180)
     show_on_map: bool = False
+    geo: dict | None = None
 
     @field_validator("city", "area")
     @classmethod

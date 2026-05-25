@@ -6,7 +6,7 @@ from typing import Any
 from bson import ObjectId
 
 from app.core.database import get_database
-from app.models.post import build_post_document
+from app.models.post import build_post_document, normalize_location
 from app.schemas.post import PostCreate, PostOut, PostUpdate
 
 
@@ -159,6 +159,8 @@ async def update_post(post: dict, payload: PostUpdate) -> dict:
 
     if "location" in update_data and update_data["location"] is None:
         update_data["location"] = {}
+    elif "location" in update_data:
+        update_data["location"] = normalize_location(update_data["location"] or {})
 
     update_data["updated_at"] = datetime.now(timezone.utc)
     await db.posts.update_one({"_id": post["_id"]}, {"$set": update_data})

@@ -1,5 +1,8 @@
+import L from "leaflet";
+import "leaflet/dist/leaflet.css";
 import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { MapContainer, Marker, TileLayer, useMapEvents } from "react-leaflet";
 
 import apiClient from "../api/client.js";
 import { getApiErrorMessage } from "../utils/errors.js";
@@ -37,13 +40,37 @@ const initialForm = {
   is_open: true,
 };
 
+const MALABO_CENTER = [3.7523, 8.7741];
+
+function createSelectedIcon() {
+  return L.divIcon({
+    className: "",
+    html: '<div style="width:26px;height:26px;border-radius:999px;background:#ff1478;border:4px solid #08070d;box-shadow:0 0 22px #ff1478;"></div>',
+    iconSize: [26, 26],
+    iconAnchor: [13, 13],
+  });
+}
+
+function MapClickHandler({ onSelect }) {
+  useMapEvents({
+    click(event) {
+      onSelect(event.latlng);
+    },
+  });
+
+  return null;
+}
+
 function CreatePost() {
   const navigate = useNavigate();
   const [form, setForm] = useState(initialForm);
   const [mediaItems, setMediaItems] = useState([]);
   const [error, setError] = useState("");
   const [uploadError, setUploadError] = useState("");
+  const [locationError, setLocationError] = useState("");
+  const [showLocationPicker, setShowLocationPicker] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
+  const [isLocating, setIsLocating] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const hasEventFields = useMemo(
@@ -57,6 +84,40 @@ function CreatePost() {
       ...current,
       [name]: type === "checkbox" ? checked : value,
     }));
+  }
+
+  function setSelectedLocation(lat, lng) {
+    setForm((current) => ({
+      ...current,
+      lat: Number(lat).toFixed(6),
+      lng: Number(lng).toFixed(6),
+      show_on_map: true,
+    }));
+    setLocationError("");
+  }
+
+  function handleUseCurrentLocation() {
+    setLocationError("");
+
+    if (!navigator.geolocation) {
+      setLocationError("Tu navegador no permite obtener ubicación. Puedes elegir el punto en el mapa.");
+      return;
+    }
+
+    setIsLocating(true);
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        setSelectedLocation(position.coords.latitude, position.coords.longitude);
+        setIsLocating(false);
+      },
+      () => {
+        setLocationError(
+          "No se pudo obtener tu ubicación. Puedes elegir el punto manualmente en el mapa."
+        );
+        setIsLocating(false);
+      },
+      { enableHighAccuracy: false, maximumAge: 60000, timeout: 10000 }
+    );
   }
 
   async function handleMediaSelect(event) {
@@ -95,8 +156,8 @@ function CreatePost() {
       location: {
         city: form.city,
         area: form.area,
-        lat: form.lat === "" ? null : Number(form.lat),
-        lng: form.lng === "" ? null : Number(form.lng),
+        lat: form.show_on_map && form.lat !== "" ? Number(form.lat) : null,
+        lng: form.show_on_map && form.lng !== "" ? Number(form.lng) : null,
         show_on_map: form.show_on_map,
       },
     };
@@ -257,7 +318,7 @@ function CreatePost() {
         <div className="rounded-lg border border-white/10 bg-surface p-4">
           <p className="text-sm font-black text-white">Ubicación opcional</p>
           <p className="mt-1 text-xs font-semibold text-white/48">
-            Para mostrar en el mapa, añade latitud y longitud.
+            BUCAN DEY usará tu ubicación solo para colocar esta publicación en el mapa si tú lo permites.
           </p>
           <div className="mt-4 grid grid-cols-2 gap-3">
             <input
@@ -275,26 +336,67 @@ function CreatePost() {
               placeholder="Zona/Barrio"
             />
           </div>
-          <div className="mt-3 grid grid-cols-2 gap-3">
-            <input
-              className="h-12 rounded-lg border border-white/10 bg-white/5 px-3 text-sm text-white outline-none placeholder:text-white/32 focus:border-neonPink"
-              name="lat"
-              type="number"
-              step="any"
-              value={form.lat}
-              onChange={updateField}
-              placeholder="Latitud"
-            />
-            <input
-              className="h-12 rounded-lg border border-white/10 bg-white/5 px-3 text-sm text-white outline-none placeholder:text-white/32 focus:border-neonPink"
-              name="lng"
-              type="number"
-              step="any"
-              value={form.lng}
-              onChange={updateField}
-              placeholder="Longitud"
-            />
+
+          <div className="mt-4 grid grid-cols-2 gap-3">
+            <button
+              className="min-h-12 rounded-lg border border-neonGreen/30 bg-neonGreen/10 px-3 text-sm font-black text-white transition active:scale-[0.99]"
+              type="button"
+              onClick={handleUseCurrentLocation}
+              disabled={isLocating}
+            >
+              {isLocating ? "Buscando..." : "Usar mi ubicación actual"}
+            </button>
+            <button
+              className="min-h-12 rounded-lg border border-neonPink/30 bg-neonPink/10 px-3 text-sm font-black text-white transition active:scale-[0.99]"
+              type="button"
+              onClick={() => setShowLocationPicker((current) => !current)}
+            >
+              Elegir en el mapa
+            </button>
           </div>
+
+          {form.lat && form.lng ? (
+            <div className="mt-4 rounded-lg border border-neonGreen/30 bg-neonGreen/10 px-4 py-3 text-sm font-bold text-white">
+              Ubicación seleccionada: {Number(form.lat).toFixed(4)}, {Number(form.lng).toFixed(4)}
+            </div>
+          ) : null}
+
+          {showLocationPicker ? (
+            <div className="mt-4 overflow-hidden rounded-lg border border-white/10">
+              <div className="h-80 w-full">
+                <MapContainer
+                  center={form.lat && form.lng ? [Number(form.lat), Number(form.lng)] : MALABO_CENTER}
+                  className="h-full w-full"
+                  scrollWheelZoom={false}
+                  zoom={13}
+                >
+                  <TileLayer
+                    attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+                    url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                  />
+                  <MapClickHandler
+                    onSelect={(latlng) => setSelectedLocation(latlng.lat, latlng.lng)}
+                  />
+                  {form.lat && form.lng ? (
+                    <Marker
+                      icon={createSelectedIcon()}
+                      position={[Number(form.lat), Number(form.lng)]}
+                    />
+                  ) : null}
+                </MapContainer>
+              </div>
+              <p className="bg-night px-4 py-3 text-xs font-semibold text-white/56">
+                Toca el mapa para seleccionar el punto de la publicación.
+              </p>
+            </div>
+          ) : null}
+
+          {locationError ? (
+            <div className="mt-3 rounded-lg border border-neonPink/30 bg-neonPink/10 px-4 py-3 text-sm font-semibold text-white">
+              {locationError}
+            </div>
+          ) : null}
+
           <label className="mt-4 flex items-center justify-between rounded-lg border border-white/10 bg-white/5 px-4 py-3">
             <span className="text-sm font-semibold text-white">Mostrar en mapa</span>
             <input

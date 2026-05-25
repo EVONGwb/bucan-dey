@@ -34,6 +34,9 @@ CLOUDINARY_API_SECRET=
 CLOUDINARY_UPLOAD_FOLDER=bucan-dey
 GOOGLE_CLIENT_ID=
 GOOGLE_CLIENT_SECRET=
+VAPID_PUBLIC_KEY=
+VAPID_PRIVATE_KEY=
+VAPID_SUBJECT=mailto:evongorecords@gmail.com
 ```
 
 Ejemplo de CORS para producción:
@@ -71,6 +74,20 @@ VITE_GOOGLE_CLIENT_ID=TU_GOOGLE_CLIENT_ID
 ```
 
 `VITE_API_URL` y `VITE_GOOGLE_CLIENT_ID` son públicas porque se usan en el navegador. Las claves privadas no deben estar en Vercel para esta arquitectura.
+
+## Push Notifications PWA
+
+1. Genera claves VAPID para Web Push.
+2. Guarda `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY` y `VAPID_SUBJECT` solo en Render.
+3. No pongas `VAPID_PRIVATE_KEY` en Vercel ni en archivos públicos.
+4. Verifica `GET /api/push/vapid-public-key`.
+5. En la app, entra en Perfil y activa Notificaciones Push desde el dispositivo.
+
+Notas:
+
+- Chrome/Android funciona directamente si el usuario concede permiso.
+- En iOS, las notificaciones push requieren que la PWA esté instalada.
+- El permiso nunca se pide automáticamente; solo al pulsar Activar.
 
 ## Google OAuth
 
@@ -114,6 +131,7 @@ Frontend:
 5. Crea una publicación global.
 6. Comprueba que aparece en Inicio.
 7. Sube una imagen o vídeo y confirma que Cloudinary devuelve URL.
+8. En Perfil, activa Notificaciones Push y prueba el botón de prueba.
 
 ## Verificar CORS
 

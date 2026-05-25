@@ -6,7 +6,7 @@ from fastapi.middleware.gzip import GZipMiddleware
 
 from app.core.config import settings
 from app.core.database import close_mongo_connection, connect_to_mongo
-from app.routes import admin, auth, chat, comments, feed, health, map, media, notifications, posts, reports, stories, trending, users, ws
+from app.routes import admin, auth, chat, comments, feed, health, map, media, notifications, posts, push, reports, stories, trending, users, ws
 
 
 @asynccontextmanager
@@ -45,6 +45,7 @@ app.include_router(posts.router, prefix=f"{settings.API_PREFIX}/posts", tags=["p
 app.include_router(comments.router, prefix=f"{settings.API_PREFIX}/comments", tags=["comments"])
 app.include_router(chat.router, prefix=f"{settings.API_PREFIX}/chat", tags=["chat"])
 app.include_router(notifications.router, prefix=f"{settings.API_PREFIX}/notifications", tags=["notifications"])
+app.include_router(push.router, prefix=f"{settings.API_PREFIX}/push", tags=["push"])
 app.include_router(reports.router, prefix=f"{settings.API_PREFIX}/reports", tags=["reports"])
 app.include_router(admin.router, prefix=f"{settings.API_PREFIX}/admin", tags=["admin"])
 app.include_router(ws.router, prefix=settings.API_PREFIX, tags=["websocket"])

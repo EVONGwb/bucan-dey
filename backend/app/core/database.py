@@ -90,6 +90,8 @@ async def create_indexes() -> None:
     await database.notifications.create_index([("user_id", 1), ("created_at", -1)])
     await database.notifications.create_index([("user_id", 1), ("is_read", 1)])
     await database.notifications.create_index([("entity_type", 1), ("entity_id", 1)])
+    await database.push_subscriptions.create_index([("user_id", 1)])
+    await database.push_subscriptions.create_index([("endpoint", 1)], unique=True)
     await database.reports.create_index([("status", 1), ("created_at", -1)])
     await database.reports.create_index([("target_type", 1), ("target_id", 1)])
     await database.reports.create_index(

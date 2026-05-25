@@ -11,6 +11,7 @@ export default defineConfig({
       manifest: false,
       workbox: {
         navigateFallback: "/index.html",
+        importScripts: ["/push-sw.js"],
         globPatterns: ["**/*.{js,css,html,svg,png,ico,json}"],
         runtimeCaching: [
           {

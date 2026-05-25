@@ -3,6 +3,7 @@ import { Link, useNavigate, useParams } from "react-router-dom";
 
 import apiClient from "../api/client.js";
 import PostCard from "../components/post/PostCard.jsx";
+import PushSettings from "../components/push/PushSettings.jsx";
 import { ProfileSkeleton } from "../components/ui/Skeletons.jsx";
 import { useAuth } from "../context/AuthContext.jsx";
 import { getApiErrorMessage } from "../utils/errors.js";
@@ -194,13 +195,16 @@ function Profile() {
         </div>
 
         {isOwnProfile ? (
-          <button
-            className="mt-6 h-14 w-full rounded-lg border border-neonPink/40 bg-neonPink/10 px-4 text-sm font-black text-white transition active:scale-[0.99]"
-            type="button"
-            onClick={logout}
-          >
-            Cerrar sesión
-          </button>
+          <>
+            <PushSettings />
+            <button
+              className="mt-6 h-14 w-full rounded-lg border border-neonPink/40 bg-neonPink/10 px-4 text-sm font-black text-white transition active:scale-[0.99]"
+              type="button"
+              onClick={logout}
+            >
+              Cerrar sesión
+            </button>
+          </>
         ) : (
           <div className="mt-6 grid grid-cols-2 gap-3">
             <button

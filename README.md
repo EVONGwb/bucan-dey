@@ -79,6 +79,9 @@ CLOUDINARY_API_SECRET=
 CLOUDINARY_UPLOAD_FOLDER=bucan-dey
 GOOGLE_CLIENT_ID=
 GOOGLE_CLIENT_SECRET=
+VAPID_PUBLIC_KEY=
+VAPID_PRIVATE_KEY=
+VAPID_SUBJECT=mailto:evongorecords@gmail.com
 ```
 
 Frontend (`frontend/.env` local o Vercel):

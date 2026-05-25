@@ -94,6 +94,12 @@ async def create_notification(
     notification = await db.notifications.find_one({"_id": result.inserted_id})
     if notification:
         await emit_notification(notification)
+        try:
+            from app.services.push import send_push_for_notification
+
+            await send_push_for_notification(notification)
+        except Exception:
+            pass
     return notification
 
 

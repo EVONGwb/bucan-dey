@@ -58,3 +58,11 @@ services:
         value: "60"
       - key: LIVE_CONTROL_INTERVAL_SECONDS
         value: "30"
+      - key: SYSTEM_METRICS_INTERVAL_SECONDS
+        value: "300"
+      - key: SYSTEM_BACKUP_INTERVAL_HOURS
+        value: "24"
+      - key: SYSTEM_BACKUP_ENABLED
+        value: "true"
+      - key: SYSTEM_BACKUP_DIR
+        value: /tmp/bucan-dey-backups

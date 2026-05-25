@@ -1,14 +1,18 @@
 from contextlib import asynccontextmanager
+import time
 
+from fastapi import Request
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
+from starlette.responses import JSONResponse
 
 from app.core.config import settings
 from app.core.database import close_mongo_connection, connect_to_mongo
 from app.routes import admin, auth, chat, comments, events, feed, health, lives, map, media, notifications, posts, push, reports, stories, trending, users, ws
 from app.services.event_reminders import start_event_reminder_scheduler, stop_event_reminder_scheduler
 from app.services.lives import start_live_control_scheduler, stop_live_control_scheduler
+from app.services.system import log_system_event, set_latest_response_ms, start_system_scheduler, stop_system_scheduler
 
 
 @asynccontextmanager
@@ -17,7 +21,9 @@ async def lifespan(app: FastAPI):
     if settings.MONGO_URL:
         start_event_reminder_scheduler()
         start_live_control_scheduler()
+        start_system_scheduler()
     yield
+    await stop_system_scheduler()
     await stop_live_control_scheduler()
     await stop_event_reminder_scheduler()
     await close_mongo_connection()
@@ -39,6 +45,24 @@ app.add_middleware(
 )
 
 app.add_middleware(GZipMiddleware, minimum_size=1000)
+
+
+@app.middleware("http")
+async def production_monitoring_middleware(request: Request, call_next):
+    started_at = time.perf_counter()
+    try:
+        response = await call_next(request)
+        set_latest_response_ms(int((time.perf_counter() - started_at) * 1000))
+        return response
+    except Exception as exc:
+        set_latest_response_ms(int((time.perf_counter() - started_at) * 1000))
+        await log_system_event(
+            level="critical",
+            source="backend",
+            message=f"Unhandled error on {request.method} {request.url.path}",
+            details={"error": str(exc), "path": request.url.path, "method": request.method},
+        )
+        return JSONResponse(status_code=500, content={"detail": "Internal server error"})
 
 app.include_router(health.router, prefix=settings.API_PREFIX, tags=["health"])
 app.include_router(auth.router, prefix=f"{settings.API_PREFIX}/auth", tags=["auth"])

@@ -1,15 +1,11 @@
 from fastapi import APIRouter
 
-from app.core.config import settings
+from app.services.system import get_health_status
 
 
 router = APIRouter()
 
 
 @router.get("/health")
-async def health_check() -> dict[str, str]:
-    return {
-        "status": "ok",
-        "app": settings.APP_NAME,
-        "version": settings.APP_VERSION,
-    }
+async def health_check() -> dict:
+    return await get_health_status()

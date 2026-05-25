@@ -8,6 +8,7 @@ import { PageFallback } from "./components/ui/Skeletons.jsx";
 import Home from "./pages/Home.jsx";
 
 const Admin = lazy(() => import("./pages/Admin.jsx"));
+const AdminSystem = lazy(() => import("./pages/AdminSystem.jsx"));
 const Chat = lazy(() => import("./pages/Chat.jsx"));
 const CreateEvent = lazy(() => import("./pages/CreateEvent.jsx"));
 const CreatePost = lazy(() => import("./pages/CreatePost.jsx"));
@@ -192,6 +193,18 @@ const appRoutes = [
         <AdminRoute>
           <LazyPage>
             <Admin />
+          </LazyPage>
+        </AdminRoute>
+      </ProtectedRoute>
+    ),
+  },
+  {
+    path: "/admin/system",
+    element: (
+      <ProtectedRoute>
+        <AdminRoute>
+          <LazyPage>
+            <AdminSystem />
           </LazyPage>
         </AdminRoute>
       </ProtectedRoute>

@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { Link } from "react-router-dom";
 
 import apiClient from "../api/client.js";
 import PostCard from "../components/post/PostCard.jsx";
@@ -197,6 +198,9 @@ function Admin() {
       <p className="mt-3 text-sm leading-6 text-white/64">
         Control rápido de usuarios, publicaciones y reportes.
       </p>
+      <Link className="mt-4 block rounded-lg border border-neonGreen/30 bg-neonGreen/10 px-4 py-3 text-center text-sm font-black text-neonGreen" to="/admin/system">
+        Estado del sistema
+      </Link>
 
       <div className="mt-5 grid grid-cols-2 gap-2">
         {TABS.map((tab) => (

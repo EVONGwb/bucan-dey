@@ -26,6 +26,14 @@ from app.services.admin import (
 )
 from app.services.event_reminders import list_event_reminders
 from app.services.lives import get_live_by_id, list_admin_lives, to_live_out, update_live_admin
+from app.services.system import (
+    collect_metrics_snapshot,
+    get_system_overview,
+    list_backups,
+    list_logs,
+    list_metrics,
+    run_all_backups,
+)
 
 
 router = APIRouter()
@@ -149,6 +157,47 @@ async def admin_update_live(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Live not found.")
     updated = await update_live_admin(live, payload.model_dump(exclude_unset=True), current_admin)
     return to_live_out(updated)
+
+
+@router.get("/system")
+async def admin_system(_: dict = Depends(require_admin_user)) -> dict:
+    return await get_system_overview()
+
+
+@router.get("/system/backups")
+async def admin_system_backups(
+    limit: int = Query(default=20, ge=1, le=100),
+    _: dict = Depends(require_admin_user),
+) -> dict:
+    return {"items": await list_backups(limit=limit), "next_cursor": None}
+
+
+@router.post("/system/backups/run")
+async def admin_run_system_backup(_: dict = Depends(require_admin_user)) -> dict:
+    return {"items": await run_all_backups()}
+
+
+@router.get("/system/logs")
+async def admin_system_logs(
+    level: str | None = None,
+    source: str | None = None,
+    limit: int = Query(default=50, ge=1, le=100),
+    _: dict = Depends(require_admin_user),
+) -> dict:
+    return {"items": await list_logs(level=level, source=source, limit=limit), "next_cursor": None}
+
+
+@router.get("/system/metrics")
+async def admin_system_metrics(
+    limit: int = Query(default=60, ge=1, le=200),
+    _: dict = Depends(require_admin_user),
+) -> dict:
+    return {"items": await list_metrics(limit=limit), "next_cursor": None}
+
+
+@router.post("/system/metrics/snapshot")
+async def admin_system_metrics_snapshot(_: dict = Depends(require_admin_user)) -> dict:
+    return await collect_metrics_snapshot()
 
 
 @router.patch("/reports/{report_id}", response_model=ReportOut)

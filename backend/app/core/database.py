@@ -124,3 +124,10 @@ async def create_indexes() -> None:
         [("reporter_id", 1), ("target_type", 1), ("target_id", 1)],
         unique=True,
     )
+    await database.system_backups.create_index([("started_at", -1)])
+    await database.system_backups.create_index([("type", 1), ("started_at", -1)])
+    await database.system_backups.create_index([("status", 1), ("started_at", -1)])
+    await database.system_logs.create_index([("created_at", -1)])
+    await database.system_logs.create_index([("level", 1), ("created_at", -1)])
+    await database.system_logs.create_index([("source", 1), ("created_at", -1)])
+    await database.system_metrics.create_index([("created_at", -1)])

@@ -37,6 +37,11 @@ class Settings(BaseSettings):
     LIVE_VIEWER_INACTIVE_SECONDS: int = 60
     LIVE_CONTROL_INTERVAL_SECONDS: int = 30
 
+    SYSTEM_METRICS_INTERVAL_SECONDS: int = 300
+    SYSTEM_BACKUP_INTERVAL_HOURS: int = 24
+    SYSTEM_BACKUP_ENABLED: bool = True
+    SYSTEM_BACKUP_DIR: str = "/tmp/bucan-dey-backups"
+
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8")
 
     @property

@@ -30,6 +30,14 @@ class RealtimeManager:
     def is_online(self, user_id: str) -> bool:
         return bool(self._connections.get(user_id))
 
+    @property
+    def online_users_count(self) -> int:
+        return len(self._connections)
+
+    @property
+    def connections_count(self) -> int:
+        return sum(len(connections) for connections in self._connections.values())
+
     async def send_to_user(self, user_id: str, event_type: str, payload: dict[str, Any]) -> None:
         connections = list(self._connections.get(user_id, set()))
         stale_connections: list[WebSocket] = []

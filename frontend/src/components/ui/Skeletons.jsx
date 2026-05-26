@@ -66,19 +66,35 @@ export function ListSkeleton({ count = 4 }) {
 
 export function ProfileSkeleton() {
   return (
-    <div className="mt-8 rounded-lg border border-white/10 bg-surface p-5">
-      <div className="flex items-center gap-4">
-        <SkeletonBlock className="h-20 w-20 rounded-full" />
-        <div className="flex-1 space-y-3">
-          <SkeletonBlock className="h-6 w-40" />
-          <SkeletonBlock className="h-4 w-28" />
+    <div className="space-y-4">
+      <div className="glass-panel rounded-[2rem] p-5">
+        <div className="flex items-start justify-between gap-4">
+          <SkeletonBlock className="h-24 w-24 rounded-full" />
+          <div className="flex gap-2">
+            <SkeletonBlock className="h-7 w-20 rounded-full" />
+          </div>
+        </div>
+        <div className="mt-5 space-y-3">
+          <SkeletonBlock className="h-8 w-48" />
+          <SkeletonBlock className="h-4 w-32" />
+          <SkeletonBlock className="h-20 w-full rounded-[1.25rem]" />
         </div>
       </div>
-      <div className="mt-6 grid grid-cols-2 gap-3">
-        <SkeletonBlock className="h-20" />
-        <SkeletonBlock className="h-20" />
+
+      <div className="grid grid-cols-2 gap-3">
+        <SkeletonBlock className="h-20 rounded-[1.35rem]" />
+        <SkeletonBlock className="h-20 rounded-[1.35rem]" />
+        <SkeletonBlock className="h-20 rounded-[1.35rem]" />
+        <SkeletonBlock className="h-20 rounded-[1.35rem]" />
       </div>
-      <SkeletonBlock className="mt-4 h-24" />
+
+      <div className="flex gap-2 overflow-hidden">
+        <SkeletonBlock className="h-11 w-24 rounded-full" />
+        <SkeletonBlock className="h-11 w-24 rounded-full" />
+        <SkeletonBlock className="h-11 w-24 rounded-full" />
+      </div>
+
+      <SkeletonBlock className="h-56 rounded-[1.75rem]" />
     </div>
   );
 }

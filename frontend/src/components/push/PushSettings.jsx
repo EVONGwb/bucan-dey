@@ -1,4 +1,6 @@
 import { useEffect, useState } from "react";
+import { motion } from "framer-motion";
+import { Bell, BellOff, Send, Smartphone } from "lucide-react";
 
 import {
   getPushPermission,
@@ -92,9 +94,14 @@ function PushSettings() {
   }
 
   return (
-    <div className="mt-5 rounded-lg border border-white/10 bg-white/5 p-4">
+    <motion.div
+      className="glass-panel rounded-[1.75rem] p-4"
+      initial={{ opacity: 0, y: 12 }}
+      animate={{ opacity: 1, y: 0 }}
+    >
       <div>
-        <p className="text-xs font-bold uppercase tracking-[0.16em] text-neonGreen">
+        <p className="inline-flex items-center gap-2 text-xs font-black uppercase tracking-[0.16em] text-neonCyan">
+          <Bell className="h-4 w-4" />
           Notificaciones Push
         </p>
         <p className="mt-2 text-sm leading-6 text-white/68">
@@ -104,13 +111,14 @@ function PushSettings() {
       </div>
 
       <div className="mt-4 grid grid-cols-2 gap-3 text-xs font-bold uppercase tracking-[0.12em]">
-        <div className="rounded-lg border border-white/10 bg-night/50 p-3 text-white/55">
+        <div className="rounded-[1.15rem] border border-white/10 bg-black/24 p-3 text-white/55">
           Estado
-          <p className="mt-1 text-sm normal-case tracking-normal text-white">
+          <p className="mt-1 flex items-center gap-1.5 text-sm normal-case tracking-normal text-white">
+            <Smartphone className="h-4 w-4 text-neonCyan" />
             {state.isSubscribed ? "Suscrito" : "No suscrito"}
           </p>
         </div>
-        <div className="rounded-lg border border-white/10 bg-night/50 p-3 text-white/55">
+        <div className="rounded-[1.15rem] border border-white/10 bg-black/24 p-3 text-white/55">
           Permiso
           <p className="mt-1 text-sm normal-case tracking-normal text-white">
             {permissionLabel(state.permission)}
@@ -119,44 +127,56 @@ function PushSettings() {
       </div>
 
       {error ? (
-        <div className="mt-4 rounded-lg border border-neonPink/30 bg-neonPink/10 px-4 py-3 text-sm font-semibold text-white">
+        <div className="mt-4 rounded-[1.1rem] border border-neonPink/30 bg-neonPink/10 px-4 py-3 text-sm font-semibold text-white">
           {error}
         </div>
       ) : null}
 
       {message ? (
-        <div className="mt-4 rounded-lg border border-neonGreen/30 bg-neonGreen/10 px-4 py-3 text-sm font-semibold text-white">
+        <div className="mt-4 rounded-[1.1rem] border border-neonCyan/30 bg-neonCyan/10 px-4 py-3 text-sm font-semibold text-white">
           {message}
         </div>
       ) : null}
 
       <div className="mt-4 grid gap-3 sm:grid-cols-3">
-        <button
-          className="h-12 rounded-lg bg-gradient-to-r from-neonGreen via-neonYellow to-neonPink text-sm font-black text-night transition active:scale-[0.99] disabled:opacity-50"
+        <motion.button
+          className="h-12 rounded-full bg-gradient-to-r from-neonCyan via-fiestaPurple to-neonPink text-sm font-black text-white shadow-cyan disabled:opacity-50"
           type="button"
           onClick={handleEnable}
           disabled={!state.isSupported || state.isSubscribed || isBusy}
+          whileTap={{ scale: 0.96 }}
         >
-          Activar
-        </button>
-        <button
-          className="h-12 rounded-lg border border-neonPink/40 bg-neonPink/10 text-sm font-black text-white transition active:scale-[0.99] disabled:opacity-50"
+          <span className="inline-flex items-center gap-2">
+            <Bell className="h-4 w-4" />
+            Activar
+          </span>
+        </motion.button>
+        <motion.button
+          className="h-12 rounded-full border border-neonPink/40 bg-neonPink/10 text-sm font-black text-white disabled:opacity-50"
           type="button"
           onClick={handleDisable}
           disabled={!state.isSupported || !state.isSubscribed || isBusy}
+          whileTap={{ scale: 0.96 }}
         >
-          Desactivar
-        </button>
-        <button
-          className="h-12 rounded-lg border border-white/10 bg-white/5 text-sm font-black text-white transition active:scale-[0.99] disabled:opacity-50"
+          <span className="inline-flex items-center gap-2">
+            <BellOff className="h-4 w-4" />
+            Desactivar
+          </span>
+        </motion.button>
+        <motion.button
+          className="h-12 rounded-full border border-white/10 bg-white/7 text-sm font-black text-white disabled:opacity-50"
           type="button"
           onClick={handleTest}
           disabled={!state.isSupported || !state.isSubscribed || isBusy}
+          whileTap={{ scale: 0.96 }}
         >
-          Enviar prueba
-        </button>
+          <span className="inline-flex items-center gap-2">
+            <Send className="h-4 w-4" />
+            Prueba
+          </span>
+        </motion.button>
       </div>
-    </div>
+    </motion.div>
   );
 }
 

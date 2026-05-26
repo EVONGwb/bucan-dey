@@ -63,6 +63,22 @@ video {
   display: none;
 }
 
+.bucan-map .leaflet-tile {
+  filter: saturate(1.25) hue-rotate(175deg) brightness(0.72) contrast(1.15);
+}
+
+.bucan-map .leaflet-container,
+.bucan-map.leaflet-container {
+  background: #070b14;
+}
+
+.bucan-map .leaflet-control-attribution {
+  border-radius: 999px;
+  background: rgba(7, 11, 20, 0.68);
+  color: rgba(255, 255, 255, 0.58);
+  backdrop-filter: blur(12px);
+}
+
 @keyframes live-pulse {
   0%,
   100% {

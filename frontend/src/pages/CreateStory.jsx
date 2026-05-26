@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 
 import apiClient from "../api/client.js";
 import { getApiErrorMessage } from "../utils/errors.js";
+import { MEDIA_UPLOAD_TIMEOUT_MS, getMediaValidationError } from "../utils/uploads.js";
 
 const initialForm = {
   text: "",
@@ -38,6 +39,12 @@ function CreateStory() {
     event.target.value = "";
     if (!file) return;
 
+    const validationError = getMediaValidationError(file);
+    if (validationError) {
+      setUploadError(validationError);
+      return;
+    }
+
     const formData = new FormData();
     formData.append("file", file);
 
@@ -46,6 +53,7 @@ function CreateStory() {
       setIsUploading(true);
       const response = await apiClient.post("/media/upload", formData, {
         headers: { "Content-Type": "multipart/form-data" },
+        timeout: MEDIA_UPLOAD_TIMEOUT_MS,
       });
       setMedia(response.data);
     } catch (err) {

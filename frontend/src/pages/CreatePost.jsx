@@ -31,6 +31,7 @@ import { MapContainer, Marker, TileLayer, useMapEvents } from "react-leaflet";
 import apiClient from "../api/client.js";
 import { useAuth } from "../context/AuthContext.jsx";
 import { getApiErrorMessage } from "../utils/errors.js";
+import { MEDIA_UPLOAD_TIMEOUT_MS, getMediaValidationError } from "../utils/uploads.js";
 
 const MALABO_CENTER = [3.7523, 8.7741];
 
@@ -229,6 +230,12 @@ function CreatePost() {
   async function uploadMedia(file, nextMode) {
     if (!file) return;
 
+    const validationError = getMediaValidationError(file);
+    if (validationError) {
+      setUploadError(validationError);
+      return;
+    }
+
     const formData = new FormData();
     formData.append("file", file);
 
@@ -237,6 +244,7 @@ function CreatePost() {
       setIsUploading(true);
       const response = await apiClient.post("/media/upload", formData, {
         headers: { "Content-Type": "multipart/form-data" },
+        timeout: MEDIA_UPLOAD_TIMEOUT_MS,
       });
       setMediaItems([response.data]);
       setActiveMode(nextMode);

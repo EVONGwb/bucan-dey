@@ -1,4 +1,8 @@
 export function getApiErrorMessage(error) {
+  if (error.code === "ECONNABORTED") {
+    return "La subida tardó demasiado. Prueba con un archivo más ligero o una conexión más estable.";
+  }
+
   const detail = error.response?.data?.detail;
 
   if (Array.isArray(detail)) {

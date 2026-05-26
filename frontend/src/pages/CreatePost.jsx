@@ -473,32 +473,6 @@ function CreatePost() {
                       <div className="flex items-center gap-2 text-white/66 sm:gap-3">
                         <Smile className="h-[18px] w-[18px] sm:h-5 sm:w-5" />
                         <span className="text-lg font-black sm:text-xl">#</span>
-                        <button
-                          className="transition hover:text-neonCyan disabled:opacity-40"
-                          type="button"
-                          onClick={() => imageInputRef.current?.click()}
-                          disabled={isUploading}
-                          aria-label="Subir foto"
-                        >
-                          <Camera className="h-[18px] w-[18px] sm:h-5 sm:w-5" />
-                        </button>
-                        <button
-                          className="transition hover:text-fiestaPurple disabled:opacity-40"
-                          type="button"
-                          onClick={() => videoInputRef.current?.click()}
-                          disabled={isUploading}
-                          aria-label="Subir video"
-                        >
-                          <Video className="h-[18px] w-[18px] sm:h-5 sm:w-5" />
-                        </button>
-                        <button
-                          className="transition hover:text-neonCyan"
-                          type="button"
-                          onClick={() => setShowLocationPicker((current) => !current)}
-                          aria-label="Añadir ubicación"
-                        >
-                          <MapPin className="h-[18px] w-[18px] sm:h-5 sm:w-5" />
-                        </button>
                       </div>
                       <span className="text-xs font-semibold text-white/52 sm:text-sm">{form.text.length}/2000</span>
                     </div>
@@ -552,6 +526,14 @@ function CreatePost() {
                   ) : null}
                 </>
               )}
+
+              <MiniPublishSelector
+                activeMode={activeMode}
+                isUploading={isUploading}
+                isLocationActive={showLocationPicker || Boolean(position)}
+                selectMode={selectMode}
+                setShowLocationPicker={setShowLocationPicker}
+              />
 
               {uploadError ? (
                 <div className="mt-3 rounded-[1rem] border border-neonPink/30 bg-neonPink/10 px-4 py-3 text-sm font-semibold text-white sm:mt-4">
@@ -620,61 +602,6 @@ function CreatePost() {
               />
             </section>
 
-            <section>
-              <h2 className="text-lg font-black text-white sm:text-xl">¿Qué quieres publicar?</h2>
-              <div className="mt-3 grid grid-cols-5 gap-2 sm:mt-4 sm:gap-3">
-                {publishModes.map((mode) => {
-                  const Icon = mode.icon;
-                  const isActive = activeMode === mode.id;
-                  return (
-                    <motion.button
-                      className={[
-                        "min-h-[4.6rem] rounded-[0.95rem] border p-2.5 text-center transition sm:min-h-28 sm:rounded-[1.05rem] sm:p-4",
-                        isActive
-                          ? "border-neonPink bg-neonPink/14 text-white shadow-neon"
-                          : "border-white/10 bg-white/6 text-white/82 hover:bg-white/10",
-                      ].join(" ")}
-                      type="button"
-                      onClick={() => selectMode(mode)}
-                      whileTap={{ scale: 0.96 }}
-                      key={mode.id}
-                    >
-                      <Icon
-                        className={[
-                          "mx-auto h-6 w-6 sm:h-8 sm:w-8",
-                          mode.tone === "cyan"
-                            ? "text-neonCyan"
-                            : mode.tone === "purple"
-                              ? "text-fiestaPurple"
-                              : mode.tone === "red"
-                                ? "text-liveRed"
-                                : "text-neonPink",
-                        ].join(" ")}
-                      />
-                      <span className="mt-2 block text-[11px] font-black sm:mt-3 sm:text-sm">{mode.label}</span>
-                    </motion.button>
-                  );
-                })}
-              </div>
-
-              <input
-                ref={imageInputRef}
-                className="sr-only"
-                type="file"
-                accept="image/jpeg,image/png,image/webp"
-                onChange={(event) => handleMediaSelect(event, "photo")}
-                disabled={isUploading}
-              />
-              <input
-                ref={videoInputRef}
-                className="sr-only"
-                type="file"
-                accept="video/mp4,video/quicktime,video/webm"
-                onChange={(event) => handleMediaSelect(event, "video")}
-                disabled={isUploading}
-              />
-            </section>
-
             <MobileUtilityPanels
               form={form}
               updateField={updateField}
@@ -719,6 +646,23 @@ function CreatePost() {
             <PrivacyPanel form={form} updateField={updateField} />
           </aside>
         </div>
+
+        <input
+          ref={imageInputRef}
+          className="sr-only"
+          type="file"
+          accept="image/jpeg,image/png,image/webp"
+          onChange={(event) => handleMediaSelect(event, "photo")}
+          disabled={isUploading}
+        />
+        <input
+          ref={videoInputRef}
+          className="sr-only"
+          type="file"
+          accept="video/mp4,video/quicktime,video/webm"
+          onChange={(event) => handleMediaSelect(event, "video")}
+          disabled={isUploading}
+        />
 
         <div className="relative z-20 mt-4 sm:sticky sm:bottom-[7rem] sm:mt-6">
           <motion.button
@@ -778,6 +722,71 @@ function MobileUtilityPanels({ form, updateField, position }) {
         );
       })}
     </section>
+  );
+}
+
+function MiniPublishSelector({
+  activeMode,
+  isUploading,
+  isLocationActive,
+  selectMode,
+  setShowLocationPicker,
+}) {
+  const tools = [
+    ...publishModes,
+    { id: "location", label: "Lugar", icon: MapPin, tone: "cyan" },
+  ];
+
+  function handleToolClick(tool) {
+    if (tool.id === "location") {
+      setShowLocationPicker((current) => !current);
+      return;
+    }
+
+    selectMode(tool);
+  }
+
+  return (
+    <div className="mt-3 rounded-[1rem] border border-white/10 bg-night/38 p-2.5 sm:mt-4 sm:rounded-[1.1rem] sm:p-3">
+      <div className="flex items-center justify-between gap-3 px-1">
+        <p className="text-xs font-black uppercase tracking-[0.16em] text-white/62">Añadir a la publicación</p>
+        {isUploading ? <span className="text-xs font-black text-neonCyan">Subiendo...</span> : null}
+      </div>
+      <div className="mt-2 flex gap-2 overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:grid sm:grid-cols-6 sm:overflow-visible sm:pb-0">
+        {tools.map((tool) => {
+          const Icon = tool.icon;
+          const isActive = activeMode === tool.id || (tool.id === "location" && isLocationActive);
+          const colorClass =
+            tool.tone === "cyan"
+              ? "text-neonCyan"
+              : tool.tone === "purple"
+                ? "text-fiestaPurple"
+                : tool.tone === "red"
+                  ? "text-liveRed"
+                  : "text-neonPink";
+
+          return (
+            <motion.button
+              className={[
+                "flex min-w-[4.45rem] flex-col items-center justify-center gap-1.5 rounded-[0.85rem] border px-2 py-2.5 text-center transition sm:min-w-0",
+                isActive
+                  ? "border-neonPink bg-neonPink/14 text-white shadow-neon"
+                  : "border-white/10 bg-white/6 text-white/78 hover:border-white/18 hover:bg-white/10",
+                isUploading && (tool.id === "photo" || tool.id === "video") ? "opacity-50" : "",
+              ].join(" ")}
+              type="button"
+              onClick={() => handleToolClick(tool)}
+              whileTap={{ scale: 0.94 }}
+              disabled={isUploading && (tool.id === "photo" || tool.id === "video")}
+              key={tool.id}
+            >
+              <Icon className={["h-5 w-5", colorClass].join(" ")} />
+              <span className="text-[10px] font-black leading-none sm:text-[11px]">{tool.label}</span>
+            </motion.button>
+          );
+        })}
+      </div>
+    </div>
   );
 }
 

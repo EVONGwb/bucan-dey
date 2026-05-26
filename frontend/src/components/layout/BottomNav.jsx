@@ -1,19 +1,27 @@
 import { Home, Map, MessageCircle, PlusCircle, User } from "lucide-react";
 import { motion } from "framer-motion";
-import { NavLink } from "react-router-dom";
+import { NavLink, useLocation } from "react-router-dom";
 
 const navItems = [
   { to: "/", label: "Inicio", icon: Home },
   { to: "/map", label: "Mapa", icon: Map },
-  { to: "/create", label: "Crear", icon: PlusCircle },
+  { to: "/create", label: "Publicar", icon: PlusCircle },
   { to: "/chat", label: "Chat", icon: MessageCircle },
   { to: "/profile", label: "Perfil", icon: User },
 ];
 
 function BottomNav() {
+  const location = useLocation();
+  const isPublishPage = location.pathname === "/create";
+
   return (
     <nav className="fixed inset-x-0 bottom-0 z-20 px-3 pb-[calc(0.7rem+env(safe-area-inset-bottom))] pt-2">
-      <div className="glass-panel mx-auto grid max-w-md grid-cols-5 gap-1 rounded-[1.7rem] p-1.5">
+      <div
+        className={[
+          "glass-panel mx-auto grid grid-cols-5 gap-1 rounded-[1.7rem] p-1.5",
+          isPublishPage ? "max-w-5xl" : "max-w-md",
+        ].join(" ")}
+      >
         {navItems.map((item) => {
           const Icon = item.icon;
 

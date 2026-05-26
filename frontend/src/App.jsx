@@ -1,5 +1,5 @@
 import { lazy, Suspense } from "react";
-import { Navigate, Route, Routes } from "react-router-dom";
+import { Navigate, Route, Routes, useLocation } from "react-router-dom";
 
 import AdminRoute from "./components/layout/AdminRoute.jsx";
 import BottomNav from "./components/layout/BottomNav.jsx";
@@ -237,9 +237,17 @@ const appRoutes = [
 ];
 
 function App() {
+  const location = useLocation();
+  const isPublishPage = location.pathname === "/create";
+
   return (
     <div className="min-h-screen bg-night text-white">
-      <main className="mx-auto min-h-screen w-full max-w-md px-4 pb-36 pt-5">
+      <main
+        className={[
+          "mx-auto min-h-screen w-full px-4 pb-36 pt-5",
+          isPublishPage ? "max-w-6xl" : "max-w-md",
+        ].join(" ")}
+      >
         <Routes>
           {appRoutes.map((route) => (
             <Route key={route.path} path={route.path} element={route.element} />

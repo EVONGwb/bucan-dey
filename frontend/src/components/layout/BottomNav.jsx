@@ -15,10 +15,10 @@ function BottomNav() {
   const isPublishPage = location.pathname === "/create";
 
   return (
-    <nav className="fixed inset-x-0 bottom-0 z-20 px-3 pb-[calc(0.7rem+env(safe-area-inset-bottom))] pt-2">
+    <nav className="fixed inset-x-0 bottom-0 z-20 px-3 pb-[calc(0.55rem+env(safe-area-inset-bottom))] pt-1.5 sm:pb-[calc(0.7rem+env(safe-area-inset-bottom))] sm:pt-2">
       <div
         className={[
-          "glass-panel mx-auto grid grid-cols-5 gap-1 rounded-[1.7rem] p-1.5",
+          "glass-panel mx-auto grid grid-cols-5 gap-1 rounded-[1.45rem] p-1 sm:rounded-[1.7rem] sm:p-1.5",
           isPublishPage ? "max-w-5xl" : "max-w-md",
         ].join(" ")}
       >
@@ -31,7 +31,8 @@ function BottomNav() {
               to={item.to}
               className={({ isActive }) =>
                 [
-                  "relative flex min-h-14 touch-manipulation flex-col items-center justify-center rounded-[1.2rem] text-[11px] font-extrabold transition active:scale-[0.96]",
+                  "relative flex touch-manipulation flex-col items-center justify-center rounded-[1.05rem] font-extrabold transition active:scale-[0.96] sm:rounded-[1.2rem]",
+                  isPublishPage ? "min-h-12 text-[10px] sm:min-h-14 sm:text-[11px]" : "min-h-14 text-[11px]",
                   isActive
                     ? "bg-white/12 text-white shadow-cyan"
                     : "text-white/56 hover:bg-white/7 hover:text-white",
@@ -46,7 +47,11 @@ function BottomNav() {
                       layoutId="bottom-nav-active"
                     />
                   ) : null}
-                  <Icon aria-hidden="true" className="mb-1 h-5 w-5" strokeWidth={2.3} />
+                  <Icon
+                    aria-hidden="true"
+                    className={isPublishPage ? "mb-0.5 h-[18px] w-[18px] sm:mb-1 sm:h-5 sm:w-5" : "mb-1 h-5 w-5"}
+                    strokeWidth={2.3}
+                  />
                   <span>{item.label}</span>
                 </>
               )}

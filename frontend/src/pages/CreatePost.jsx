@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import L from "leaflet";
@@ -143,10 +143,6 @@ function CreatePost() {
     eventsToday: null,
   });
 
-  const selectedMode = useMemo(
-    () => publishModes.find((mode) => mode.id === activeMode) || publishModes[0],
-    [activeMode]
-  );
   const position = form.lat && form.lng ? [Number(form.lat), Number(form.lng)] : null;
   const isEventMode = activeMode === "event";
   const isLiveMode = activeMode === "live";
@@ -337,8 +333,8 @@ function CreatePost() {
   }
 
   return (
-    <section className="relative -mx-4 min-h-[calc(100vh-7rem)] overflow-hidden bg-night px-4 pb-36 text-white sm:mx-0 sm:rounded-[2rem]">
-      <div className="pointer-events-none absolute inset-x-0 top-0 h-72 overflow-hidden">
+    <section className="relative -mx-4 min-h-[calc(100vh-7rem)] overflow-hidden bg-night px-3 pb-28 text-white sm:mx-0 sm:rounded-[2rem] sm:px-4 sm:pb-36">
+      <div className="pointer-events-none absolute inset-x-0 top-0 h-56 overflow-hidden sm:h-72">
         <div className="creator-aurora absolute inset-0 opacity-95" />
         <div className="absolute inset-0 bg-gradient-to-b from-night/5 via-night/62 to-night" />
       </div>
@@ -346,9 +342,9 @@ function CreatePost() {
       <div className="pointer-events-none absolute -right-24 top-96 h-72 w-72 rounded-full bg-neonPink/12 blur-3xl" />
 
       <form className="relative z-10 mx-auto max-w-6xl" onSubmit={handleSubmit}>
-        <header className="flex items-start gap-4 border-b border-white/10 py-7">
+        <header className="flex items-start gap-3 border-b border-white/10 py-4 sm:gap-4 sm:py-7">
           <motion.button
-            className="mt-1 flex h-12 w-12 shrink-0 items-center justify-center rounded-full border border-white/10 bg-white/10 text-white shadow-cyan backdrop-blur-xl"
+            className="mt-1 flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-white/10 bg-white/10 text-white shadow-cyan backdrop-blur-xl sm:h-12 sm:w-12"
             type="button"
             onClick={() => navigate(-1)}
             whileTap={{ scale: 0.94 }}
@@ -359,27 +355,27 @@ function CreatePost() {
 
           <div className="min-w-0 flex-1">
             <motion.h1
-              className="text-4xl font-black uppercase leading-none tracking-tight text-neonPink sm:text-5xl"
+              className="text-3xl font-black uppercase leading-none tracking-tight text-neonPink sm:text-5xl"
               initial={{ opacity: 0, y: 12 }}
               animate={{ opacity: 1, y: 0 }}
             >
               Publicar
             </motion.h1>
-            <p className="mt-3 text-base font-semibold text-white/82 sm:text-lg">
+            <p className="mt-2 text-sm font-semibold text-white/82 sm:mt-3 sm:text-lg">
               Comparte lo que está pasando ahora
             </p>
 
-            <div className="mt-5 flex flex-wrap gap-3 text-sm font-bold">
-              <span className="inline-flex items-center gap-2 rounded-[0.7rem] border border-white/10 bg-white/7 px-4 py-2 backdrop-blur-xl">
-                <MapPin className="h-4 w-4 text-neonPink" />
+            <div className="mt-4 flex flex-wrap gap-2 text-xs font-bold sm:mt-5 sm:gap-3 sm:text-sm">
+              <span className="inline-flex items-center gap-1.5 rounded-[0.7rem] border border-white/10 bg-white/7 px-3 py-1.5 backdrop-blur-xl sm:gap-2 sm:px-4 sm:py-2">
+                <MapPin className="h-3.5 w-3.5 text-neonPink sm:h-4 sm:w-4" />
                 {form.city || user?.city || "Malabo"}
               </span>
-              <span className="inline-flex items-center gap-2 rounded-[0.7rem] border border-white/10 bg-white/7 px-4 py-2 backdrop-blur-xl">
-                <span className="h-2.5 w-2.5 rounded-full bg-green-400 shadow-[0_0_18px_rgba(34,197,94,.85)]" />
+              <span className="inline-flex items-center gap-1.5 rounded-[0.7rem] border border-white/10 bg-white/7 px-3 py-1.5 backdrop-blur-xl sm:gap-2 sm:px-4 sm:py-2">
+                <span className="h-2 w-2 rounded-full bg-green-400 shadow-[0_0_18px_rgba(34,197,94,.85)] sm:h-2.5 sm:w-2.5" />
                 {publishStats.activeUsers ?? "..."} usuarios activos
               </span>
-              <span className="inline-flex items-center gap-2 rounded-[0.7rem] border border-white/10 bg-white/7 px-4 py-2 backdrop-blur-xl">
-                <CalendarDays className="h-4 w-4 text-neonPink" />
+              <span className="inline-flex items-center gap-1.5 rounded-[0.7rem] border border-white/10 bg-white/7 px-3 py-1.5 backdrop-blur-xl sm:gap-2 sm:px-4 sm:py-2">
+                <CalendarDays className="h-3.5 w-3.5 text-neonPink sm:h-4 sm:w-4" />
                 {publishStats.eventsToday ?? "..."} eventos hoy
               </span>
             </div>
@@ -400,18 +396,18 @@ function CreatePost() {
           </div>
         </header>
 
-        <div className="mt-7 grid gap-6 lg:grid-cols-[1fr_24rem]">
-          <main className="min-w-0 space-y-6">
+        <div className="mt-5 grid gap-4 sm:mt-7 sm:gap-6 lg:grid-cols-[1fr_24rem]">
+          <main className="min-w-0 space-y-4 sm:space-y-6">
             <section>
-              <h2 className="text-xl font-black text-white">¿Qué quieres publicar?</h2>
-              <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-5">
+              <h2 className="text-lg font-black text-white sm:text-xl">¿Qué quieres publicar?</h2>
+              <div className="mt-3 grid grid-cols-5 gap-2 sm:mt-4 sm:gap-3">
                 {publishModes.map((mode) => {
                   const Icon = mode.icon;
                   const isActive = activeMode === mode.id;
                   return (
                     <motion.button
                       className={[
-                        "min-h-28 rounded-[1.05rem] border p-4 text-center transition",
+                        "min-h-[5.1rem] rounded-[0.95rem] border p-2.5 text-center transition sm:min-h-28 sm:rounded-[1.05rem] sm:p-4",
                         isActive
                           ? "border-neonPink bg-neonPink/14 text-white shadow-neon"
                           : "border-white/10 bg-white/6 text-white/82 hover:bg-white/10",
@@ -423,7 +419,7 @@ function CreatePost() {
                     >
                       <Icon
                         className={[
-                          "mx-auto h-8 w-8",
+                          "mx-auto h-6 w-6 sm:h-8 sm:w-8",
                           mode.tone === "cyan"
                             ? "text-neonCyan"
                             : mode.tone === "purple"
@@ -433,7 +429,7 @@ function CreatePost() {
                                 : "text-neonPink",
                         ].join(" ")}
                       />
-                      <span className="mt-3 block text-sm font-black">{mode.label}</span>
+                      <span className="mt-2 block text-[11px] font-black sm:mt-3 sm:text-sm">{mode.label}</span>
                     </motion.button>
                   );
                 })}
@@ -457,44 +453,44 @@ function CreatePost() {
               />
             </section>
 
-            <section className="rounded-[1.45rem] border border-white/10 bg-white/[0.045] p-5 shadow-cyan backdrop-blur-2xl">
-              <h2 className="text-2xl font-black text-white">
+            <section className="rounded-[1.15rem] border border-white/10 bg-white/[0.045] p-4 shadow-cyan backdrop-blur-2xl sm:rounded-[1.45rem] sm:p-5">
+              <h2 className="text-xl font-black text-white sm:text-2xl">
                 {isLiveMode ? "Directo" : isEventMode ? "Publica un evento rápido" : "Escribe tu publicación"}
               </h2>
 
-              <div className="mt-5 flex items-center gap-4">
+              <div className="mt-4 flex items-center gap-3 sm:mt-5 sm:gap-4">
                 {user?.avatar_url ? (
                   <img
                     alt={user.display_name || user.username}
-                    className="h-16 w-16 rounded-full border-2 border-neonPink object-cover shadow-neon"
+                    className="h-12 w-12 rounded-full border-2 border-neonPink object-cover shadow-neon sm:h-16 sm:w-16"
                     src={user.avatar_url}
                   />
                 ) : (
-                  <div className="flex h-16 w-16 items-center justify-center rounded-full border-2 border-neonPink bg-gradient-to-br from-neonPink via-fiestaPurple to-neonCyan text-xl font-black shadow-neon">
+                  <div className="flex h-12 w-12 items-center justify-center rounded-full border-2 border-neonPink bg-gradient-to-br from-neonPink via-fiestaPurple to-neonCyan text-lg font-black shadow-neon sm:h-16 sm:w-16 sm:text-xl">
                     {initials(user)}
                   </div>
                 )}
                 <div className="min-w-0">
-                  <p className="truncate text-lg font-black text-white">
+                  <p className="truncate text-base font-black text-white sm:text-lg">
                     {user?.display_name || user?.username || "BUCAN DEY"}
                   </p>
-                  <span className="mt-1 inline-flex items-center gap-2 rounded-[0.8rem] border border-white/10 bg-white/7 px-3 py-2 text-sm font-bold text-white/70">
-                    <Globe2 className="h-4 w-4" />
+                  <span className="mt-1 inline-flex items-center gap-1.5 rounded-[0.75rem] border border-white/10 bg-white/7 px-2.5 py-1.5 text-xs font-bold text-white/70 sm:gap-2 sm:px-3 sm:py-2 sm:text-sm">
+                    <Globe2 className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                     {privacyLabel(form.visibility)}
-                    <ChevronDown className="h-4 w-4" />
+                    <ChevronDown className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                   </span>
                 </div>
               </div>
 
               {isLiveMode ? (
-                <div className="mt-6 rounded-[1.2rem] border border-liveRed/25 bg-liveRed/10 p-5">
+                <div className="mt-4 rounded-[1.05rem] border border-liveRed/25 bg-liveRed/10 p-4 sm:mt-6 sm:rounded-[1.2rem] sm:p-5">
                   <p className="text-sm font-black uppercase tracking-[0.16em] text-liveRed">Live</p>
-                  <p className="mt-3 text-2xl font-black text-white">Entra en directo ahora</p>
+                  <p className="mt-2 text-xl font-black text-white sm:mt-3 sm:text-2xl">Entra en directo ahora</p>
                   <p className="mt-2 text-sm font-semibold leading-6 text-white/62">
                     El directo real se inicia desde la pantalla LiveKit preparada para BUCAN DEY.
                   </p>
                   <Link
-                    className="mt-5 inline-flex h-12 items-center gap-2 rounded-[0.9rem] bg-liveRed px-5 text-sm font-black text-white shadow-live"
+                    className="mt-4 inline-flex h-11 items-center gap-2 rounded-[0.9rem] bg-liveRed px-4 text-sm font-black text-white shadow-live sm:mt-5 sm:h-12 sm:px-5"
                     to="/lives/start"
                   >
                     Empezar directo
@@ -503,45 +499,45 @@ function CreatePost() {
                 </div>
               ) : (
                 <>
-                  <div className="mt-5 overflow-hidden rounded-[1.1rem] border border-white/10 bg-night/42">
+                  <div className="mt-4 overflow-hidden rounded-[1rem] border border-white/10 bg-night/42 sm:mt-5 sm:rounded-[1.1rem]">
                     <textarea
-                      className="min-h-72 w-full resize-none bg-transparent px-5 py-5 text-xl font-semibold leading-8 text-white outline-none placeholder:text-white/34"
+                      className="min-h-36 w-full resize-none bg-transparent px-4 py-4 text-base font-semibold leading-7 text-white outline-none placeholder:text-white/34 sm:min-h-72 sm:px-5 sm:py-5 sm:text-xl sm:leading-8"
                       name="text"
                       value={form.text}
                       onChange={updateField}
                       placeholder="¿Qué está pasando ahora?"
                       maxLength={2000}
                     />
-                    <div className="flex items-center justify-between border-t border-white/10 px-4 py-3">
-                      <div className="flex items-center gap-4 text-white/66">
-                        <Smile className="h-5 w-5" />
-                        <span className="text-xl font-black">#</span>
+                    <div className="flex items-center justify-between border-t border-white/10 px-3 py-2.5 sm:px-4 sm:py-3">
+                      <div className="flex items-center gap-3 text-white/66 sm:gap-4">
+                        <Smile className="h-[18px] w-[18px] sm:h-5 sm:w-5" />
+                        <span className="text-lg font-black sm:text-xl">#</span>
                         <button
                           className="transition hover:text-neonCyan"
                           type="button"
                           onClick={() => setShowLocationPicker((current) => !current)}
                           aria-label="Añadir ubicación"
                         >
-                          <MapPin className="h-5 w-5" />
+                          <MapPin className="h-[18px] w-[18px] sm:h-5 sm:w-5" />
                         </button>
                       </div>
-                      <span className="text-sm font-semibold text-white/52">{form.text.length}/2000</span>
+                      <span className="text-xs font-semibold text-white/52 sm:text-sm">{form.text.length}/2000</span>
                     </div>
                   </div>
 
                   {mediaItems.length ? (
-                    <div className="mt-4 overflow-hidden rounded-[1.15rem] border border-white/10 bg-night">
+                    <div className="mt-3 overflow-hidden rounded-[1.05rem] border border-white/10 bg-night sm:mt-4 sm:rounded-[1.15rem]">
                       {mediaItems.map((item) =>
                         item.type === "image" ? (
                           <img
                             alt="Vista previa"
-                            className="max-h-[32rem] w-full object-cover"
+                            className="max-h-80 w-full object-cover sm:max-h-[32rem]"
                             src={item.url}
                             key={item.public_id || item.url}
                           />
                         ) : (
                           <video
-                            className="max-h-[32rem] w-full bg-black"
+                            className="max-h-80 w-full bg-black sm:max-h-[32rem]"
                             controls
                             preload="metadata"
                             src={item.url}
@@ -550,7 +546,7 @@ function CreatePost() {
                         )
                       )}
                       <button
-                        className="h-12 w-full border-t border-white/10 text-sm font-black text-neonPink"
+                        className="h-10 w-full border-t border-white/10 text-sm font-black text-neonPink sm:h-12"
                         type="button"
                         onClick={() => setMediaItems([])}
                       >
@@ -562,47 +558,47 @@ function CreatePost() {
               )}
 
               {uploadError ? (
-                <div className="mt-4 rounded-[1rem] border border-neonPink/30 bg-neonPink/10 px-4 py-3 text-sm font-semibold text-white">
+                <div className="mt-3 rounded-[1rem] border border-neonPink/30 bg-neonPink/10 px-4 py-3 text-sm font-semibold text-white sm:mt-4">
                   {uploadError}
                 </div>
               ) : null}
 
               {isEventMode ? (
-                <div className="mt-5 rounded-[1.2rem] border border-fiestaPurple/24 bg-fiestaPurple/10 p-4">
+                <div className="mt-4 rounded-[1.05rem] border border-fiestaPurple/24 bg-fiestaPurple/10 p-3 sm:mt-5 sm:rounded-[1.2rem] sm:p-4">
                   <p className="text-sm font-black uppercase tracking-[0.16em] text-neonPink">
                     Datos del evento
                   </p>
                   <div className="mt-4 grid gap-3 sm:grid-cols-2">
                     <input
-                      className="h-12 rounded-[0.9rem] border border-white/10 bg-white/6 px-4 text-sm font-semibold text-white outline-none placeholder:text-white/34 focus:border-neonPink"
+                      className="h-11 rounded-[0.85rem] border border-white/10 bg-white/6 px-3 text-sm font-semibold text-white outline-none placeholder:text-white/34 focus:border-neonPink sm:h-12 sm:rounded-[0.9rem] sm:px-4"
                       name="event_title"
                       value={form.event_title}
                       onChange={updateField}
                       placeholder="Título"
                     />
                     <input
-                      className="h-12 rounded-[0.9rem] border border-white/10 bg-white/6 px-4 text-sm font-semibold text-white outline-none placeholder:text-white/34 focus:border-neonPink"
+                      className="h-11 rounded-[0.85rem] border border-white/10 bg-white/6 px-3 text-sm font-semibold text-white outline-none placeholder:text-white/34 focus:border-neonPink sm:h-12 sm:rounded-[0.9rem] sm:px-4"
                       name="venue"
                       value={form.venue}
                       onChange={updateField}
                       placeholder="Lugar"
                     />
                     <input
-                      className="h-12 rounded-[0.9rem] border border-white/10 bg-white/6 px-4 text-sm font-semibold text-white outline-none focus:border-neonPink"
+                      className="h-11 rounded-[0.85rem] border border-white/10 bg-white/6 px-3 text-sm font-semibold text-white outline-none focus:border-neonPink sm:h-12 sm:rounded-[0.9rem] sm:px-4"
                       name="start_at"
                       value={form.start_at}
                       onChange={updateField}
                       type="datetime-local"
                     />
                     <input
-                      className="h-12 rounded-[0.9rem] border border-white/10 bg-white/6 px-4 text-sm font-semibold text-white outline-none placeholder:text-white/34 focus:border-neonPink"
+                      className="h-11 rounded-[0.85rem] border border-white/10 bg-white/6 px-3 text-sm font-semibold text-white outline-none placeholder:text-white/34 focus:border-neonPink sm:h-12 sm:rounded-[0.9rem] sm:px-4"
                       name="price"
                       value={form.price}
                       onChange={updateField}
                       placeholder="Precio"
                     />
                   </div>
-                  <label className="mt-3 flex items-center justify-between rounded-[0.9rem] border border-white/10 bg-white/6 px-4 py-3">
+                  <label className="mt-3 flex items-center justify-between rounded-[0.85rem] border border-white/10 bg-white/6 px-3 py-2.5 sm:rounded-[0.9rem] sm:px-4 sm:py-3">
                     <span className="text-sm font-bold text-white">Evento abierto</span>
                     <input
                       className="h-5 w-5 accent-pink-500"
@@ -628,7 +624,15 @@ function CreatePost() {
               />
             </section>
 
-            <section className="grid gap-5">
+            <MobileUtilityPanels
+              form={form}
+              updateField={updateField}
+              position={position}
+              user={user}
+              mediaItems={mediaItems}
+            />
+
+            <section className="grid gap-4 sm:gap-5">
               <FeatureRouteCard
                 icon={CalendarDays}
                 title="Evento"
@@ -661,16 +665,16 @@ function CreatePost() {
             ) : null}
           </main>
 
-          <aside className="min-w-0 space-y-5 lg:sticky lg:top-5 lg:self-start">
+          <aside className="hidden min-w-0 space-y-5 lg:sticky lg:top-5 lg:block lg:self-start">
             <LocationSummary form={form} position={position} />
             <PrivacyPanel form={form} updateField={updateField} />
             <PreviewCard user={user} form={form} mediaItems={mediaItems} />
           </aside>
         </div>
 
-        <div className="sticky bottom-[6.9rem] z-20 mt-6 sm:bottom-[7rem]">
+        <div className="sticky bottom-[5.9rem] z-20 mt-4 sm:bottom-[7rem] sm:mt-6">
           <motion.button
-            className="flex h-16 w-full items-center justify-center gap-3 rounded-[1rem] bg-gradient-to-r from-neonPink via-fiestaPurple to-[#4c00ff] text-lg font-black text-white shadow-neon disabled:opacity-60"
+            className="flex h-[3.25rem] w-full items-center justify-center gap-2 rounded-[0.95rem] bg-gradient-to-r from-neonPink via-fiestaPurple to-[#4c00ff] text-base font-black text-white shadow-neon disabled:opacity-60 sm:h-16 sm:gap-3 sm:rounded-[1rem] sm:text-lg"
             type="submit"
             disabled={isSubmitting || isUploading}
             whileTap={{ scale: 0.98 }}
@@ -680,6 +684,58 @@ function CreatePost() {
           </motion.button>
         </div>
       </form>
+    </section>
+  );
+}
+
+function MobileUtilityPanels({ form, updateField, position, user, mediaItems }) {
+  const panels = [
+    {
+      id: "location",
+      icon: MapPin,
+      label: "Ubicación",
+      summary: selectedLocationLabel(form),
+      content: <LocationSummary form={form} position={position} compact />,
+    },
+    {
+      id: "privacy",
+      icon: Shield,
+      label: "Privacidad",
+      summary: privacyLabel(form.visibility),
+      content: <PrivacyPanel form={form} updateField={updateField} compact />,
+    },
+    {
+      id: "preview",
+      icon: Eye,
+      label: "Vista previa",
+      summary: form.text.trim() ? "Actualizada" : "Mini post",
+      content: <PreviewCard user={user} form={form} mediaItems={mediaItems} compact />,
+    },
+  ];
+
+  return (
+    <section className="space-y-2 lg:hidden">
+      {panels.map((panel) => {
+        const Icon = panel.icon;
+        return (
+          <details
+            className="group overflow-hidden rounded-[1rem] border border-white/10 bg-white/[0.045] shadow-cyan backdrop-blur-2xl"
+            key={panel.id}
+          >
+            <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-3 py-3">
+              <span className="flex min-w-0 items-center gap-2">
+                <Icon className="h-4 w-4 shrink-0 text-neonCyan" />
+                <span className="text-sm font-black uppercase text-white">{panel.label}</span>
+              </span>
+              <span className="flex min-w-0 items-center gap-2 text-xs font-bold text-white/54">
+                <span className="truncate">{panel.summary}</span>
+                <ChevronDown className="h-4 w-4 transition group-open:rotate-180" />
+              </span>
+            </summary>
+            <div className="border-t border-white/10 p-2.5">{panel.content}</div>
+          </details>
+        );
+      })}
     </section>
   );
 }
@@ -696,18 +752,18 @@ function LocationPanel({
   setSelectedLocation,
 }) {
   return (
-    <div className="mt-5 rounded-[1.15rem] border border-white/10 bg-night/38 p-4">
-      <p className="text-base font-black text-white">Ubicación (opcional)</p>
-      <div className="mt-4 grid gap-3 sm:grid-cols-2">
+    <div className="mt-4 rounded-[1.05rem] border border-white/10 bg-night/38 p-3 sm:mt-5 sm:rounded-[1.15rem] sm:p-4">
+      <p className="text-sm font-black text-white sm:text-base">Ubicación (opcional)</p>
+      <div className="mt-3 grid gap-2 sm:mt-4 sm:grid-cols-2 sm:gap-3">
         <input
-          className="h-12 rounded-[0.9rem] border border-white/10 bg-white/6 px-4 text-sm font-semibold text-white outline-none placeholder:text-white/34 focus:border-neonCyan"
+          className="h-11 rounded-[0.85rem] border border-white/10 bg-white/6 px-3 text-sm font-semibold text-white outline-none placeholder:text-white/34 focus:border-neonCyan sm:h-12 sm:rounded-[0.9rem] sm:px-4"
           name="city"
           value={form.city}
           onChange={updateField}
           placeholder="Ciudad"
         />
         <input
-          className="h-12 rounded-[0.9rem] border border-white/10 bg-white/6 px-4 text-sm font-semibold text-white outline-none placeholder:text-white/34 focus:border-neonCyan"
+          className="h-11 rounded-[0.85rem] border border-white/10 bg-white/6 px-3 text-sm font-semibold text-white outline-none placeholder:text-white/34 focus:border-neonCyan sm:h-12 sm:rounded-[0.9rem] sm:px-4"
           name="area"
           value={form.area}
           onChange={updateField}
@@ -716,25 +772,25 @@ function LocationPanel({
       </div>
 
       <button
-        className="mt-4 flex w-full items-center justify-between rounded-[0.95rem] border border-white/10 bg-white/6 px-4 py-4 text-left"
+        className="mt-3 flex w-full items-center justify-between rounded-[0.9rem] border border-white/10 bg-white/6 px-3 py-3 text-left sm:mt-4 sm:rounded-[0.95rem] sm:px-4 sm:py-4"
         type="button"
         onClick={() => setShowLocationPicker((current) => !current)}
       >
         <span className="flex items-center gap-3">
-          <span className="flex h-10 w-10 items-center justify-center rounded-full bg-fiestaPurple/18 text-fiestaPurple">
-            <MapPin className="h-5 w-5" />
+          <span className="flex h-9 w-9 items-center justify-center rounded-full bg-fiestaPurple/18 text-fiestaPurple sm:h-10 sm:w-10">
+            <MapPin className="h-4 w-4 sm:h-5 sm:w-5" />
           </span>
           <span>
             <span className="block text-sm font-black text-white">Añadir ubicación</span>
-            <span className="block text-sm font-semibold text-white/50">Ciudad, zona o punto en el mapa</span>
+            <span className="block text-xs font-semibold text-white/50 sm:text-sm">Ciudad, zona o punto en el mapa</span>
           </span>
         </span>
-        <ChevronRight className="h-5 w-5 text-white/62" />
+        <ChevronRight className="h-4 w-4 text-white/62 sm:h-5 sm:w-5" />
       </button>
 
-      <div className="mt-3 grid grid-cols-2 gap-3">
+      <div className="mt-3 grid grid-cols-2 gap-2 sm:gap-3">
         <button
-          className="flex h-12 items-center justify-center gap-2 rounded-[0.85rem] border border-white/10 bg-white/6 text-sm font-black text-white disabled:opacity-60"
+          className="flex h-11 items-center justify-center gap-1.5 rounded-[0.85rem] border border-white/10 bg-white/6 text-xs font-black text-white disabled:opacity-60 sm:h-12 sm:gap-2 sm:text-sm"
           type="button"
           onClick={handleUseCurrentLocation}
           disabled={isLocating}
@@ -743,7 +799,7 @@ function LocationPanel({
           {isLocating ? "Buscando..." : "Usar mi ubicación"}
         </button>
         <button
-          className="flex h-12 items-center justify-center gap-2 rounded-[0.85rem] border border-white/10 bg-white/6 text-sm font-black text-white"
+          className="flex h-11 items-center justify-center gap-1.5 rounded-[0.85rem] border border-white/10 bg-white/6 text-xs font-black text-white sm:h-12 sm:gap-2 sm:text-sm"
           type="button"
           onClick={() => setShowLocationPicker((current) => !current)}
         >
@@ -753,14 +809,14 @@ function LocationPanel({
       </div>
 
       {position ? (
-        <div className="mt-3 rounded-[0.95rem] border border-neonCyan/25 bg-neonCyan/10 px-4 py-3 text-sm font-bold text-white">
+        <div className="mt-3 rounded-[0.9rem] border border-neonCyan/25 bg-neonCyan/10 px-3 py-2.5 text-xs font-bold text-white sm:rounded-[0.95rem] sm:px-4 sm:py-3 sm:text-sm">
           Ubicación seleccionada: {Number(form.lat).toFixed(4)}, {Number(form.lng).toFixed(4)}
         </div>
       ) : null}
 
       {showLocationPicker ? (
-        <div className="mt-4 overflow-hidden rounded-[1.1rem] border border-neonCyan/20 shadow-cyan">
-          <div className="h-72 w-full">
+        <div className="mt-3 overflow-hidden rounded-[1rem] border border-neonCyan/20 shadow-cyan sm:mt-4 sm:rounded-[1.1rem]">
+          <div className="h-56 w-full sm:h-72">
             <MapContainer
               center={position || MALABO_CENTER}
               className="bucan-map h-full w-full"
@@ -776,27 +832,27 @@ function LocationPanel({
               {position ? <Marker icon={createSelectedIcon()} position={position} /> : null}
             </MapContainer>
           </div>
-          <p className="bg-night px-4 py-3 text-xs font-semibold text-white/56">
+          <p className="bg-night px-3 py-2.5 text-xs font-semibold text-white/56 sm:px-4 sm:py-3">
             Toca el mapa para seleccionar el punto de la publicación.
           </p>
         </div>
       ) : null}
 
       {locationError ? (
-        <div className="mt-3 rounded-[1rem] border border-neonPink/30 bg-neonPink/10 px-4 py-3 text-sm font-semibold text-white">
+        <div className="mt-3 rounded-[1rem] border border-neonPink/30 bg-neonPink/10 px-3 py-2.5 text-sm font-semibold text-white sm:px-4 sm:py-3">
           {locationError}
         </div>
       ) : null}
 
-      <label className="mt-4 flex items-center justify-between border-t border-white/10 pt-4">
+      <label className="mt-3 flex items-center justify-between border-t border-white/10 pt-3 sm:mt-4 sm:pt-4">
         <span>
           <span className="block text-sm font-black text-white">Mostrar en el mapa</span>
-          <span className="mt-1 block text-sm font-semibold text-white/50">
+          <span className="mt-1 block text-xs font-semibold text-white/50 sm:text-sm">
             Tu publicación será visible en el mapa
           </span>
         </span>
         <input
-          className="h-6 w-6 accent-pink-500"
+          className="h-5 w-5 accent-pink-500 sm:h-6 sm:w-6"
           type="checkbox"
           name="show_on_map"
           checked={form.show_on_map}
@@ -807,42 +863,53 @@ function LocationPanel({
   );
 }
 
-function LocationSummary({ form, position }) {
+function LocationSummary({ form, position, compact = false }) {
   return (
-    <section className="rounded-[1.3rem] border border-white/10 bg-white/[0.045] p-4 shadow-cyan backdrop-blur-2xl">
-      <h2 className="flex items-center gap-3 text-lg font-black uppercase text-white">
-        <MapPin className="h-5 w-5 text-fiestaPurple" />
+    <section
+      className={[
+        "border border-white/10 bg-white/[0.045] shadow-cyan backdrop-blur-2xl",
+        compact ? "rounded-[0.9rem] p-3" : "rounded-[1.3rem] p-4",
+      ].join(" ")}
+    >
+      <h2 className={compact ? "flex items-center gap-2 text-sm font-black uppercase text-white" : "flex items-center gap-3 text-lg font-black uppercase text-white"}>
+        <MapPin className={compact ? "h-4 w-4 text-fiestaPurple" : "h-5 w-5 text-fiestaPurple"} />
         Ubicación
       </h2>
-      <div className="mt-4 overflow-hidden rounded-[1rem] border border-white/10 bg-night">
-        <div className="relative h-36 bg-[linear-gradient(135deg,rgba(0,217,255,.14),rgba(124,58,237,.18)),repeating-linear-gradient(35deg,rgba(255,216,77,.17)_0_1px,transparent_1px_38px),repeating-linear-gradient(120deg,rgba(255,255,255,.06)_0_1px,transparent_1px_34px)]">
-          <span className="absolute left-1/2 top-1/2 flex h-10 w-10 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full bg-blue-500 shadow-[0_0_0_18px_rgba(59,130,246,.18),0_0_30px_rgba(59,130,246,.7)]" />
+      <div className={(compact ? "mt-3" : "mt-4") + " overflow-hidden rounded-[1rem] border border-white/10 bg-night"}>
+        <div className={(compact ? "h-24" : "h-36") + " relative bg-[linear-gradient(135deg,rgba(0,217,255,.14),rgba(124,58,237,.18)),repeating-linear-gradient(35deg,rgba(255,216,77,.17)_0_1px,transparent_1px_38px),repeating-linear-gradient(120deg,rgba(255,255,255,.06)_0_1px,transparent_1px_34px)]"}>
+          <span className={(compact ? "h-8 w-8 shadow-[0_0_0_13px_rgba(59,130,246,.18),0_0_24px_rgba(59,130,246,.7)]" : "h-10 w-10 shadow-[0_0_0_18px_rgba(59,130,246,.18),0_0_30px_rgba(59,130,246,.7)]") + " absolute left-1/2 top-1/2 flex -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full bg-blue-500"} />
         </div>
       </div>
-      <p className="mt-4 font-black text-white">{selectedLocationLabel(form)}, Guinea Ecuatorial</p>
-      <p className="mt-1 text-sm font-semibold text-white/54">
+      <p className={(compact ? "mt-3 text-sm" : "mt-4") + " font-black text-white"}>{selectedLocationLabel(form)}, Guinea Ecuatorial</p>
+      <p className={(compact ? "text-xs" : "text-sm") + " mt-1 font-semibold text-white/54"}>
         {position ? "Punto seleccionado" : "Centro de Malabo"}
       </p>
     </section>
   );
 }
 
-function PrivacyPanel({ form, updateField }) {
+function PrivacyPanel({ form, updateField, compact = false }) {
   return (
-    <section className="rounded-[1.3rem] border border-white/10 bg-white/[0.045] p-4 shadow-cyan backdrop-blur-2xl">
-      <h2 className="flex items-center gap-3 text-lg font-black uppercase text-white">
-        <Shield className="h-5 w-5 text-white/70" />
+    <section
+      className={[
+        "border border-white/10 bg-white/[0.045] shadow-cyan backdrop-blur-2xl",
+        compact ? "rounded-[0.9rem] p-3" : "rounded-[1.3rem] p-4",
+      ].join(" ")}
+    >
+      <h2 className={compact ? "flex items-center gap-2 text-sm font-black uppercase text-white" : "flex items-center gap-3 text-lg font-black uppercase text-white"}>
+        <Shield className={compact ? "h-4 w-4 text-white/70" : "h-5 w-5 text-white/70"} />
         Privacidad
       </h2>
-      <p className="mt-4 text-sm font-semibold text-white/64">¿Quién puede ver tu publicación?</p>
-      <div className="mt-4 space-y-2">
+      <p className={(compact ? "mt-3 text-xs" : "mt-4 text-sm") + " font-semibold text-white/64"}>¿Quién puede ver tu publicación?</p>
+      <div className={(compact ? "mt-3" : "mt-4") + " space-y-2"}>
         {privacyOptions.map((option) => {
           const Icon = option.icon;
           const isActive = form.visibility === option.value;
           return (
             <label
               className={[
-                "flex cursor-pointer items-center gap-3 rounded-[0.95rem] border px-3 py-3 transition",
+                "flex cursor-pointer items-center gap-3 rounded-[0.95rem] border px-3 transition",
+                compact ? "py-2.5" : "py-3",
                 isActive ? "border-neonPink bg-neonPink/12 shadow-neon" : "border-white/10 bg-white/5",
               ].join(" ")}
               key={option.id}
@@ -868,23 +935,28 @@ function PrivacyPanel({ form, updateField }) {
   );
 }
 
-function PreviewCard({ user, form, mediaItems }) {
+function PreviewCard({ user, form, mediaItems, compact = false }) {
   return (
-    <section className="rounded-[1.3rem] border border-white/10 bg-white/[0.045] p-4 shadow-cyan backdrop-blur-2xl">
-      <h2 className="flex items-center gap-3 text-lg font-black uppercase text-white">
-        <Eye className="h-5 w-5 text-white/70" />
+    <section
+      className={[
+        "border border-white/10 bg-white/[0.045] shadow-cyan backdrop-blur-2xl",
+        compact ? "rounded-[0.9rem] p-3" : "rounded-[1.3rem] p-4",
+      ].join(" ")}
+    >
+      <h2 className={compact ? "flex items-center gap-2 text-sm font-black uppercase text-white" : "flex items-center gap-3 text-lg font-black uppercase text-white"}>
+        <Eye className={compact ? "h-4 w-4 text-white/70" : "h-5 w-5 text-white/70"} />
         Vista previa
       </h2>
-      <div className="mt-4 rounded-[1rem] border border-white/10 bg-night/48 p-4">
+      <div className={(compact ? "mt-3 p-3" : "mt-4 p-4") + " rounded-[1rem] border border-white/10 bg-night/48"}>
         <div className="flex items-center gap-3">
           {user?.avatar_url ? (
             <img
               alt={user.display_name || user.username}
-              className="h-11 w-11 rounded-full border border-neonPink object-cover"
+              className={(compact ? "h-9 w-9" : "h-11 w-11") + " rounded-full border border-neonPink object-cover"}
               src={user.avatar_url}
             />
           ) : (
-            <span className="flex h-11 w-11 items-center justify-center rounded-full border border-neonPink bg-gradient-to-br from-neonPink to-neonCyan text-sm font-black">
+            <span className={(compact ? "h-9 w-9" : "h-11 w-11") + " flex items-center justify-center rounded-full border border-neonPink bg-gradient-to-br from-neonPink to-neonCyan text-sm font-black"}>
               {initials(user)}
             </span>
           )}
@@ -897,33 +969,33 @@ function PreviewCard({ user, form, mediaItems }) {
           <span className="text-xl font-black text-white/40">...</span>
         </div>
 
-        <p className="mt-4 whitespace-pre-wrap text-sm font-semibold leading-6 text-white">
+        <p className={(compact ? "mt-3 line-clamp-4" : "mt-4") + " whitespace-pre-wrap text-sm font-semibold leading-6 text-white"}>
           {form.text.trim() || "¿Qué está pasando ahora?"}
         </p>
 
         {mediaItems.length ? (
-          <div className="mt-4 overflow-hidden rounded-[0.9rem] border border-white/10">
+          <div className={(compact ? "mt-3" : "mt-4") + " overflow-hidden rounded-[0.9rem] border border-white/10"}>
             {mediaItems[0].type === "image" ? (
-              <img alt="Preview" className="max-h-64 w-full object-cover" src={mediaItems[0].url} />
+              <img alt="Preview" className={(compact ? "max-h-40" : "max-h-64") + " w-full object-cover"} src={mediaItems[0].url} />
             ) : (
-              <video className="max-h-64 w-full bg-black" controls preload="metadata" src={mediaItems[0].url} />
+              <video className={(compact ? "max-h-40" : "max-h-64") + " w-full bg-black"} controls preload="metadata" src={mediaItems[0].url} />
             )}
           </div>
         ) : null}
 
-        <p className="mt-4 flex items-center gap-2 text-sm font-bold text-neonCyan">
+        <p className={(compact ? "mt-3 text-xs" : "mt-4 text-sm") + " flex items-center gap-2 font-bold text-neonCyan"}>
           <MapPin className="h-4 w-4" />
           {selectedLocationLabel(form)}, Guinea Ecuatorial
         </p>
 
-        <div className="mt-4 flex items-center justify-between border-t border-white/10 pt-4 text-white/68">
-          <Heart className="h-6 w-6" />
-          <MessageCircle className="h-6 w-6" />
-          <Send className="h-6 w-6" />
-          <Navigation className="h-6 w-6" />
+        <div className={(compact ? "mt-3 pt-3" : "mt-4 pt-4") + " flex items-center justify-between border-t border-white/10 text-white/68"}>
+          <Heart className={compact ? "h-5 w-5" : "h-6 w-6"} />
+          <MessageCircle className={compact ? "h-5 w-5" : "h-6 w-6"} />
+          <Send className={compact ? "h-5 w-5" : "h-6 w-6"} />
+          <Navigation className={compact ? "h-5 w-5" : "h-6 w-6"} />
         </div>
       </div>
-      <span className="mt-4 inline-flex items-center gap-2 rounded-[0.75rem] border border-white/10 bg-white/6 px-3 py-2 text-sm font-bold text-white/70">
+      <span className={(compact ? "mt-3 px-2.5 py-1.5 text-xs" : "mt-4 px-3 py-2 text-sm") + " inline-flex items-center gap-2 rounded-[0.75rem] border border-white/10 bg-white/6 font-bold text-white/70"}>
         <Globe2 className="h-4 w-4" />
         {privacyLabel(form.visibility)}
       </span>
@@ -936,7 +1008,7 @@ function FeatureRouteCard({ icon: Icon, title, subtitle, body, button, to, tone 
   return (
     <section
       className={[
-        "relative overflow-hidden rounded-[1.25rem] border bg-white/[0.045] p-5 shadow-cyan backdrop-blur-2xl sm:p-7",
+        "relative overflow-hidden rounded-[1.05rem] border bg-white/[0.045] p-4 shadow-cyan backdrop-blur-2xl sm:rounded-[1.25rem] sm:p-7",
         isRed ? "border-liveRed/30" : "border-fiestaPurple/30",
       ].join(" ")}
     >
@@ -946,17 +1018,17 @@ function FeatureRouteCard({ icon: Icon, title, subtitle, body, button, to, tone 
           isRed ? "bg-liveRed/22" : "bg-fiestaPurple/24",
         ].join(" ")}
       />
-      <div className="relative z-10 grid gap-5 sm:grid-cols-[1fr_18rem] sm:items-center">
+      <div className="relative z-10 grid gap-4 sm:gap-5 md:grid-cols-[1fr_18rem] md:items-center">
         <div>
-          <h2 className="flex items-center gap-3 text-lg font-black uppercase text-white">
-            <Icon className={isRed ? "h-6 w-6 text-liveRed" : "h-6 w-6 text-fiestaPurple"} />
+          <h2 className="flex items-center gap-2.5 text-base font-black uppercase text-white sm:gap-3 sm:text-lg">
+            <Icon className={isRed ? "h-5 w-5 text-liveRed sm:h-6 sm:w-6" : "h-5 w-5 text-fiestaPurple sm:h-6 sm:w-6"} />
             {title}
           </h2>
-          <p className="mt-3 text-lg font-black text-white/72">{subtitle}</p>
-          <p className="mt-2 text-base font-semibold leading-7 text-white/62">{body}</p>
+          <p className="mt-2 text-base font-black text-white/72 sm:mt-3 sm:text-lg">{subtitle}</p>
+          <p className="mt-1.5 text-sm font-semibold leading-6 text-white/62 sm:mt-2 sm:text-base sm:leading-7">{body}</p>
           <Link
             className={[
-              "mt-5 inline-flex h-12 items-center gap-2 rounded-[0.85rem] px-5 text-sm font-black text-white",
+              "mt-4 inline-flex h-11 items-center gap-2 rounded-[0.85rem] px-4 text-sm font-black text-white sm:mt-5 sm:h-12 sm:px-5",
               isRed ? "bg-liveRed shadow-live" : "border border-white/10 bg-white/8",
             ].join(" ")}
             to={to}
@@ -967,7 +1039,7 @@ function FeatureRouteCard({ icon: Icon, title, subtitle, body, button, to, tone 
         </div>
         <div
           className={[
-            "hidden min-h-36 rounded-[1.2rem] border bg-night/40 sm:flex sm:items-center sm:justify-center",
+            "hidden min-h-36 rounded-[1.2rem] border bg-night/40 md:flex md:items-center md:justify-center",
             isRed ? "border-liveRed/30 text-liveRed shadow-live" : "border-fiestaPurple/30 text-fiestaPurple shadow-neon",
           ].join(" ")}
         >

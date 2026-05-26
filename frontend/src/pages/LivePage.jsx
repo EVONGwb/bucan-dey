@@ -1,17 +1,134 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useParams } from "react-router-dom";
+import { motion } from "framer-motion";
 import { Room, RoomEvent, Track } from "livekit-client";
+import {
+  AlertTriangle,
+  ArrowLeft,
+  Flag,
+  Gift,
+  Heart,
+  Radio,
+  Send,
+  Share2,
+  ShieldCheck,
+  Signal,
+  Sparkles,
+  Users,
+  X,
+  Zap,
+} from "lucide-react";
 
 import apiClient from "../api/client.js";
 import { useAuth } from "../context/AuthContext.jsx";
 import { useRealtime } from "../context/RealtimeContext.jsx";
 import { getApiErrorMessage } from "../utils/errors.js";
 
+const qualityOptions = [
+  { value: "auto", label: "Auto" },
+  { value: "low", label: "Ahorro datos" },
+  { value: "high", label: "Alta calidad" },
+];
+
+const reportReasons = [
+  ["spam", "Spam"],
+  ["contenido ofensivo", "Contenido ofensivo"],
+  ["violencia", "Violencia"],
+  ["desnudos", "Desnudos"],
+  ["acoso", "Acoso"],
+  ["otro", "Otro"],
+];
+
+function LivePageSkeleton() {
+  return (
+    <div className="space-y-4">
+      <div className="h-[72vh] animate-pulse rounded-[2rem] bg-gradient-to-br from-white/8 via-white/5 to-liveRed/12" />
+      <div className="glass-panel rounded-[1.75rem] p-4">
+        <div className="h-4 w-28 animate-pulse rounded-full bg-white/10" />
+        <div className="mt-3 h-10 w-full animate-pulse rounded-2xl bg-white/8" />
+      </div>
+    </div>
+  );
+}
+
+function LiveBadge({ isLive }) {
+  return (
+    <span
+      className={`inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs font-black uppercase ${
+        isLive ? "bg-liveRed text-white shadow-live" : "bg-white/10 text-white/58"
+      }`}
+    >
+      <span
+        className={`h-2 w-2 rounded-full ${
+          isLive ? "bg-white [animation:live-pulse_1.4s_ease-in-out_infinite]" : "bg-white/38"
+        }`}
+      />
+      {isLive ? "Live" : "Finalizado"}
+    </span>
+  );
+}
+
+function Avatar({ user }) {
+  return (
+    <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-liveRed via-neonPink to-neonCyan p-[2px] shadow-live">
+      {user?.avatar_url ? (
+        <img
+          alt={user.display_name || user.username}
+          className="h-full w-full rounded-full border-2 border-night object-cover"
+          loading="lazy"
+          src={user.avatar_url}
+        />
+      ) : (
+        <div className="flex h-full w-full items-center justify-center rounded-full border-2 border-night bg-black/52 text-base font-black text-white">
+          {(user?.display_name || user?.username || "B").charAt(0).toUpperCase()}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function LiveComment({ comment }) {
+  return (
+    <motion.div
+      className="max-w-[88%] rounded-[1.1rem] border border-white/10 bg-black/34 px-3 py-2 text-sm shadow-cyan backdrop-blur-xl"
+      initial={{ opacity: 0, y: 14, scale: 0.98 }}
+      animate={{ opacity: 1, y: 0, scale: 1 }}
+      transition={{ duration: 0.2 }}
+      layout
+    >
+      <p className="text-xs font-black text-neonYellow">@{comment.username || "bucandey"}</p>
+      <p className="mt-0.5 break-words font-semibold leading-5 text-white">{comment.text}</p>
+    </motion.div>
+  );
+}
+
+function StatusPill({ icon: Icon, label, value, tone = "cyan" }) {
+  const tones = {
+    cyan: "border-neonCyan/30 bg-neonCyan/10 text-neonCyan",
+    red: "border-liveRed/35 bg-liveRed/12 text-liveRed",
+    pink: "border-neonPink/30 bg-neonPink/10 text-neonPink",
+    white: "border-white/10 bg-white/8 text-white/72",
+  };
+
+  return (
+    <div className={`rounded-full border px-3 py-2 ${tones[tone] || tones.white}`}>
+      <div className="flex items-center gap-2">
+        <Icon className="h-4 w-4" />
+        <span className="text-xs font-black">{value}</span>
+      </div>
+      <p className="mt-0.5 text-[10px] font-black uppercase tracking-[0.12em] opacity-62">
+        {label}
+      </p>
+    </div>
+  );
+}
+
 function LivePage() {
   const { liveId } = useParams();
   const { isAuthenticated, user } = useAuth();
   const { sendEvent, subscribe } = useRealtime();
   const videoContainerRef = useRef(null);
+  const commentsEndRef = useRef(null);
   const roomRef = useRef(null);
   const heartbeatRef = useRef(null);
   const statsRef = useRef(null);
@@ -23,13 +140,15 @@ function LivePage() {
   const [reportReason, setReportReason] = useState("spam");
   const [reportDetails, setReportDetails] = useState("");
   const [showReport, setShowReport] = useState(false);
+  const [hasJoined, setHasJoined] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [isJoining, setIsJoining] = useState(false);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
 
   useEffect(() => {
-    const connection = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
+    const connection =
+      navigator.connection || navigator.mozConnection || navigator.webkitConnection;
     if (connection?.saveData || ["slow-2g", "2g"].includes(connection?.effectiveType)) {
       setQualityMode("low");
     }
@@ -79,9 +198,14 @@ function LivePage() {
     return subscribe("live_ended", (payload) => {
       if (payload.id !== liveId) return;
       setLive(payload);
+      setHasJoined(false);
       roomRef.current?.disconnect();
     });
   }, [liveId, subscribe]);
+
+  useEffect(() => {
+    commentsEndRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
+  }, [comments]);
 
   useEffect(() => {
     return () => {
@@ -127,6 +251,7 @@ function LivePage() {
       room.remoteParticipants.forEach((participant) => {
         participant.trackPublications.forEach((publication) => attachTrack(publication.track));
       });
+      setHasJoined(true);
 
       heartbeatRef.current = window.setInterval(() => {
         apiClient.post(`/lives/${liveId}/heartbeat`, { role: "viewer" }).catch(() => {});
@@ -171,9 +296,25 @@ function LivePage() {
     try {
       const response = await apiClient.post(`/lives/${liveId}/end`);
       setLive(response.data);
+      setHasJoined(false);
       roomRef.current?.disconnect();
     } catch (err) {
       setError(getApiErrorMessage(err));
+    }
+  }
+
+  async function shareLive() {
+    try {
+      if (navigator.share) {
+        await navigator.share({ title: live?.title || "BUCAN DEY Live", url: window.location.href });
+      } else {
+        await navigator.clipboard.writeText(window.location.href);
+        setNotice("Enlace del live copiado.");
+        window.setTimeout(() => setNotice(""), 2500);
+      }
+    } catch {
+      setNotice("No se pudo compartir ahora.");
+      window.setTimeout(() => setNotice(""), 2500);
     }
   }
 
@@ -181,6 +322,11 @@ function LivePage() {
     event.preventDefault();
     const text = commentText.trim();
     if (!text) return;
+
+    if (!isAuthenticated) {
+      window.location.href = "/login";
+      return;
+    }
 
     const sent = sendEvent("live_comment", { live_id: liveId, text });
     if (!sent) {
@@ -190,144 +336,322 @@ function LivePage() {
   }
 
   const isCreator = user?.id && live?.creator_id === user.id;
+  const viewersCount = stats?.current_viewers ?? live?.viewers_count ?? 0;
+  const durationMinutes = Math.floor((stats?.duration_seconds || 0) / 60);
+  const connectionLabel = useMemo(() => {
+    if (qualityMode === "low") return "Ahorro";
+    if (qualityMode === "high") return "Alta";
+    return "Excelente";
+  }, [qualityMode]);
+
+  if (isLoading) {
+    return <LivePageSkeleton />;
+  }
 
   return (
-    <section className="min-h-[calc(100vh-7rem)]">
-      <div className="flex items-start justify-between gap-3">
-        <div>
-          <p className="text-xs font-bold uppercase tracking-[0.24em] text-neonPink">
-            Live
-          </p>
-          <h1 className="mt-3 text-3xl font-black text-white">
-            {live?.title || "Directo"}
-          </h1>
-        </div>
-        <Link className="rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-xs font-black text-white" to="/">
-          Inicio
-        </Link>
-      </div>
+    <section className="relative -mx-4 min-h-[calc(100vh-5rem)] overflow-hidden bg-night text-white sm:mx-0 sm:rounded-[2rem]">
+      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_50%_0%,rgba(255,48,64,.24),transparent_32%),radial-gradient(circle_at_100%_35%,rgba(0,217,255,.16),transparent_28%),linear-gradient(180deg,rgba(7,11,20,.2),#070B14_82%)]" />
 
-      {error ? (
-        <div className="mt-4 rounded-lg border border-neonPink/30 bg-neonPink/10 px-4 py-3 text-sm font-bold text-white">
-          {error}
-        </div>
-      ) : null}
-      {notice ? (
-        <div className="mt-4 rounded-lg border border-neonGreen/30 bg-neonGreen/10 px-4 py-3 text-sm font-bold text-white">
-          {notice}
-        </div>
-      ) : null}
-
-      {isLoading ? (
-        <div className="mt-6 h-96 animate-pulse rounded-lg bg-white/8" />
-      ) : null}
-
-      {!isLoading && live ? (
-        <article className="mt-5 overflow-hidden rounded-lg border border-white/10 bg-surface">
-          <div ref={videoContainerRef} className="flex aspect-[9/14] max-h-[70vh] w-full items-center justify-center bg-black text-center text-sm font-bold text-white/54">
-            {live.is_live ? "Pulsa entrar para ver el directo." : "Este directo ha terminado."}
-          </div>
-          <div className="p-4">
-            <div className="flex items-center justify-between">
-              <span className={`rounded-full px-3 py-1 text-xs font-black uppercase ${live.is_live ? "bg-neonPink text-white" : "bg-white/10 text-white/58"}`}>
-                {live.is_live ? "En directo" : "Finalizado"}
-              </span>
-              <span className="text-sm font-black text-neonPink">
-                {live.viewers_count || 0} viendo · pico {live.peak_viewers || 0}
-              </span>
-            </div>
-            <div className="mt-3 grid grid-cols-3 gap-2 text-center">
-              <div className="rounded-lg bg-white/5 p-2">
-                <p className="text-xs font-bold text-white/42">Actuales</p>
-                <p className="text-lg font-black text-white">{stats?.current_viewers ?? live.viewers_count ?? 0}</p>
-              </div>
-              <div className="rounded-lg bg-white/5 p-2">
-                <p className="text-xs font-bold text-white/42">Únicos</p>
-                <p className="text-lg font-black text-white">{stats?.total_unique_viewers ?? live.total_unique_viewers ?? 0}</p>
-              </div>
-              <div className="rounded-lg bg-white/5 p-2">
-                <p className="text-xs font-bold text-white/42">Duración</p>
-                <p className="text-lg font-black text-white">{Math.floor((stats?.duration_seconds || 0) / 60)}m</p>
+      {live ? (
+        <article className="relative flex min-h-[calc(100vh-5rem)] flex-col">
+          <div className="relative min-h-[68vh] flex-1 overflow-hidden bg-black">
+            <div
+              ref={videoContainerRef}
+              className="flex h-full min-h-[68vh] w-full items-center justify-center bg-[radial-gradient(circle_at_center,rgba(124,58,237,.35),rgba(0,0,0,.96)_72%)] text-center text-sm font-bold text-white/54"
+            >
+              <div className="px-8">
+                <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-full border border-liveRed/35 bg-liveRed/12 text-liveRed shadow-live">
+                  <Radio className="h-9 w-9" />
+                </div>
+                {!live.is_live ? (
+                  <>
+                    <p className="mt-5 text-base font-black text-white">
+                      El directo ha terminado.
+                    </p>
+                    <p className="mt-2 text-sm font-semibold text-white/48">
+                      {live.description || "BUCAN DEY Live"}
+                    </p>
+                  </>
+                ) : null}
               </div>
             </div>
-            <p className="mt-3 text-sm font-semibold text-white/62">
-              @{live.creator_snapshot.username}
-              {live.location?.city ? ` · ${live.location.city}` : ""}
-            </p>
-            <p className="mt-3 text-base leading-7 text-white/72">
-              {live.description || "Directo en BUCAN DEY."}
-            </p>
-            <div className="mt-4 grid grid-cols-2 gap-2">
-              <select className="col-span-2 rounded-lg border border-white/10 bg-night px-3 py-3 text-sm font-bold text-white" value={qualityMode} onChange={(event) => setQualityMode(event.target.value)}>
-                <option value="auto">Calidad auto</option>
-                <option value="low">Ahorro datos</option>
-                <option value="high">Alta calidad</option>
-              </select>
-              <button className="h-12 rounded-lg bg-gradient-to-r from-neonGreen via-neonYellow to-neonPink text-sm font-black text-night disabled:opacity-60" type="button" onClick={joinLive} disabled={!live.is_live || isJoining}>
+
+            <div className="pointer-events-none absolute inset-x-0 top-0 h-48 bg-gradient-to-b from-black/82 to-transparent" />
+            <div className="pointer-events-none absolute inset-x-0 bottom-0 h-64 bg-gradient-to-t from-night via-night/74 to-transparent" />
+
+            <header className="absolute inset-x-3 top-3 z-20">
+              <motion.div
+                className="glass-panel rounded-[1.7rem] p-3"
+                initial={{ opacity: 0, y: -16 }}
+                animate={{ opacity: 1, y: 0 }}
+              >
+                <div className="flex items-center gap-3">
+                  <Link
+                    className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-white/10 bg-white/8 text-white"
+                    to="/"
+                    aria-label="Cerrar live"
+                  >
+                    <ArrowLeft className="h-5 w-5" />
+                  </Link>
+                  <Avatar user={live.creator_snapshot} />
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-2">
+                      <LiveBadge isLive={live.is_live} />
+                      <motion.span
+                        key={viewersCount}
+                        className="inline-flex items-center gap-1 rounded-full border border-white/10 bg-white/8 px-2.5 py-1 text-xs font-black text-white"
+                        initial={{ scale: 1.08 }}
+                        animate={{ scale: 1 }}
+                      >
+                        <Users className="h-3.5 w-3.5 text-neonCyan" />
+                        {viewersCount}
+                      </motion.span>
+                    </div>
+                    <p className="mt-1 truncate text-sm font-black text-white">
+                      {live.title || "Directo BUCAN DEY"}
+                    </p>
+                    <p className="truncate text-xs font-semibold text-white/54">
+                      @{live.creator_snapshot.username}
+                      {live.location?.city ? ` · ${live.location.city}` : ""}
+                      {live.category ? ` · ${live.category}` : ""}
+                    </p>
+                  </div>
+                </div>
+              </motion.div>
+            </header>
+
+            <div className="absolute bottom-28 left-3 right-3 z-40 space-y-2">
+              <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-none">
+                <StatusPill icon={Signal} label="conexión" value={connectionLabel} />
+                <StatusPill icon={ShieldCheck} label="calidad" value={qualityMode} tone="white" />
+                <StatusPill icon={Zap} label="duración" value={`${durationMinutes}m`} tone="pink" />
+              </div>
+
+              <div className="max-h-44 space-y-2 overflow-y-auto pr-5 scrollbar-none">
+                {comments.length === 0 ? (
+                  <div className="inline-flex rounded-full border border-white/10 bg-black/34 px-3 py-2 text-xs font-bold text-white/52 backdrop-blur-xl">
+                    Sé el primero en comentar.
+                  </div>
+                ) : null}
+                {comments.slice(-8).map((comment, index) => (
+                  <LiveComment comment={comment} key={`${comment.created_at}-${index}`} />
+                ))}
+                <div ref={commentsEndRef} />
+              </div>
+            </div>
+
+            {!hasJoined && live.is_live ? (
+              <motion.button
+                className="absolute left-1/2 top-1/2 z-20 flex h-16 -translate-x-1/2 -translate-y-1/2 items-center gap-3 rounded-full bg-gradient-to-r from-liveRed via-neonPink to-neonCyan px-7 text-base font-black text-white shadow-live disabled:opacity-60"
+                type="button"
+                onClick={joinLive}
+                disabled={isJoining}
+                whileTap={{ scale: 0.96 }}
+              >
+                <Radio className="h-5 w-5" />
                 {isJoining ? "Entrando..." : "Entrar al live"}
-              </button>
-              {isCreator && live.is_live ? (
-                <button className="h-12 rounded-lg bg-neonPink text-sm font-black text-white" type="button" onClick={endLive}>
-                  Terminar
+              </motion.button>
+            ) : null}
+          </div>
+
+          <div className="relative z-30 -mt-28 px-3 pb-28">
+            {error ? (
+              <div className="mb-3 rounded-[1.2rem] border border-neonPink/30 bg-neonPink/10 px-4 py-3 text-sm font-bold text-white backdrop-blur-xl">
+                {error}
+              </div>
+            ) : null}
+            {notice ? (
+              <div className="mb-3 rounded-[1.2rem] border border-neonCyan/30 bg-neonCyan/10 px-4 py-3 text-sm font-bold text-white backdrop-blur-xl">
+                {notice}
+              </div>
+            ) : null}
+
+            <div className="glass-panel rounded-[1.7rem] p-4">
+              <div className="flex items-center justify-between gap-3">
+                <div className="min-w-0">
+                  <p className="truncate text-lg font-black text-white">
+                    {live.title || "Directo BUCAN DEY"}
+                  </p>
+                  <p className="mt-1 text-sm font-semibold leading-6 text-white/62">
+                    {live.description || "Directo en BUCAN DEY."}
+                  </p>
+                </div>
+                <button
+                  className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full border border-white/10 bg-white/8 text-white"
+                  type="button"
+                  onClick={shareLive}
+                  aria-label="Compartir live"
+                >
+                  <Share2 className="h-5 w-5" />
                 </button>
-              ) : (
-                <button className="h-12 rounded-lg border border-white/10 bg-white/5 text-sm font-black text-white" type="button" onClick={() => navigator.share?.({ title: live.title, url: window.location.href })}>
-                  Compartir
-                </button>
-              )}
+              </div>
+
+              <div className="mt-4 grid grid-cols-3 gap-2 text-center">
+                <div className="rounded-[1.1rem] bg-white/7 p-3">
+                  <p className="text-lg font-black text-white">{viewersCount}</p>
+                  <p className="text-[10px] font-black uppercase text-white/38">actuales</p>
+                </div>
+                <div className="rounded-[1.1rem] bg-white/7 p-3">
+                  <p className="text-lg font-black text-white">
+                    {stats?.total_unique_viewers ?? live.total_unique_viewers ?? 0}
+                  </p>
+                  <p className="text-[10px] font-black uppercase text-white/38">únicos</p>
+                </div>
+                <div className="rounded-[1.1rem] bg-white/7 p-3">
+                  <p className="text-lg font-black text-white">{live.peak_viewers || 0}</p>
+                  <p className="text-[10px] font-black uppercase text-white/38">pico</p>
+                </div>
+              </div>
+
+              <div className="mt-4 flex gap-2 overflow-x-auto scrollbar-none">
+                {qualityOptions.map((option) => (
+                  <button
+                    className={`shrink-0 rounded-full border px-4 py-2 text-xs font-black transition ${
+                      qualityMode === option.value
+                        ? "border-neonCyan/50 bg-neonCyan/14 text-white shadow-cyan"
+                        : "border-white/10 bg-white/7 text-white/58"
+                    }`}
+                    key={option.value}
+                    type="button"
+                    onClick={() => setQualityMode(option.value)}
+                  >
+                    {option.label}
+                  </button>
+                ))}
+              </div>
+
+              {!live.is_live ? (
+                <p className="mt-4 rounded-[1.1rem] border border-white/10 bg-white/7 px-4 py-3 text-sm font-bold text-white/68">
+                  El directo ha terminado.
+                </p>
+              ) : null}
+
+              <div className="mt-4 flex gap-2">
+                {isCreator && live.is_live ? (
+                  <button
+                    className="h-12 flex-1 rounded-full bg-liveRed text-sm font-black text-white shadow-live"
+                    type="button"
+                    onClick={endLive}
+                  >
+                    Terminar directo
+                  </button>
+                ) : (
+                  <button
+                    className="h-12 flex-1 rounded-full border border-neonPink/35 bg-neonPink/10 text-sm font-black text-neonPink"
+                    type="button"
+                    onClick={() => setShowReport(true)}
+                  >
+                    Reportar live
+                  </button>
+                )}
+              </div>
             </div>
-            {!live.is_live ? (
-              <p className="mt-4 rounded-lg border border-white/10 bg-white/5 px-4 py-3 text-sm font-bold text-white/68">
-                El directo ha terminado.
-              </p>
-            ) : null}
-            {!isCreator ? (
-              <button className="mt-3 h-11 w-full rounded-lg border border-neonPink/30 bg-neonPink/10 text-sm font-black text-neonPink" type="button" onClick={() => setShowReport((current) => !current)}>
-                Reportar live
-              </button>
-            ) : null}
-            {showReport ? (
-              <form className="mt-3 space-y-2 rounded-lg border border-white/10 bg-white/5 p-3" onSubmit={submitReport}>
-                <select className="w-full rounded-lg border border-white/10 bg-night px-3 py-3 text-sm font-bold text-white" value={reportReason} onChange={(event) => setReportReason(event.target.value)}>
-                  <option value="spam">Spam</option>
-                  <option value="contenido ofensivo">Contenido ofensivo</option>
-                  <option value="violencia">Violencia</option>
-                  <option value="desnudos">Desnudos</option>
-                  <option value="acoso">Acoso</option>
-                  <option value="otro">Otro</option>
+          </div>
+
+          <form
+            className="glass-panel fixed inset-x-3 bottom-24 z-[950] rounded-[1.7rem] p-2 sm:left-1/2 sm:max-w-md sm:-translate-x-1/2"
+            onSubmit={sendComment}
+          >
+            <div className="mb-2 flex items-center gap-2 px-1">
+              {[
+                { icon: Gift, label: "Gifts" },
+                { icon: Heart, label: "Reacciones" },
+                { icon: Sparkles, label: "Coins" },
+                { icon: Flag, label: "Reportar", onClick: () => setShowReport(true) },
+              ].map((item) => {
+                const Icon = item.icon;
+                return (
+                  <button
+                    className="flex h-9 w-9 items-center justify-center rounded-full border border-white/10 bg-white/7 text-white/54"
+                    key={item.label}
+                    type="button"
+                    onClick={item.onClick}
+                    aria-label={item.label}
+                  >
+                    <Icon className="h-4 w-4" />
+                  </button>
+                );
+              })}
+            </div>
+            <div className="flex items-center gap-2">
+              <input
+                className="min-w-0 flex-1 rounded-full border border-white/10 bg-white/8 px-4 py-3 text-sm font-semibold text-white outline-none placeholder:text-white/34 focus:border-neonCyan"
+                placeholder="Comenta en vivo..."
+                value={commentText}
+                onChange={(event) => setCommentText(event.target.value)}
+              />
+              <motion.button
+                className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-liveRed via-neonPink to-neonCyan text-white shadow-live"
+                type="submit"
+                whileTap={{ scale: 0.92 }}
+                aria-label="Enviar comentario"
+              >
+                <Send className="h-5 w-5" />
+              </motion.button>
+            </div>
+          </form>
+
+          {showReport ? (
+            <motion.div
+              className="fixed inset-0 z-[1000] flex items-end bg-black/62 p-3 backdrop-blur-sm"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+            >
+              <motion.form
+                className="mx-auto w-full max-w-md rounded-[2rem] border border-white/10 bg-night p-4 shadow-live"
+                onSubmit={submitReport}
+                initial={{ y: 80 }}
+                animate={{ y: 0 }}
+              >
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-lg font-black text-white">Reportar live</p>
+                    <p className="mt-1 text-sm font-semibold text-white/52">
+                      Ayuda a moderar BUCAN DEY.
+                    </p>
+                  </div>
+                  <button
+                    className="flex h-10 w-10 items-center justify-center rounded-full bg-white/8 text-white"
+                    type="button"
+                    onClick={() => setShowReport(false)}
+                    aria-label="Cerrar reporte"
+                  >
+                    <X className="h-5 w-5" />
+                  </button>
+                </div>
+                <select
+                  className="mt-4 h-12 w-full rounded-[1rem] border border-white/10 bg-white/7 px-3 text-sm font-bold text-white outline-none focus:border-neonPink"
+                  value={reportReason}
+                  onChange={(event) => setReportReason(event.target.value)}
+                >
+                  {reportReasons.map(([value, label]) => (
+                    <option value={value} key={value}>
+                      {label}
+                    </option>
+                  ))}
                 </select>
-                <textarea className="min-h-20 w-full rounded-lg border border-white/10 bg-night px-3 py-3 text-sm font-semibold text-white outline-none focus:border-neonPink" placeholder="Detalles opcionales" value={reportDetails} onChange={(event) => setReportDetails(event.target.value)} />
-                <button className="h-11 w-full rounded-lg bg-neonPink text-sm font-black text-white" type="submit">
+                <textarea
+                  className="mt-3 min-h-24 w-full rounded-[1rem] border border-white/10 bg-white/7 px-3 py-3 text-sm font-semibold text-white outline-none placeholder:text-white/34 focus:border-neonPink"
+                  placeholder="Detalles opcionales"
+                  value={reportDetails}
+                  onChange={(event) => setReportDetails(event.target.value)}
+                />
+                <button
+                  className="mt-3 flex h-12 w-full items-center justify-center gap-2 rounded-full bg-liveRed text-sm font-black text-white shadow-live"
+                  type="submit"
+                >
+                  <AlertTriangle className="h-4 w-4" />
                   Enviar reporte
                 </button>
-              </form>
-            ) : null}
-          </div>
-        </article>
-      ) : null}
-
-      <div className="mt-5 rounded-lg border border-white/10 bg-surface p-4">
-        <p className="text-sm font-black uppercase tracking-[0.16em] text-white/48">
-          Chat live
-        </p>
-        <div className="mt-3 max-h-64 space-y-2 overflow-y-auto">
-          {comments.length === 0 ? (
-            <p className="text-sm font-semibold text-white/48">Sé el primero en comentar.</p>
+              </motion.form>
+            </motion.div>
           ) : null}
-          {comments.map((comment, index) => (
-            <div className="rounded-lg bg-white/5 px-3 py-2" key={`${comment.created_at}-${index}`}>
-              <p className="text-xs font-black text-neonYellow">@{comment.username}</p>
-              <p className="text-sm font-semibold text-white">{comment.text}</p>
-            </div>
-          ))}
+        </article>
+      ) : (
+        <div className="relative z-10 mx-4 rounded-[1.75rem] border border-neonPink/30 bg-neonPink/10 p-5 text-sm font-bold text-white">
+          {error || "No se pudo cargar este live."}
         </div>
-        <form className="mt-3 flex gap-2" onSubmit={sendComment}>
-          <input className="min-w-0 flex-1 rounded-lg border border-white/10 bg-white/5 px-4 py-3 text-sm font-bold text-white outline-none focus:border-neonPink" placeholder="Comenta en vivo..." value={commentText} onChange={(event) => setCommentText(event.target.value)} />
-          <button className="rounded-lg bg-neonPink px-4 py-3 text-sm font-black text-white" type="submit">
-            Enviar
-          </button>
-        </form>
-      </div>
+      )}
     </section>
   );
 }

@@ -188,14 +188,24 @@ function Home() {
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.05 }}
       >
-        <div className="flex items-center justify-between">
-          <p className="flex items-center gap-2 text-sm font-black uppercase tracking-[0.16em] text-white/68">
-            <span className="h-2 w-2 rounded-full bg-liveRed [animation:live-pulse_1.4s_ease-in-out_infinite]" />
-            En directo ahora
-          </p>
-          <Link className="text-sm font-black text-liveRed" to="/lives/start">
-            Empezar live
-          </Link>
+        <div className="glass-panel rounded-[1.7rem] p-4">
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <p className="flex items-center gap-2 text-sm font-black uppercase tracking-[0.16em] text-white/72">
+                <span className="h-2.5 w-2.5 rounded-full bg-liveRed shadow-live [animation:live-pulse_1.4s_ease-in-out_infinite]" />
+                En directo ahora
+              </p>
+              <p className="mt-1 text-sm font-semibold text-white/46">
+                Fiestas, bares y ambiente en vivo.
+              </p>
+            </div>
+            <Link
+              className="shrink-0 rounded-full bg-liveRed px-4 py-2 text-sm font-black text-white shadow-live"
+              to="/lives/start"
+            >
+              Empezar
+            </Link>
+          </div>
         </div>
         {lives.length ? (
           <div className="scrollbar-none -mx-4 mt-3 flex gap-3 overflow-x-auto px-4 pb-2">

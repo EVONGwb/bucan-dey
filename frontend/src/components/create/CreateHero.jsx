@@ -12,15 +12,15 @@ const heroActions = [
 function CreateHero({ activeMode, onModeChange, onLive }) {
   return (
     <motion.header
-      className="relative overflow-hidden rounded-[2rem] border border-white/10 bg-night p-5 shadow-cyan"
+      className="relative min-w-0 overflow-hidden rounded-[2rem] border border-white/10 bg-night p-5 shadow-cyan"
       initial={{ opacity: 0, y: -16 }}
       animate={{ opacity: 1, y: 0 }}
     >
       <div className="creator-aurora absolute inset-0 opacity-90" />
       <div className="absolute inset-0 bg-gradient-to-b from-night/12 via-night/42 to-night/94" />
 
-      <div className="relative z-10 flex items-start justify-between gap-4">
-        <div>
+      <div className="relative z-10 flex min-w-0 items-start justify-between gap-3">
+        <div className="min-w-0">
           <h1 className="text-4xl font-black uppercase leading-none text-white">
             Creador <span className="text-neonPink">Vivo</span>
           </h1>
@@ -40,7 +40,7 @@ function CreateHero({ activeMode, onModeChange, onLive }) {
           </div>
         </div>
 
-        <div className="flex gap-2">
+        <div className="hidden shrink-0 gap-2 min-[440px]:flex">
           {[
             { icon: Search, label: "Buscar" },
             { icon: Bell, label: "Notificaciones", badge: "12" },
@@ -72,7 +72,7 @@ function CreateHero({ activeMode, onModeChange, onLive }) {
           const isActive = activeMode === action.id;
           const content = (
             <motion.button
-              className={`flex h-14 w-full items-center justify-center gap-2 rounded-[1rem] border text-sm font-black transition ${
+              className={`flex h-14 min-w-0 items-center justify-center gap-2 rounded-[1rem] border px-2 text-sm font-black transition ${
                 isActive
                   ? "border-neonPink/70 bg-gradient-to-r from-neonPink to-fiestaPurple text-white shadow-neon"
                   : "border-white/10 bg-white/7 text-white/82 backdrop-blur-xl hover:bg-white/10"
@@ -84,8 +84,8 @@ function CreateHero({ activeMode, onModeChange, onLive }) {
               }}
               whileTap={{ scale: 0.96 }}
             >
-              <Icon className="h-5 w-5" />
-              {action.label}
+              <Icon className="h-5 w-5 shrink-0" />
+              <span className="truncate">{action.label}</span>
             </motion.button>
           );
 

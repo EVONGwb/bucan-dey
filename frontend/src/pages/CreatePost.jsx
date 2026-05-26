@@ -298,7 +298,7 @@ function CreatePost() {
       <div className="pointer-events-none absolute -left-20 top-48 h-80 w-80 rounded-full bg-neonCyan/12 blur-3xl" />
 
       <form id="create-post-form" className="relative z-10 grid gap-4 px-4 lg:grid-cols-[1fr_20rem]" onSubmit={handleSubmit}>
-        <div className="space-y-4">
+        <div className="min-w-0 space-y-4">
           <CreateHero
             activeMode={creatorMode}
             onModeChange={handleHeroMode}
@@ -365,7 +365,7 @@ function CreatePost() {
           ) : null}
         </div>
 
-        <aside className="space-y-4 lg:sticky lg:top-4 lg:self-start">
+        <aside className="min-w-0 space-y-4 lg:sticky lg:top-4 lg:self-start">
           <MusicWidget />
           <PrivacyEditor selectedPrivacy={selectedPrivacy} onPrivacyChange={handlePrivacyChange} />
           <DraftManager />

@@ -672,7 +672,7 @@ function CreatePost() {
           </aside>
         </div>
 
-        <div className="sticky bottom-[5.9rem] z-20 mt-4 sm:bottom-[7rem] sm:mt-6">
+        <div className="relative z-20 mt-4 sm:sticky sm:bottom-[7rem] sm:mt-6">
           <motion.button
             className="flex h-[3.25rem] w-full items-center justify-center gap-2 rounded-[0.95rem] bg-gradient-to-r from-neonPink via-fiestaPurple to-[#4c00ff] text-base font-black text-white shadow-neon disabled:opacity-60 sm:h-16 sm:gap-3 sm:rounded-[1rem] sm:text-lg"
             type="submit"

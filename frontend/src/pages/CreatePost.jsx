@@ -11,14 +11,11 @@ import {
   ChevronRight,
   Eye,
   Globe2,
-  Heart,
   Image as ImageIcon,
   LocateFixed,
   Lock,
   Map as MapIcon,
   MapPin,
-  MessageCircle,
-  Navigation,
   Radio,
   Send,
   Shield,
@@ -406,65 +403,21 @@ function CreatePost() {
 
         <div className="mt-5 grid gap-4 sm:mt-7 sm:gap-6 lg:grid-cols-[1fr_24rem]">
           <main className="min-w-0 space-y-4 sm:space-y-6">
-            <section>
-              <h2 className="text-lg font-black text-white sm:text-xl">¿Qué quieres publicar?</h2>
-              <div className="mt-3 grid grid-cols-5 gap-2 sm:mt-4 sm:gap-3">
-                {publishModes.map((mode) => {
-                  const Icon = mode.icon;
-                  const isActive = activeMode === mode.id;
-                  return (
-                    <motion.button
-                      className={[
-                        "min-h-[5.1rem] rounded-[0.95rem] border p-2.5 text-center transition sm:min-h-28 sm:rounded-[1.05rem] sm:p-4",
-                        isActive
-                          ? "border-neonPink bg-neonPink/14 text-white shadow-neon"
-                          : "border-white/10 bg-white/6 text-white/82 hover:bg-white/10",
-                      ].join(" ")}
-                      type="button"
-                      onClick={() => selectMode(mode)}
-                      whileTap={{ scale: 0.96 }}
-                      key={mode.id}
-                    >
-                      <Icon
-                        className={[
-                          "mx-auto h-6 w-6 sm:h-8 sm:w-8",
-                          mode.tone === "cyan"
-                            ? "text-neonCyan"
-                            : mode.tone === "purple"
-                              ? "text-fiestaPurple"
-                              : mode.tone === "red"
-                                ? "text-liveRed"
-                                : "text-neonPink",
-                        ].join(" ")}
-                      />
-                      <span className="mt-2 block text-[11px] font-black sm:mt-3 sm:text-sm">{mode.label}</span>
-                    </motion.button>
-                  );
-                })}
+            <section className="rounded-[1.15rem] border border-neonPink/20 bg-white/[0.055] p-4 shadow-neon backdrop-blur-2xl sm:rounded-[1.45rem] sm:p-5">
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <p className="flex items-center gap-2 text-xs font-black uppercase tracking-[0.18em] text-neonCyan">
+                    <Eye className="h-4 w-4" />
+                    Vista previa siempre arriba
+                  </p>
+                  <h2 className="mt-2 text-xl font-black text-white sm:text-2xl">
+                    {isLiveMode ? "Directo" : isEventMode ? "Publicación de evento" : "Tu publicación"}
+                  </h2>
+                </div>
+                <span className="rounded-full border border-white/10 bg-white/7 px-3 py-1.5 text-xs font-black text-white/68">
+                  {privacyLabel(form.visibility)}
+                </span>
               </div>
-
-              <input
-                ref={imageInputRef}
-                className="sr-only"
-                type="file"
-                accept="image/jpeg,image/png,image/webp"
-                onChange={(event) => handleMediaSelect(event, "photo")}
-                disabled={isUploading}
-              />
-              <input
-                ref={videoInputRef}
-                className="sr-only"
-                type="file"
-                accept="video/mp4,video/quicktime,video/webm"
-                onChange={(event) => handleMediaSelect(event, "video")}
-                disabled={isUploading}
-              />
-            </section>
-
-            <section className="rounded-[1.15rem] border border-white/10 bg-white/[0.045] p-4 shadow-cyan backdrop-blur-2xl sm:rounded-[1.45rem] sm:p-5">
-              <h2 className="text-xl font-black text-white sm:text-2xl">
-                {isLiveMode ? "Directo" : isEventMode ? "Publica un evento rápido" : "Escribe tu publicación"}
-              </h2>
 
               <div className="mt-4 flex items-center gap-3 sm:mt-5 sm:gap-4">
                 {user?.avatar_url ? (
@@ -509,7 +462,7 @@ function CreatePost() {
                 <>
                   <div className="mt-4 overflow-hidden rounded-[1rem] border border-white/10 bg-night/42 sm:mt-5 sm:rounded-[1.1rem]">
                     <textarea
-                      className="min-h-36 w-full resize-none bg-transparent px-4 py-4 text-base font-semibold leading-7 text-white outline-none placeholder:text-white/34 sm:min-h-72 sm:px-5 sm:py-5 sm:text-xl sm:leading-8"
+                      className="min-h-28 w-full resize-none bg-transparent px-4 py-4 text-base font-semibold leading-7 text-white outline-none placeholder:text-white/34 sm:min-h-44 sm:px-5 sm:py-5 sm:text-xl sm:leading-8"
                       name="text"
                       value={form.text}
                       onChange={updateField}
@@ -517,9 +470,27 @@ function CreatePost() {
                       maxLength={2000}
                     />
                     <div className="flex items-center justify-between border-t border-white/10 px-3 py-2.5 sm:px-4 sm:py-3">
-                      <div className="flex items-center gap-3 text-white/66 sm:gap-4">
+                      <div className="flex items-center gap-2 text-white/66 sm:gap-3">
                         <Smile className="h-[18px] w-[18px] sm:h-5 sm:w-5" />
                         <span className="text-lg font-black sm:text-xl">#</span>
+                        <button
+                          className="transition hover:text-neonCyan disabled:opacity-40"
+                          type="button"
+                          onClick={() => imageInputRef.current?.click()}
+                          disabled={isUploading}
+                          aria-label="Subir foto"
+                        >
+                          <Camera className="h-[18px] w-[18px] sm:h-5 sm:w-5" />
+                        </button>
+                        <button
+                          className="transition hover:text-fiestaPurple disabled:opacity-40"
+                          type="button"
+                          onClick={() => videoInputRef.current?.click()}
+                          disabled={isUploading}
+                          aria-label="Subir video"
+                        >
+                          <Video className="h-[18px] w-[18px] sm:h-5 sm:w-5" />
+                        </button>
                         <button
                           className="transition hover:text-neonCyan"
                           type="button"
@@ -532,6 +503,23 @@ function CreatePost() {
                       <span className="text-xs font-semibold text-white/52 sm:text-sm">{form.text.length}/2000</span>
                     </div>
                   </div>
+
+                  {isUploading ? (
+                    <div className="mt-3 overflow-hidden rounded-[1.05rem] border border-neonCyan/25 bg-neonCyan/10 p-4 shadow-cyan sm:mt-4 sm:rounded-[1.15rem]">
+                      <div className="flex items-center gap-3">
+                        <span className="h-3 w-3 animate-pulse rounded-full bg-neonCyan shadow-cyan" />
+                        <div>
+                          <p className="text-sm font-black text-white">Subiendo archivo...</p>
+                          <p className="mt-1 text-xs font-semibold text-white/56">
+                            La vista previa se actualizará aquí en cuanto termine la carga.
+                          </p>
+                        </div>
+                      </div>
+                      <div className="mt-4 h-2 overflow-hidden rounded-full bg-white/10">
+                        <div className="h-full w-2/3 animate-pulse rounded-full bg-gradient-to-r from-neonCyan via-fiestaPurple to-neonPink" />
+                      </div>
+                    </div>
+                  ) : null}
 
                   {mediaItems.length ? (
                     <div className="mt-3 overflow-hidden rounded-[1.05rem] border border-white/10 bg-night sm:mt-4 sm:rounded-[1.15rem]">
@@ -632,12 +620,65 @@ function CreatePost() {
               />
             </section>
 
+            <section>
+              <h2 className="text-lg font-black text-white sm:text-xl">¿Qué quieres publicar?</h2>
+              <div className="mt-3 grid grid-cols-5 gap-2 sm:mt-4 sm:gap-3">
+                {publishModes.map((mode) => {
+                  const Icon = mode.icon;
+                  const isActive = activeMode === mode.id;
+                  return (
+                    <motion.button
+                      className={[
+                        "min-h-[4.6rem] rounded-[0.95rem] border p-2.5 text-center transition sm:min-h-28 sm:rounded-[1.05rem] sm:p-4",
+                        isActive
+                          ? "border-neonPink bg-neonPink/14 text-white shadow-neon"
+                          : "border-white/10 bg-white/6 text-white/82 hover:bg-white/10",
+                      ].join(" ")}
+                      type="button"
+                      onClick={() => selectMode(mode)}
+                      whileTap={{ scale: 0.96 }}
+                      key={mode.id}
+                    >
+                      <Icon
+                        className={[
+                          "mx-auto h-6 w-6 sm:h-8 sm:w-8",
+                          mode.tone === "cyan"
+                            ? "text-neonCyan"
+                            : mode.tone === "purple"
+                              ? "text-fiestaPurple"
+                              : mode.tone === "red"
+                                ? "text-liveRed"
+                                : "text-neonPink",
+                        ].join(" ")}
+                      />
+                      <span className="mt-2 block text-[11px] font-black sm:mt-3 sm:text-sm">{mode.label}</span>
+                    </motion.button>
+                  );
+                })}
+              </div>
+
+              <input
+                ref={imageInputRef}
+                className="sr-only"
+                type="file"
+                accept="image/jpeg,image/png,image/webp"
+                onChange={(event) => handleMediaSelect(event, "photo")}
+                disabled={isUploading}
+              />
+              <input
+                ref={videoInputRef}
+                className="sr-only"
+                type="file"
+                accept="video/mp4,video/quicktime,video/webm"
+                onChange={(event) => handleMediaSelect(event, "video")}
+                disabled={isUploading}
+              />
+            </section>
+
             <MobileUtilityPanels
               form={form}
               updateField={updateField}
               position={position}
-              user={user}
-              mediaItems={mediaItems}
             />
 
             <section className="grid gap-4 sm:gap-5">
@@ -676,7 +717,6 @@ function CreatePost() {
           <aside className="hidden min-w-0 space-y-5 lg:sticky lg:top-5 lg:block lg:self-start">
             <LocationSummary form={form} position={position} />
             <PrivacyPanel form={form} updateField={updateField} />
-            <PreviewCard user={user} form={form} mediaItems={mediaItems} />
           </aside>
         </div>
 
@@ -696,7 +736,7 @@ function CreatePost() {
   );
 }
 
-function MobileUtilityPanels({ form, updateField, position, user, mediaItems }) {
+function MobileUtilityPanels({ form, updateField, position }) {
   const panels = [
     {
       id: "location",
@@ -711,13 +751,6 @@ function MobileUtilityPanels({ form, updateField, position, user, mediaItems }) 
       label: "Privacidad",
       summary: privacyLabel(form.visibility),
       content: <PrivacyPanel form={form} updateField={updateField} compact />,
-    },
-    {
-      id: "preview",
-      icon: Eye,
-      label: "Vista previa",
-      summary: form.text.trim() ? "Actualizada" : "Mini post",
-      content: <PreviewCard user={user} form={form} mediaItems={mediaItems} compact />,
     },
   ];
 
@@ -939,74 +972,6 @@ function PrivacyPanel({ form, updateField, compact = false }) {
           );
         })}
       </div>
-    </section>
-  );
-}
-
-function PreviewCard({ user, form, mediaItems, compact = false }) {
-  return (
-    <section
-      className={[
-        "border border-white/10 bg-white/[0.045] shadow-cyan backdrop-blur-2xl",
-        compact ? "rounded-[0.9rem] p-3" : "rounded-[1.3rem] p-4",
-      ].join(" ")}
-    >
-      <h2 className={compact ? "flex items-center gap-2 text-sm font-black uppercase text-white" : "flex items-center gap-3 text-lg font-black uppercase text-white"}>
-        <Eye className={compact ? "h-4 w-4 text-white/70" : "h-5 w-5 text-white/70"} />
-        Vista previa
-      </h2>
-      <div className={(compact ? "mt-3 p-3" : "mt-4 p-4") + " rounded-[1rem] border border-white/10 bg-night/48"}>
-        <div className="flex items-center gap-3">
-          {user?.avatar_url ? (
-            <img
-              alt={user.display_name || user.username}
-              className={(compact ? "h-9 w-9" : "h-11 w-11") + " rounded-full border border-neonPink object-cover"}
-              src={user.avatar_url}
-            />
-          ) : (
-            <span className={(compact ? "h-9 w-9" : "h-11 w-11") + " flex items-center justify-center rounded-full border border-neonPink bg-gradient-to-br from-neonPink to-neonCyan text-sm font-black"}>
-              {initials(user)}
-            </span>
-          )}
-          <div className="min-w-0 flex-1">
-            <p className="truncate text-sm font-black text-white">
-              {user?.display_name || user?.username || "BUCAN DEY"}
-            </p>
-            <p className="text-xs font-semibold text-white/48">Ahora · {privacyLabel(form.visibility)}</p>
-          </div>
-          <span className="text-xl font-black text-white/40">...</span>
-        </div>
-
-        <p className={(compact ? "mt-3 line-clamp-4" : "mt-4") + " whitespace-pre-wrap text-sm font-semibold leading-6 text-white"}>
-          {form.text.trim() || "¿Qué está pasando ahora?"}
-        </p>
-
-        {mediaItems.length ? (
-          <div className={(compact ? "mt-3" : "mt-4") + " overflow-hidden rounded-[0.9rem] border border-white/10"}>
-            {mediaItems[0].type === "image" ? (
-              <img alt="Preview" className={(compact ? "max-h-40" : "max-h-64") + " w-full object-cover"} src={mediaItems[0].url} />
-            ) : (
-              <video className={(compact ? "max-h-40" : "max-h-64") + " w-full bg-black"} controls preload="metadata" src={mediaItems[0].url} />
-            )}
-          </div>
-        ) : null}
-
-        <p className={(compact ? "mt-3 text-xs" : "mt-4 text-sm") + " flex items-center gap-2 font-bold text-neonCyan"}>
-          <MapPin className="h-4 w-4" />
-          {selectedLocationLabel(form)}, Guinea Ecuatorial
-        </p>
-
-        <div className={(compact ? "mt-3 pt-3" : "mt-4 pt-4") + " flex items-center justify-between border-t border-white/10 text-white/68"}>
-          <Heart className={compact ? "h-5 w-5" : "h-6 w-6"} />
-          <MessageCircle className={compact ? "h-5 w-5" : "h-6 w-6"} />
-          <Send className={compact ? "h-5 w-5" : "h-6 w-6"} />
-          <Navigation className={compact ? "h-5 w-5" : "h-6 w-6"} />
-        </div>
-      </div>
-      <span className={(compact ? "mt-3 px-2.5 py-1.5 text-xs" : "mt-4 px-3 py-2 text-sm") + " inline-flex items-center gap-2 rounded-[0.75rem] border border-white/10 bg-white/6 font-bold text-white/70"}>
-        <Globe2 className="h-4 w-4" />
-        {privacyLabel(form.visibility)}
-      </span>
     </section>
   );
 }

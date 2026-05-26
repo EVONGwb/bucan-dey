@@ -98,6 +98,30 @@ video {
   }
 }
 
+@keyframes creator-aurora-flow {
+  0% {
+    transform: translate3d(-4%, -3%, 0) scale(1);
+    filter: hue-rotate(0deg);
+  }
+  50% {
+    transform: translate3d(5%, 4%, 0) scale(1.06);
+    filter: hue-rotate(22deg);
+  }
+  100% {
+    transform: translate3d(-4%, -3%, 0) scale(1);
+    filter: hue-rotate(0deg);
+  }
+}
+
+.creator-aurora {
+  background:
+    radial-gradient(circle at 18% 25%, rgba(255, 79, 216, 0.42), transparent 24rem),
+    radial-gradient(circle at 56% 10%, rgba(0, 217, 255, 0.34), transparent 22rem),
+    radial-gradient(circle at 85% 36%, rgba(255, 216, 77, 0.28), transparent 18rem),
+    linear-gradient(135deg, rgba(124, 58, 237, 0.42), rgba(7, 11, 20, 0.9));
+  animation: creator-aurora-flow 12s ease-in-out infinite;
+}
+
 @media (prefers-reduced-motion: reduce) {
   html {
     scroll-behavior: auto;

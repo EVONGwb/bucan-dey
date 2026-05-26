@@ -1,28 +1,24 @@
-import L from "leaflet";
-import "leaflet/dist/leaflet.css";
 import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { MapContainer, Marker, TileLayer, useMapEvents } from "react-leaflet";
+import { motion } from "framer-motion";
+import { Palette, Save, Send } from "lucide-react";
 
 import apiClient from "../api/client.js";
+import AdvancedTools from "../components/create/AdvancedTools.jsx";
+import BusinessFields from "../components/create/BusinessFields.jsx";
+import CreateHero from "../components/create/CreateHero.jsx";
+import CreatorPreviewCards from "../components/create/CreatorPreviewCards.jsx";
+import DraftManager from "../components/create/DraftManager.jsx";
+import MusicWidget from "../components/create/MusicWidget.jsx";
+import NearbyWidget from "../components/create/NearbyWidget.jsx";
+import PostEditor from "../components/create/PostEditor.jsx";
+import PrivacyEditor from "../components/create/PrivacyEditor.jsx";
+import QuickActions from "../components/create/QuickActions.jsx";
+import ThemeEditor from "../components/create/ThemeEditor.jsx";
+import { creatorTypes } from "../components/create/TypeSelector.jsx";
+import TypeSelector from "../components/create/TypeSelector.jsx";
+import { useAuth } from "../context/AuthContext.jsx";
 import { getApiErrorMessage } from "../utils/errors.js";
-
-const postTypes = [
-  { value: "normal", label: "Normal" },
-  { value: "fiesta", label: "Fiesta" },
-  { value: "cumpleaños", label: "Cumpleaños" },
-  { value: "evento", label: "Evento" },
-  { value: "live", label: "Live" },
-  { value: "bar", label: "Bar" },
-  { value: "ambiente", label: "Ambiente" },
-  { value: "video", label: "Vídeo" },
-];
-
-const visibilityOptions = [
-  { value: "global", label: "Global", description: "Aparece en Inicio" },
-  { value: "profile_only", label: "Solo perfil", description: "Solo aparece en tu perfil" },
-  { value: "private", label: "Privado", description: "Solo lo ves tú" },
-];
 
 const initialForm = {
   text: "",
@@ -40,32 +36,43 @@ const initialForm = {
   is_open: true,
 };
 
-const MALABO_CENTER = [3.7523, 8.7741];
+const initialExtraFields = {
+  company: "",
+  role: "",
+  salary: "",
+  city: "",
+  schedule: "",
+  contact: "",
+};
 
-function createSelectedIcon() {
-  return L.divIcon({
-    className: "",
-    html: '<div style="width:26px;height:26px;border-radius:999px;background:#ff1478;border:4px solid #08070d;box-shadow:0 0 22px #ff1478;"></div>',
-    iconSize: [26, 26],
-    iconAnchor: [13, 13],
-  });
-}
+const quickActionMap = {
+  photo: "post",
+  reel: "reel",
+  audio: "post",
+  place: "post",
+  event: "event",
+  taxi: "taxi",
+  job: "job",
+  pallets: "pallets",
+  business: "business",
+  trend: "community",
+};
 
-function MapClickHandler({ onSelect }) {
-  useMapEvents({
-    click(event) {
-      onSelect(event.latlng);
-    },
-  });
-
-  return null;
+function resolveCreatorType(id) {
+  return creatorTypes.find((type) => type.id === id) || creatorTypes[0];
 }
 
 function CreatePost() {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [form, setForm] = useState(initialForm);
   const [mediaItems, setMediaItems] = useState([]);
+  const [creatorMode, setCreatorMode] = useState("post");
+  const [selectedPrivacy, setSelectedPrivacy] = useState("all");
+  const [selectedTheme, setSelectedTheme] = useState("neon");
+  const [extraFields, setExtraFields] = useState(initialExtraFields);
   const [error, setError] = useState("");
+  const [notice, setNotice] = useState("");
   const [uploadError, setUploadError] = useState("");
   const [locationError, setLocationError] = useState("");
   const [showLocationPicker, setShowLocationPicker] = useState(false);
@@ -84,6 +91,10 @@ function CreatePost() {
       ...current,
       [name]: type === "checkbox" ? checked : value,
     }));
+  }
+
+  function updateExtraField(name, value) {
+    setExtraFields((current) => ({ ...current, [name]: value }));
   }
 
   function setSelectedLocation(lat, lng) {
@@ -108,6 +119,7 @@ function CreatePost() {
     navigator.geolocation.getCurrentPosition(
       (position) => {
         setSelectedLocation(position.coords.latitude, position.coords.longitude);
+        setShowLocationPicker(true);
         setIsLocating(false);
       },
       () => {
@@ -143,15 +155,113 @@ function CreatePost() {
     }
   }
 
+  function applyCreatorType(type) {
+    if (type.id === "live") {
+      setCreatorMode(type.id);
+      setForm((current) => ({ ...current, type: "live" }));
+      return;
+    }
+
+    setCreatorMode(type.id);
+    setForm((current) => ({
+      ...current,
+      type: type.backendType,
+    }));
+  }
+
+  function handleQuickAction(actionId) {
+    if (actionId === "place") {
+      setShowLocationPicker(true);
+      setNotice("El selector de ubicación está listo.");
+      return;
+    }
+
+    const mappedType = resolveCreatorType(quickActionMap[actionId]);
+    applyCreatorType(mappedType);
+    setNotice(`${mappedType.label} seleccionado.`);
+  }
+
+  function handleHeroMode(mode) {
+    const mappedMode = mode === "business" ? "business" : mode === "event" ? "event" : "post";
+    applyCreatorType(resolveCreatorType(mappedMode));
+  }
+
+  function handlePrivacyChange(option) {
+    setSelectedPrivacy(option.id);
+    setForm((current) => ({ ...current, visibility: option.value }));
+  }
+
+  function composePostText() {
+    const baseText = form.text.trim();
+
+    if (!["job", "business", "taxi", "pallets", "sale"].includes(creatorMode)) {
+      return baseText;
+    }
+
+    const labels = {
+      job: "OFERTA DE TRABAJO",
+      business: "NEGOCIO",
+      taxi: "EVO TAXI",
+      pallets: "CONECTAPALET",
+      sale: "VENTA",
+    };
+
+    const details = [
+      labels[creatorMode],
+      extraFields.company ? `Empresa: ${extraFields.company}` : "",
+      extraFields.role ? `${creatorMode === "pallets" ? "Producto" : "Puesto/servicio"}: ${extraFields.role}` : "",
+      extraFields.salary ? `${creatorMode === "pallets" ? "Cantidad/precio" : "Salario"}: ${extraFields.salary}` : "",
+      extraFields.city ? `Ciudad: ${extraFields.city}` : "",
+      extraFields.schedule ? `Horario: ${extraFields.schedule}` : "",
+      extraFields.contact ? `Contacto: ${extraFields.contact}` : "",
+    ].filter(Boolean);
+
+    return [baseText, details.join("\n")].filter(Boolean).join("\n\n");
+  }
+
+  function saveDraft() {
+    const draft = {
+      form,
+      creatorMode,
+      extraFields,
+      selectedPrivacy,
+      selectedTheme,
+      mediaItems,
+      saved_at: new Date().toISOString(),
+    };
+    try {
+      localStorage.setItem("bucan_dey_create_draft", JSON.stringify(draft));
+      setNotice("Borrador guardado en este dispositivo.");
+    } catch {
+      setNotice("No se pudo guardar el borrador en este dispositivo.");
+    }
+  }
+
+  function personalize() {
+    const themeOrder = ["neon", "africa", "oro", "evo", "minimal", "discord"];
+    const currentIndex = themeOrder.indexOf(selectedTheme);
+    const nextTheme = themeOrder[(currentIndex + 1) % themeOrder.length];
+    setSelectedTheme(nextTheme);
+    setNotice("Tema actualizado para la vista previa.");
+  }
+
   async function handleSubmit(event) {
     event.preventDefault();
     setError("");
+    setNotice("");
+
+    const postText = composePostText();
+    if (!postText && mediaItems.length === 0) {
+      setError("Añade texto, detalles o un archivo antes de publicar.");
+      return;
+    }
+
     setIsSubmitting(true);
 
     const payload = {
       type: form.type,
       visibility: form.visibility,
-      text: form.text,
+      text: postText,
       media: mediaItems,
       location: {
         city: form.city,
@@ -183,292 +293,118 @@ function CreatePost() {
   }
 
   return (
-    <section className="min-h-[calc(100vh-7rem)]">
-      <p className="text-xs font-bold uppercase tracking-[0.24em] text-neonGreen">
-        Publicar
-      </p>
-      <h1 className="mt-3 text-4xl font-black text-white">Crear</h1>
+    <section className="relative -mx-4 min-h-[calc(100vh-7rem)] overflow-hidden pb-44 text-white sm:mx-0">
+      <div className="pointer-events-none absolute -right-24 top-0 h-80 w-80 rounded-full bg-neonPink/14 blur-3xl" />
+      <div className="pointer-events-none absolute -left-20 top-48 h-80 w-80 rounded-full bg-neonCyan/12 blur-3xl" />
 
-      <form className="mt-7 space-y-5" onSubmit={handleSubmit}>
-        <label className="block">
-          <span className="text-sm font-semibold text-white/78">Texto</span>
-          <textarea
-            className="mt-2 min-h-36 w-full resize-none rounded-lg border border-white/10 bg-surface px-4 py-4 text-base leading-7 text-white outline-none transition placeholder:text-white/32 focus:border-neonPink"
-            name="text"
-            value={form.text}
-            onChange={updateField}
-            placeholder="¿Qué está pasando ahora?"
-            maxLength={1000}
-            required
+      <form id="create-post-form" className="relative z-10 grid gap-4 px-4 lg:grid-cols-[1fr_20rem]" onSubmit={handleSubmit}>
+        <div className="space-y-4">
+          <CreateHero
+            activeMode={creatorMode}
+            onModeChange={handleHeroMode}
+            onLive={() => navigate("/lives/start")}
           />
-        </label>
 
-        <div>
-          <p className="text-sm font-semibold text-white/78">Tipo</p>
-          <div className="mt-2 grid grid-cols-2 gap-2">
-            {postTypes.map((type) => (
-              <label
-                className={`rounded-lg border px-3 py-3 text-sm font-black transition ${
-                  form.type === type.value
-                    ? "border-neonPink bg-neonPink/16 text-white"
-                    : "border-white/10 bg-surface text-white/68"
-                }`}
-                key={type.value}
-              >
-                <input
-                  className="sr-only"
-                  type="radio"
-                  name="type"
-                  value={type.value}
-                  checked={form.type === type.value}
-                  onChange={updateField}
-                />
-                {type.label}
-              </label>
-            ))}
-          </div>
-        </div>
-
-        <div className="rounded-lg border border-white/10 bg-surface p-4">
-          <p className="text-sm font-black text-white">Foto o vídeo</p>
-          <p className="mt-1 text-xs font-semibold text-white/48">
-            Imágenes hasta 10 MB. Vídeos hasta 100 MB.
-          </p>
-
-          {mediaItems.length === 0 ? (
-            <label className="mt-4 flex min-h-28 cursor-pointer flex-col items-center justify-center rounded-lg border border-dashed border-white/18 bg-white/5 px-4 text-center">
-              <span className="text-sm font-black text-white">
-                {isUploading ? "Subiendo..." : "Seleccionar imagen/vídeo"}
-              </span>
-              <span className="mt-1 text-xs font-semibold text-white/42">
-                JPEG, PNG, WEBP, MP4, MOV o WEBM
-              </span>
-              <input
-                className="sr-only"
-                type="file"
-                accept="image/jpeg,image/png,image/webp,video/mp4,video/quicktime,video/webm"
-                onChange={handleMediaSelect}
-                disabled={isUploading}
-              />
-            </label>
+          {notice ? (
+            <div className="rounded-[1.1rem] border border-neonCyan/30 bg-neonCyan/10 px-4 py-3 text-sm font-semibold text-white">
+              {notice}
+            </div>
           ) : null}
 
-          {mediaItems.map((item) => (
-            <div key={item.public_id || item.url} className="mt-4 overflow-hidden rounded-lg border border-white/10 bg-night">
-              {item.type === "image" ? (
-                <img
-                  alt="Preview"
-                  className="max-h-96 w-full object-cover"
-                  src={item.url}
-                />
-              ) : (
-                <video
-                  className="max-h-96 w-full bg-black"
-                  controls
-                  preload="metadata"
-                  src={item.url}
-                />
-              )}
-              <button
-                className="h-11 w-full border-t border-white/10 text-sm font-black text-neonPink"
-                type="button"
-                onClick={() => setMediaItems([])}
-              >
-                Quitar archivo
-              </button>
-            </div>
-          ))}
+          <PostEditor
+            user={user}
+            form={form}
+            updateField={updateField}
+            mediaItems={mediaItems}
+            isUploading={isUploading}
+            uploadError={uploadError}
+            handleMediaSelect={handleMediaSelect}
+            removeMedia={() => setMediaItems([])}
+            hasEventFields={hasEventFields}
+          />
 
-          {uploadError ? (
-            <div className="mt-3 rounded-lg border border-neonPink/30 bg-neonPink/10 px-4 py-3 text-sm font-semibold text-white">
-              {uploadError}
+          <div className="grid gap-4 xl:grid-cols-2">
+            <QuickActions onAction={handleQuickAction} />
+            <TypeSelector activeType={creatorMode} onSelect={applyCreatorType} />
+          </div>
+
+          <CreatorPreviewCards
+            onSelectType={(id) => {
+              const type = resolveCreatorType(id);
+              applyCreatorType(type);
+              setNotice(`${type.label} preparado.`);
+            }}
+          />
+
+          <BusinessFields
+            creatorMode={creatorMode}
+            extraFields={extraFields}
+            onExtraChange={updateExtraField}
+          />
+
+          <div className="grid gap-4 xl:grid-cols-2">
+            <AdvancedTools />
+            <ThemeEditor selectedTheme={selectedTheme} onThemeChange={setSelectedTheme} />
+          </div>
+
+          <NearbyWidget
+            form={form}
+            updateField={updateField}
+            showLocationPicker={showLocationPicker}
+            setShowLocationPicker={setShowLocationPicker}
+            handleUseCurrentLocation={handleUseCurrentLocation}
+            isLocating={isLocating}
+            locationError={locationError}
+            setSelectedLocation={setSelectedLocation}
+          />
+
+          {error ? (
+            <div className="rounded-[1.1rem] border border-neonPink/30 bg-neonPink/10 px-4 py-3 text-sm font-semibold text-white">
+              {error}
             </div>
           ) : null}
         </div>
 
-        <div>
-          <p className="text-sm font-semibold text-white/78">Visibilidad</p>
-          <div className="mt-2 space-y-2">
-            {visibilityOptions.map((option) => (
-              <label
-                className={`block rounded-lg border px-4 py-3 transition ${
-                  form.visibility === option.value
-                    ? "border-neonGreen bg-neonGreen/12"
-                    : "border-white/10 bg-surface"
-                }`}
-                key={option.value}
-              >
-                <input
-                  className="sr-only"
-                  type="radio"
-                  name="visibility"
-                  value={option.value}
-                  checked={form.visibility === option.value}
-                  onChange={updateField}
-                />
-                <span className="block text-sm font-black text-white">{option.label}</span>
-                <span className="mt-1 block text-xs font-semibold text-white/50">
-                  {option.description}
-                </span>
-              </label>
-            ))}
-          </div>
-        </div>
-
-        <div className="rounded-lg border border-white/10 bg-surface p-4">
-          <p className="text-sm font-black text-white">Ubicación opcional</p>
-          <p className="mt-1 text-xs font-semibold text-white/48">
-            BUCAN DEY usará tu ubicación solo para colocar esta publicación en el mapa si tú lo permites.
-          </p>
-          <div className="mt-4 grid grid-cols-2 gap-3">
-            <input
-              className="h-12 rounded-lg border border-white/10 bg-white/5 px-3 text-sm text-white outline-none placeholder:text-white/32 focus:border-neonPink"
-              name="city"
-              value={form.city}
-              onChange={updateField}
-              placeholder="Ciudad"
-            />
-            <input
-              className="h-12 rounded-lg border border-white/10 bg-white/5 px-3 text-sm text-white outline-none placeholder:text-white/32 focus:border-neonPink"
-              name="area"
-              value={form.area}
-              onChange={updateField}
-              placeholder="Zona/Barrio"
-            />
-          </div>
-
-          <div className="mt-4 grid grid-cols-2 gap-3">
-            <button
-              className="min-h-12 rounded-lg border border-neonGreen/30 bg-neonGreen/10 px-3 text-sm font-black text-white transition active:scale-[0.99]"
-              type="button"
-              onClick={handleUseCurrentLocation}
-              disabled={isLocating}
-            >
-              {isLocating ? "Buscando..." : "Usar mi ubicación actual"}
-            </button>
-            <button
-              className="min-h-12 rounded-lg border border-neonPink/30 bg-neonPink/10 px-3 text-sm font-black text-white transition active:scale-[0.99]"
-              type="button"
-              onClick={() => setShowLocationPicker((current) => !current)}
-            >
-              Elegir en el mapa
-            </button>
-          </div>
-
-          {form.lat && form.lng ? (
-            <div className="mt-4 rounded-lg border border-neonGreen/30 bg-neonGreen/10 px-4 py-3 text-sm font-bold text-white">
-              Ubicación seleccionada: {Number(form.lat).toFixed(4)}, {Number(form.lng).toFixed(4)}
-            </div>
-          ) : null}
-
-          {showLocationPicker ? (
-            <div className="mt-4 overflow-hidden rounded-lg border border-white/10">
-              <div className="h-80 w-full">
-                <MapContainer
-                  center={form.lat && form.lng ? [Number(form.lat), Number(form.lng)] : MALABO_CENTER}
-                  className="h-full w-full"
-                  scrollWheelZoom={false}
-                  zoom={13}
-                >
-                  <TileLayer
-                    attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-                    url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-                  />
-                  <MapClickHandler
-                    onSelect={(latlng) => setSelectedLocation(latlng.lat, latlng.lng)}
-                  />
-                  {form.lat && form.lng ? (
-                    <Marker
-                      icon={createSelectedIcon()}
-                      position={[Number(form.lat), Number(form.lng)]}
-                    />
-                  ) : null}
-                </MapContainer>
-              </div>
-              <p className="bg-night px-4 py-3 text-xs font-semibold text-white/56">
-                Toca el mapa para seleccionar el punto de la publicación.
-              </p>
-            </div>
-          ) : null}
-
-          {locationError ? (
-            <div className="mt-3 rounded-lg border border-neonPink/30 bg-neonPink/10 px-4 py-3 text-sm font-semibold text-white">
-              {locationError}
-            </div>
-          ) : null}
-
-          <label className="mt-4 flex items-center justify-between rounded-lg border border-white/10 bg-white/5 px-4 py-3">
-            <span className="text-sm font-semibold text-white">Mostrar en mapa</span>
-            <input
-              className="h-5 w-5 accent-pink-500"
-              type="checkbox"
-              name="show_on_map"
-              checked={form.show_on_map}
-              onChange={updateField}
-            />
-          </label>
-        </div>
-
-        {hasEventFields ? (
-          <div className="rounded-lg border border-white/10 bg-surface p-4">
-            <p className="text-sm font-black text-white">Datos del evento</p>
-            <div className="mt-4 space-y-3">
-              <input
-                className="h-12 w-full rounded-lg border border-white/10 bg-white/5 px-3 text-sm text-white outline-none placeholder:text-white/32 focus:border-neonPink"
-                name="event_title"
-                value={form.event_title}
-                onChange={updateField}
-                placeholder="Título del evento"
-              />
-              <input
-                className="h-12 w-full rounded-lg border border-white/10 bg-white/5 px-3 text-sm text-white outline-none placeholder:text-white/32 focus:border-neonPink"
-                name="venue"
-                value={form.venue}
-                onChange={updateField}
-                placeholder="Lugar"
-              />
-              <input
-                className="h-12 w-full rounded-lg border border-white/10 bg-white/5 px-3 text-sm text-white outline-none focus:border-neonPink"
-                name="start_at"
-                type="datetime-local"
-                value={form.start_at}
-                onChange={updateField}
-              />
-              <input
-                className="h-12 w-full rounded-lg border border-white/10 bg-white/5 px-3 text-sm text-white outline-none placeholder:text-white/32 focus:border-neonPink"
-                name="price"
-                value={form.price}
-                onChange={updateField}
-                placeholder="Precio"
-              />
-              <label className="flex items-center justify-between rounded-lg border border-white/10 bg-white/5 px-4 py-3">
-                <span className="text-sm font-semibold text-white">Evento abierto</span>
-                <input
-                  className="h-5 w-5 accent-pink-500"
-                  type="checkbox"
-                  name="is_open"
-                  checked={form.is_open}
-                  onChange={updateField}
-                />
-              </label>
-            </div>
-          </div>
-        ) : null}
-
-        {error ? (
-          <div className="rounded-lg border border-neonPink/30 bg-neonPink/10 px-4 py-3 text-sm font-semibold text-white">
-            {error}
-          </div>
-        ) : null}
-
-        <button
-          className="h-14 w-full rounded-lg bg-gradient-to-r from-neonGreen via-neonYellow to-neonPink text-base font-black text-night shadow-neon transition active:scale-[0.99] disabled:opacity-60"
-          type="submit"
-          disabled={isSubmitting || isUploading}
-        >
-          {isSubmitting ? "Publicando..." : "Publicar"}
-        </button>
+        <aside className="space-y-4 lg:sticky lg:top-4 lg:self-start">
+          <MusicWidget />
+          <PrivacyEditor selectedPrivacy={selectedPrivacy} onPrivacyChange={handlePrivacyChange} />
+          <DraftManager />
+        </aside>
       </form>
+
+      <div className="fixed inset-x-0 bottom-[6.7rem] z-20 px-4 sm:bottom-[6.9rem]">
+        <div className="mx-auto grid max-w-5xl grid-cols-3 gap-2 rounded-[1.45rem] border border-white/10 bg-night/82 p-2 shadow-neon backdrop-blur-2xl">
+          <motion.button
+            className="flex h-12 items-center justify-center gap-2 rounded-[1rem] border border-white/10 bg-white/6 text-xs font-black text-white sm:text-sm"
+            type="button"
+            onClick={saveDraft}
+            whileTap={{ scale: 0.96 }}
+          >
+            <Save className="h-4 w-4" />
+            <span className="hidden sm:inline">Guardar borrador</span>
+            <span className="sm:hidden">Borrador</span>
+          </motion.button>
+          <motion.button
+            className="flex h-12 items-center justify-center gap-2 rounded-[1rem] border border-white/10 bg-white/6 text-xs font-black text-white sm:text-sm"
+            type="button"
+            onClick={personalize}
+            whileTap={{ scale: 0.96 }}
+          >
+            <Palette className="h-4 w-4" />
+            Personalizar
+          </motion.button>
+          <motion.button
+            className="flex h-12 items-center justify-center gap-2 rounded-[1rem] bg-gradient-to-r from-neonPink via-fiestaPurple to-neonCyan text-xs font-black text-white shadow-neon disabled:opacity-60 sm:text-base"
+            type="submit"
+            form="create-post-form"
+            disabled={isSubmitting || isUploading}
+            whileTap={{ scale: 0.96 }}
+          >
+            <Send className="h-4 w-4" />
+            {isSubmitting ? "Publicando..." : "Publicar ahora"}
+          </motion.button>
+        </div>
+      </div>
     </section>
   );
 }

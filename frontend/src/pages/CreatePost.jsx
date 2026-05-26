@@ -373,35 +373,37 @@ function CreatePost() {
       </form>
 
       <div className="fixed inset-x-0 bottom-[6.7rem] z-20 px-4 sm:bottom-[6.9rem]">
-        <div className="mx-auto grid max-w-5xl grid-cols-3 gap-2 rounded-[1.45rem] border border-white/10 bg-night/82 p-2 shadow-neon backdrop-blur-2xl">
+        <div className="mx-auto grid w-full max-w-md grid-cols-[1fr_1fr_1.1fr] gap-1.5 rounded-[1.45rem] border border-white/10 bg-night/82 p-2 shadow-neon backdrop-blur-2xl">
           <motion.button
-            className="flex h-12 items-center justify-center gap-2 rounded-[1rem] border border-white/10 bg-white/6 text-xs font-black text-white sm:text-sm"
+            className="flex h-12 min-w-0 items-center justify-center gap-1.5 rounded-[1rem] border border-white/10 bg-white/6 px-2 text-[11px] font-black text-white sm:gap-2 sm:text-sm"
             type="button"
             onClick={saveDraft}
             whileTap={{ scale: 0.96 }}
           >
-            <Save className="h-4 w-4" />
-            <span className="hidden sm:inline">Guardar borrador</span>
-            <span className="sm:hidden">Borrador</span>
+            <Save className="h-4 w-4 shrink-0" />
+            <span className="truncate">
+              <span className="hidden sm:inline">Guardar borrador</span>
+              <span className="sm:hidden">Borrador</span>
+            </span>
           </motion.button>
           <motion.button
-            className="flex h-12 items-center justify-center gap-2 rounded-[1rem] border border-white/10 bg-white/6 text-xs font-black text-white sm:text-sm"
+            className="flex h-12 min-w-0 items-center justify-center gap-1.5 rounded-[1rem] border border-white/10 bg-white/6 px-2 text-[11px] font-black text-white sm:gap-2 sm:text-sm"
             type="button"
             onClick={personalize}
             whileTap={{ scale: 0.96 }}
           >
-            <Palette className="h-4 w-4" />
-            Personalizar
+            <Palette className="h-4 w-4 shrink-0" />
+            <span className="truncate">Personalizar</span>
           </motion.button>
           <motion.button
-            className="flex h-12 items-center justify-center gap-2 rounded-[1rem] bg-gradient-to-r from-neonPink via-fiestaPurple to-neonCyan text-xs font-black text-white shadow-neon disabled:opacity-60 sm:text-base"
+            className="flex h-12 min-w-0 items-center justify-center gap-1.5 rounded-[1rem] bg-gradient-to-r from-neonPink via-fiestaPurple to-neonCyan px-2 text-[11px] font-black text-white shadow-neon disabled:opacity-60 sm:gap-2 sm:text-base"
             type="submit"
             form="create-post-form"
             disabled={isSubmitting || isUploading}
             whileTap={{ scale: 0.96 }}
           >
-            <Send className="h-4 w-4" />
-            {isSubmitting ? "Publicando..." : "Publicar ahora"}
+            <Send className="h-4 w-4 shrink-0" />
+            <span className="truncate">{isSubmitting ? "Publicando..." : "Publicar ahora"}</span>
           </motion.button>
         </div>
       </div>

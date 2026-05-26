@@ -386,15 +386,15 @@ function CreatePost() {
             </div>
           </div>
 
-          <div className="hidden shrink-0 sm:block">
+          <div className="shrink-0">
             {user?.avatar_url ? (
               <img
                 alt={user.display_name || user.username}
-                className="h-16 w-16 rounded-full border-2 border-neonPink object-cover shadow-neon"
+                className="h-11 w-11 rounded-full border-2 border-neonPink object-cover shadow-neon sm:h-16 sm:w-16"
                 src={user.avatar_url}
               />
             ) : (
-              <div className="flex h-16 w-16 items-center justify-center rounded-full border-2 border-neonPink bg-gradient-to-br from-neonPink via-fiestaPurple to-neonCyan text-2xl font-black shadow-neon">
+              <div className="flex h-11 w-11 items-center justify-center rounded-full border-2 border-neonPink bg-gradient-to-br from-neonPink via-fiestaPurple to-neonCyan text-base font-black shadow-neon sm:h-16 sm:w-16 sm:text-2xl">
                 {initials(user)}
               </div>
             )}
@@ -408,40 +408,18 @@ function CreatePost() {
                 <div>
                   <p className="flex items-center gap-2 text-xs font-black uppercase tracking-[0.18em] text-neonCyan">
                     <Eye className="h-4 w-4" />
-                    Composición
+                    Editor
                   </p>
                   <h2 className="mt-2 text-xl font-black text-white sm:text-2xl">
-                    {isLiveMode ? "Directo" : isEventMode ? "Publicación de evento" : "Tu publicación"}
+                    {isLiveMode ? "Directo" : isEventMode ? "Publicación de evento" : "Nueva publicación"}
                   </h2>
                 </div>
-                <span className="rounded-full border border-white/10 bg-white/7 px-3 py-1.5 text-xs font-black text-white/68">
-                  {privacyLabel(form.visibility)}
+                <span className="rounded-full border border-neonCyan/20 bg-neonCyan/10 px-3 py-1.5 text-xs font-black text-neonCyan">
+                  Editando
                 </span>
               </div>
 
-              <div className="mt-4 flex items-center gap-3 sm:mt-5 sm:gap-4">
-                {user?.avatar_url ? (
-                  <img
-                    alt={user.display_name || user.username}
-                    className="h-12 w-12 rounded-full border-2 border-neonPink object-cover shadow-neon sm:h-16 sm:w-16"
-                    src={user.avatar_url}
-                  />
-                ) : (
-                  <div className="flex h-12 w-12 items-center justify-center rounded-full border-2 border-neonPink bg-gradient-to-br from-neonPink via-fiestaPurple to-neonCyan text-lg font-black shadow-neon sm:h-16 sm:w-16 sm:text-xl">
-                    {initials(user)}
-                  </div>
-                )}
-                <div className="min-w-0">
-                  <p className="truncate text-base font-black text-white sm:text-lg">
-                    {user?.display_name || user?.username || "BUCAN DEY"}
-                  </p>
-                  <span className="mt-1 inline-flex items-center gap-1.5 rounded-[0.75rem] border border-white/10 bg-white/7 px-2.5 py-1.5 text-xs font-bold text-white/70 sm:gap-2 sm:px-3 sm:py-2 sm:text-sm">
-                    <Globe2 className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-                    {privacyLabel(form.visibility)}
-                    <ChevronDown className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-                  </span>
-                </div>
-              </div>
+              <InlinePrivacySelector form={form} updateField={updateField} />
 
               {isLiveMode ? (
                 <div className="mt-4 rounded-[1.05rem] border border-liveRed/25 bg-liveRed/10 p-4 sm:mt-6 sm:rounded-[1.2rem] sm:p-5">
@@ -551,7 +529,6 @@ function CreatePost() {
 
             <MobileUtilityPanels
               form={form}
-              updateField={updateField}
               position={position}
             />
 
@@ -590,7 +567,6 @@ function CreatePost() {
 
           <aside className="hidden min-w-0 space-y-5 lg:sticky lg:top-5 lg:block lg:self-start">
             <LocationSummary form={form} position={position} />
-            <PrivacyPanel form={form} updateField={updateField} />
           </aside>
         </div>
 
@@ -651,6 +627,49 @@ function TextComposer({ form, updateField }) {
         maxLength={2000}
       />
       <ComposerFooter count={form.text.length} />
+    </div>
+  );
+}
+
+function InlinePrivacySelector({ form, updateField }) {
+  return (
+    <div className="mt-4 rounded-[1rem] border border-white/10 bg-night/38 p-2.5 sm:mt-5 sm:rounded-[1.1rem] sm:p-3">
+      <div className="mb-2 flex items-center justify-between gap-3 px-1">
+        <span className="flex items-center gap-2 text-xs font-black uppercase tracking-[0.16em] text-white/62">
+          <Shield className="h-4 w-4 text-neonCyan" />
+          Visibilidad
+        </span>
+        <span className="text-xs font-black text-neonPink">Editar</span>
+      </div>
+      <div className="grid grid-cols-3 gap-2">
+        {privacyOptions.map((option) => {
+          const Icon = option.icon;
+          const isActive = form.visibility === option.value;
+
+          return (
+            <label
+              className={[
+                "flex cursor-pointer flex-col items-center justify-center gap-1.5 rounded-[0.8rem] border px-2 py-2 text-center transition sm:flex-row sm:gap-2 sm:rounded-[0.9rem] sm:px-3 sm:py-2.5",
+                isActive
+                  ? "border-neonPink bg-neonPink/14 text-white shadow-neon"
+                  : "border-white/10 bg-white/6 text-white/70 hover:border-white/18 hover:bg-white/10",
+              ].join(" ")}
+              key={option.id}
+            >
+              <Icon className={isActive ? "h-4 w-4 text-white" : "h-4 w-4 text-white/58"} />
+              <span className="text-[10px] font-black leading-none sm:text-xs">{option.label}</span>
+              <input
+                className="sr-only"
+                type="radio"
+                name="visibility"
+                value={option.value}
+                checked={isActive}
+                onChange={updateField}
+              />
+            </label>
+          );
+        })}
+      </div>
     </div>
   );
 }
@@ -725,7 +744,7 @@ function MediaFirstComposer({ form, updateField, mediaItems, setMediaItems, isUp
   );
 }
 
-function MobileUtilityPanels({ form, updateField, position }) {
+function MobileUtilityPanels({ form, position }) {
   const panels = [
     {
       id: "location",
@@ -733,13 +752,6 @@ function MobileUtilityPanels({ form, updateField, position }) {
       label: "Ubicación",
       summary: selectedLocationLabel(form),
       content: <LocationSummary form={form} position={position} compact />,
-    },
-    {
-      id: "privacy",
-      icon: Shield,
-      label: "Privacidad",
-      summary: privacyLabel(form.visibility),
-      content: <PrivacyPanel form={form} updateField={updateField} compact />,
     },
   ];
 
@@ -979,53 +991,6 @@ function LocationSummary({ form, position, compact = false }) {
       <p className={(compact ? "text-xs" : "text-sm") + " mt-1 font-semibold text-white/54"}>
         {position ? "Punto seleccionado" : "Centro de Malabo"}
       </p>
-    </section>
-  );
-}
-
-function PrivacyPanel({ form, updateField, compact = false }) {
-  return (
-    <section
-      className={[
-        "border border-white/10 bg-white/[0.045] shadow-cyan backdrop-blur-2xl",
-        compact ? "rounded-[0.9rem] p-3" : "rounded-[1.3rem] p-4",
-      ].join(" ")}
-    >
-      <h2 className={compact ? "flex items-center gap-2 text-sm font-black uppercase text-white" : "flex items-center gap-3 text-lg font-black uppercase text-white"}>
-        <Shield className={compact ? "h-4 w-4 text-white/70" : "h-5 w-5 text-white/70"} />
-        Privacidad
-      </h2>
-      <p className={(compact ? "mt-3 text-xs" : "mt-4 text-sm") + " font-semibold text-white/64"}>¿Quién puede ver tu publicación?</p>
-      <div className={(compact ? "mt-3" : "mt-4") + " space-y-2"}>
-        {privacyOptions.map((option) => {
-          const Icon = option.icon;
-          const isActive = form.visibility === option.value;
-          return (
-            <label
-              className={[
-                "flex cursor-pointer items-center gap-3 rounded-[0.95rem] border px-3 transition",
-                compact ? "py-2.5" : "py-3",
-                isActive ? "border-neonPink bg-neonPink/12 shadow-neon" : "border-white/10 bg-white/5",
-              ].join(" ")}
-              key={option.id}
-            >
-              <Icon className={isActive ? "h-5 w-5 text-white" : "h-5 w-5 text-white/58"} />
-              <span className="min-w-0 flex-1">
-                <span className="block text-sm font-black text-white">{option.label}</span>
-                <span className="block text-xs font-semibold text-white/52">{option.detail}</span>
-              </span>
-              <input
-                className="h-5 w-5 accent-pink-500"
-                type="radio"
-                name="visibility"
-                value={option.value}
-                checked={isActive}
-                onChange={updateField}
-              />
-            </label>
-          );
-        })}
-      </div>
     </section>
   );
 }

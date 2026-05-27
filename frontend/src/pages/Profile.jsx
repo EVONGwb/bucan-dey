@@ -47,6 +47,8 @@ const REPORT_REASONS = [
   { value: "otro", label: "Otro" },
 ];
 
+const PREMIUM_PROFILE_AVATAR = "/images/bucan-premium-avatar.png";
+
 function EmptyState({ title, description }) {
   return (
     <div className="glass-panel mt-4 rounded-[1.75rem] p-6 text-center">
@@ -124,7 +126,8 @@ function formatCompact(value) {
 
 function ProfileAvatar({ profileUser, initial, size = "large" }) {
   const sizeClass = size === "large" ? "h-[7.55rem] w-[7.55rem] sm:h-40 sm:w-40" : "h-11 w-11";
-  const textClass = size === "large" ? "text-4xl sm:text-5xl" : "text-base";
+  const avatarSrc = profileUser?.avatar_url || PREMIUM_PROFILE_AVATAR;
+  const usesPremiumFallback = !profileUser?.avatar_url;
   const frameShape = {
     clipPath: "polygon(17% 0%, 83% 0%, 100% 18%, 92% 77%, 50% 100%, 8% 77%, 0% 18%)",
   };
@@ -135,22 +138,15 @@ function ProfileAvatar({ profileUser, initial, size = "large" }) {
       style={frameShape}
     >
       <div className="absolute -inset-2 bg-neonPink/18 blur-xl" style={frameShape} />
-      {profileUser?.avatar_url ? (
-        <img
-          alt={profileUser.display_name}
-          className="relative h-full w-full border-[3px] border-night object-cover sm:border-4"
-          src={profileUser.avatar_url}
-          style={frameShape}
-        />
-      ) : (
-        <div
-          className={`relative flex h-full w-full items-center justify-center border-[3px] border-night bg-gradient-to-br from-surface to-night font-black text-white sm:border-4 ${textClass}`}
-          style={frameShape}
-        >
-          {initial.toUpperCase()}
-        </div>
+      <img
+        alt={profileUser?.display_name || `Avatar ${initial}`}
+        className="relative h-full w-full border-[3px] border-night object-cover sm:border-4"
+        src={avatarSrc}
+        style={frameShape}
+      />
+      {usesPremiumFallback ? null : (
+        <span className="absolute right-2 bottom-3 h-4 w-4 rounded-full border-[3px] border-night bg-green-400 shadow-[0_0_18px_rgba(34,197,94,.85)] sm:h-5 sm:w-5" />
       )}
-      <span className="absolute right-2 bottom-3 h-4 w-4 rounded-full border-[3px] border-night bg-green-400 shadow-[0_0_18px_rgba(34,197,94,.85)] sm:h-5 sm:w-5" />
     </div>
   );
 }

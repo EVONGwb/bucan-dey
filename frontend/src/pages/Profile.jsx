@@ -125,29 +125,23 @@ function formatCompact(value) {
 function ProfileAvatar({ profileUser, initial, size = "large" }) {
   const isHero = size === "large";
   const sizeClass = isHero ? "h-[8.15rem] w-[8.15rem] sm:h-44 sm:w-44" : "h-11 w-11";
-  const frameShape = {
-    clipPath: "polygon(50% 0%, 96% 30%, 82% 100%, 18% 100%, 4% 30%)",
-  };
 
   return (
     <div
-      className={`relative flex ${sizeClass} items-center justify-center bg-gradient-to-br from-neonPink via-fiestaPurple to-neonCyan p-[3px] shadow-[0_0_24px_rgba(255,79,216,.5),0_0_34px_rgba(0,217,255,.26)] sm:p-1`}
-      style={frameShape}
+      className={`relative flex ${sizeClass} items-center justify-center rounded-full bg-gradient-to-br from-neonPink via-fiestaPurple to-neonCyan p-[3px] shadow-[0_0_24px_rgba(255,79,216,.5),0_0_34px_rgba(0,217,255,.26)] sm:p-1`}
     >
-      <div className="absolute -inset-2 bg-neonPink/18 blur-xl" style={frameShape} />
+      <div className="absolute -inset-2 rounded-full bg-neonPink/18 blur-xl" />
       {profileUser?.avatar_url ? (
         <img
           alt={profileUser.display_name}
-          className="relative h-full w-full border-[3px] border-night object-cover sm:border-4"
+          className="relative h-full w-full rounded-full border-[3px] border-night object-cover sm:border-4"
           src={profileUser.avatar_url}
-          style={frameShape}
         />
       ) : (
         <div
-          className={`relative flex h-full w-full items-center justify-center border-[3px] border-night bg-gradient-to-br from-fiestaPurple via-neonPink to-neonCyan font-black text-white sm:border-4 ${
+          className={`relative flex h-full w-full items-center justify-center rounded-full border-[3px] border-night bg-gradient-to-br from-fiestaPurple via-neonPink to-neonCyan font-black text-white sm:border-4 ${
             isHero ? "text-4xl sm:text-5xl" : "text-base"
           }`}
-          style={frameShape}
         >
           {initial.toUpperCase()}
         </div>

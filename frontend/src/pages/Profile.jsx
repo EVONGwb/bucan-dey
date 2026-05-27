@@ -649,18 +649,15 @@ function ProfileEditModal({ profileUser, onClose, onPreferencesSaved, onSaved, p
   }
 
   return (
-    <div className="fixed inset-0 z-40 flex items-end justify-center bg-black/76 px-3 pb-3 backdrop-blur-xl sm:items-center sm:px-4 sm:pb-0">
+    <div className="fixed inset-0 z-50 bg-night text-white">
       <motion.form
-        className="relative w-full max-w-md overflow-hidden rounded-t-[1.9rem] border border-white/10 bg-night/96 text-white shadow-[0_0_42px_rgba(0,217,255,.18),0_0_70px_rgba(255,79,216,.16)] sm:rounded-[1.9rem]"
-        initial={{ opacity: 0, y: 46, scale: 0.98 }}
-        animate={{ opacity: 1, y: 0, scale: 1 }}
+        className="relative mx-auto flex h-dvh w-full max-w-md flex-col overflow-hidden border-x border-white/8 bg-night text-white shadow-[0_0_42px_rgba(0,217,255,.18),0_0_70px_rgba(255,79,216,.16)]"
+        initial={{ opacity: 0, scale: 0.985 }}
+        animate={{ opacity: 1, scale: 1 }}
         onSubmit={handleSubmit}
       >
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_16%_0%,rgba(255,79,216,.24),transparent_30%),radial-gradient(circle_at_82%_14%,rgba(0,217,255,.22),transparent_28%)]" />
-        <div className="relative max-h-[91vh] overflow-y-auto px-4 pb-24 pt-3 sm:px-5 sm:pt-4">
-          <div className="mx-auto mb-3 h-1 w-12 rounded-full bg-white/22" />
-
-          <div className="flex items-start justify-between gap-3">
+        <div className="relative flex shrink-0 items-start justify-between gap-3 border-b border-white/8 bg-night/72 px-4 pb-3 pt-[calc(env(safe-area-inset-top)+0.9rem)] backdrop-blur-2xl sm:px-5">
             <div>
               <p className="text-[10px] font-black uppercase tracking-[0.2em] text-neonCyan">
                 Perfil
@@ -679,6 +676,8 @@ function ProfileEditModal({ profileUser, onClose, onPreferencesSaved, onSaved, p
               <X className="h-5 w-5" />
             </button>
           </div>
+
+        <div className="relative flex-1 overflow-y-auto overscroll-contain px-4 pb-28 pt-3 sm:px-5">
 
           <div className="mt-4 rounded-[1.4rem] border border-white/10 bg-white/[0.045] p-3 backdrop-blur-2xl">
             <div className="flex items-center gap-3">
@@ -1121,6 +1120,17 @@ function Profile() {
     if (!targetUsername) return;
     setProfilePreferences(loadProfilePreferences(targetUsername));
   }, [targetUsername]);
+
+  useEffect(() => {
+    if (!showEditModal) return undefined;
+
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+
+    return () => {
+      document.body.style.overflow = previousOverflow;
+    };
+  }, [showEditModal]);
 
   function handlePreferencesSaved(nextPreferences) {
     const merged = { ...DEFAULT_PROFILE_PREFERENCES, ...nextPreferences };

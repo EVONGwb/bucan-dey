@@ -1,25 +1,29 @@
 import { useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import {
-  CalendarPlus,
+  Award,
+  Bookmark,
+  Car,
   Check,
+  Compass,
   Film,
   Flag,
+  Flame,
+  Heart,
   Image as ImageIcon,
+  Link as LinkIcon,
   LogOut,
   MapPin,
+  MessageCircle,
+  Music,
   Pencil,
   Play,
-  Radio,
-  Send,
-  ShieldCheck,
   Sparkles,
   UserPlus,
 } from "lucide-react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 
 import apiClient from "../api/client.js";
-import PostCard from "../components/post/PostCard.jsx";
 import PushSettings from "../components/push/PushSettings.jsx";
 import { ProfileSkeleton } from "../components/ui/Skeletons.jsx";
 import { useAuth } from "../context/AuthContext.jsx";
@@ -27,11 +31,12 @@ import { getApiErrorMessage } from "../utils/errors.js";
 import { optimizeCloudinaryImage } from "../utils/media.js";
 
 const tabs = [
-  { id: "posts", label: "Posts", icon: Sparkles },
-  { id: "media", label: "Media", icon: ImageIcon },
-  { id: "events", label: "Eventos", icon: CalendarPlus },
-  { id: "stories", label: "Stories", icon: Film },
-  { id: "lives", label: "Lives", icon: Radio },
+  { id: "posts", label: "Publicaciones", icon: Sparkles },
+  { id: "media", label: "Reels", icon: Film },
+  { id: "saved", label: "Guardados", icon: Bookmark },
+  { id: "map", label: "Mapa", icon: MapPin },
+  { id: "likes", label: "Likes", icon: Heart },
+  { id: "badges", label: "Logros", icon: Award },
 ];
 
 const REPORT_REASONS = [
@@ -41,22 +46,6 @@ const REPORT_REASONS = [
   { value: "información falsa", label: "Información falsa" },
   { value: "otro", label: "Otro" },
 ];
-
-function StatCard({ label, value, to }) {
-  const content = (
-    <motion.div
-      className="glass-panel rounded-[1.35rem] p-3"
-      whileTap={{ scale: 0.98 }}
-    >
-      <p className="text-2xl font-black text-white">{value}</p>
-      <p className="mt-1 text-[11px] font-black uppercase tracking-[0.14em] text-white/44">
-        {label}
-      </p>
-    </motion.div>
-  );
-
-  return to ? <Link to={to}>{content}</Link> : content;
-}
 
 function EmptyState({ title, description }) {
   return (
@@ -122,6 +111,278 @@ function MediaGrid({ posts }) {
           )}
         </Link>
       ))}
+    </div>
+  );
+}
+
+function formatCompact(value) {
+  return new Intl.NumberFormat("es", {
+    notation: Number(value || 0) >= 10000 ? "compact" : "standard",
+    maximumFractionDigits: 1,
+  }).format(Number(value || 0));
+}
+
+function ProfileAvatar({ profileUser, initial, size = "large" }) {
+  const sizeClass = size === "large" ? "h-32 w-32 sm:h-40 sm:w-40" : "h-11 w-11";
+  const textClass = size === "large" ? "text-5xl" : "text-base";
+
+  return (
+    <div className={`relative flex ${sizeClass} items-center justify-center rounded-[2.25rem] bg-gradient-to-br from-neonPink via-fiestaPurple to-neonCyan p-[3px] shadow-neon`}>
+      <div className="absolute -inset-2 rounded-[2.6rem] bg-neonPink/18 blur-xl" />
+      {profileUser?.avatar_url ? (
+        <img
+          alt={profileUser.display_name}
+          className="relative h-full w-full rounded-[2rem] border-4 border-night object-cover"
+          src={profileUser.avatar_url}
+        />
+      ) : (
+        <div className={`relative flex h-full w-full items-center justify-center rounded-[2rem] border-4 border-night bg-gradient-to-br from-surface to-night font-black text-white ${textClass}`}>
+          {initial.toUpperCase()}
+        </div>
+      )}
+      <span className="absolute -right-1 bottom-3 h-5 w-5 rounded-full border-[3px] border-night bg-green-400 shadow-[0_0_18px_rgba(34,197,94,.85)]" />
+    </div>
+  );
+}
+
+function ProfileStatBar({ stats }) {
+  return (
+    <motion.div
+      className="grid grid-cols-4 overflow-hidden rounded-[1.35rem] border border-white/10 bg-white/[0.055] shadow-cyan backdrop-blur-2xl"
+      initial={{ opacity: 0, y: 14 }}
+      animate={{ opacity: 1, y: 0 }}
+    >
+      {stats.map((stat, index) => {
+        const content = (
+          <div className="min-h-[4.7rem] px-2 py-3 text-center">
+            <p className="text-base font-black text-white sm:text-xl">{formatCompact(stat.value)}</p>
+            <p className="mt-1 text-[10px] font-bold leading-tight text-white/58 sm:text-xs">
+              {stat.label}
+            </p>
+          </div>
+        );
+
+        return stat.to ? (
+          <Link
+            className={index ? "border-l border-white/8" : ""}
+            key={stat.label}
+            to={stat.to}
+          >
+            {content}
+          </Link>
+        ) : (
+          <div className={index ? "border-l border-white/8" : ""} key={stat.label}>
+            {content}
+          </div>
+        );
+      })}
+    </motion.div>
+  );
+}
+
+function MoodPill({ icon: Icon, title, detail, color = "pink", to }) {
+  const className =
+    color === "cyan"
+      ? "border-neonCyan/20 bg-neonCyan/8 text-neonCyan"
+      : color === "purple"
+        ? "border-fiestaPurple/25 bg-fiestaPurple/10 text-neonPink"
+        : "border-neonPink/20 bg-neonPink/10 text-neonPink";
+  const content = (
+    <span className={`inline-flex min-w-0 items-center gap-2 rounded-[0.85rem] border px-3 py-2 ${className}`}>
+      <Icon className="h-4 w-4 shrink-0" />
+      <span className="min-w-0">
+        <span className="block truncate text-xs font-black text-white">{title}</span>
+        {detail ? <span className="block truncate text-[10px] font-semibold text-white/48">{detail}</span> : null}
+      </span>
+    </span>
+  );
+
+  return to ? <Link to={to}>{content}</Link> : content;
+}
+
+function AboutCard({ profileUser, isOwnProfile, onEdit }) {
+  const aboutLines = [
+    profileUser?.bio || "Creando movimiento en BUCAN DEY.",
+    profileUser?.role === "admin" ? "Admin de la comunidad." : "Miembro de la comunidad.",
+    profileUser?.is_verified ? "Perfil verificado." : "Perfil social local.",
+    [profileUser?.city, profileUser?.country].filter(Boolean).join(", ") || "Guinea Ecuatorial",
+  ];
+
+  return (
+    <section className="rounded-[1.3rem] border border-white/10 bg-white/[0.055] p-4 shadow-cyan backdrop-blur-2xl">
+      <div className="flex items-center justify-between gap-3">
+        <h2 className="text-xs font-black uppercase tracking-[0.12em] text-white/72">Sobre mí</h2>
+        {isOwnProfile ? (
+          <button className="text-xs font-black text-neonCyan" type="button" onClick={onEdit}>
+            Editar
+          </button>
+        ) : null}
+      </div>
+      <div className="mt-4 space-y-2 text-sm font-semibold leading-6 text-white/78">
+        {aboutLines.map((line, index) => (
+          <p key={`${line}-${index}`}>
+            <span className="mr-2">{["👋", "💼", "✨", "🌍"][index]}</span>
+            {line}
+          </p>
+        ))}
+      </div>
+      <div className="mt-5 flex flex-wrap gap-2">
+        {["Emprendedor", "Creador digital", "Visionario"].map((tag, index) => (
+          <span
+            className={[
+              "rounded-[0.75rem] border px-3 py-1.5 text-xs font-black",
+              index === 0
+                ? "border-neonCyan/20 bg-neonCyan/10 text-neonCyan"
+                : index === 1
+                  ? "border-neonYellow/20 bg-neonYellow/10 text-neonYellow"
+                  : "border-neonPink/20 bg-neonPink/10 text-neonPink",
+            ].join(" ")}
+            key={tag}
+          >
+            {tag}
+          </span>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function LocationMusicCards({ profileUser }) {
+  return (
+    <div className="grid gap-3">
+      <section className="overflow-hidden rounded-[1.3rem] border border-white/10 bg-white/[0.055] p-3 shadow-cyan backdrop-blur-2xl">
+        <div className="flex items-center justify-between">
+          <h2 className="text-xs font-black uppercase tracking-[0.12em] text-white/72">Mi ubicación</h2>
+          <Link className="text-[11px] font-black text-neonCyan" to="/map">
+            Ver mapa
+          </Link>
+        </div>
+        <div className="mt-3 grid grid-cols-[5.4rem_1fr] gap-3">
+          <div className="relative h-20 overflow-hidden rounded-[1rem] border border-neonPink/20 bg-[radial-gradient(circle_at_55%_40%,rgba(255,79,216,.55),transparent_18%),linear-gradient(135deg,rgba(0,217,255,.16),rgba(124,58,237,.16)),repeating-linear-gradient(35deg,rgba(255,255,255,.08)_0_1px,transparent_1px_18px)]">
+            <MapPin className="absolute left-1/2 top-1/2 h-9 w-9 -translate-x-1/2 -translate-y-1/2 text-neonPink drop-shadow-[0_0_16px_rgba(255,79,216,.9)]" />
+          </div>
+          <div className="min-w-0 self-center">
+            <p className="truncate text-sm font-black uppercase text-white">
+              {profileUser?.city || "Malabo"}
+            </p>
+            <p className="mt-1 text-xs font-semibold leading-5 text-white/56">
+              Último lugar: Arena Blanca
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <section className="rounded-[1.3rem] border border-white/10 bg-white/[0.055] p-3 shadow-cyan backdrop-blur-2xl">
+        <div className="flex items-center justify-between">
+          <h2 className="text-xs font-black uppercase tracking-[0.12em] text-white/72">Sonando ahora</h2>
+          <span className="text-[11px] font-black text-neonCyan">Ver todo</span>
+        </div>
+        <div className="mt-3 flex items-center gap-3">
+          <div className="h-14 w-14 overflow-hidden rounded-[0.9rem] bg-gradient-to-br from-neonPink via-fiestaPurple to-neonCyan" />
+          <div className="min-w-0 flex-1">
+            <p className="truncate text-sm font-black text-white">Me Conozco</p>
+            <p className="text-xs font-semibold text-white/52">Roku</p>
+          </div>
+          <Music className="h-5 w-5 text-neonCyan" />
+        </div>
+      </section>
+    </div>
+  );
+}
+
+function AchievementsStrip({ posts, profileUser, likesReceived }) {
+  const badges = [
+    { label: "Explorador", level: Math.max(1, Math.min(5, Math.ceil(posts.length / 3) || 1)), icon: Compass, color: "cyan" },
+    { label: "Empresario", level: profileUser?.role === "admin" ? 5 : 2, icon: Car, color: "yellow" },
+    { label: "Creador", level: Math.max(1, Math.min(5, Math.ceil(posts.length / 2) || 1)), icon: ImageIcon, color: "pink" },
+    { label: "Popular", level: Math.max(1, Math.min(5, Math.ceil(likesReceived / 10) || 1)), icon: Flame, color: "pink" },
+    { label: "Verificado", level: profileUser?.is_verified ? 5 : 1, icon: Check, color: "cyan" },
+  ];
+
+  return (
+    <section className="rounded-[1.3rem] border border-white/10 bg-white/[0.055] p-4 shadow-cyan backdrop-blur-2xl">
+      <div className="flex items-center justify-between">
+        <h2 className="text-xs font-black uppercase tracking-[0.12em] text-white/72">Logros</h2>
+        <button className="text-[11px] font-black text-neonCyan" type="button">Ver todos</button>
+      </div>
+      <div className="mt-4 grid grid-cols-5 gap-2">
+        {badges.map((badge) => {
+          const Icon = badge.icon;
+          const tone =
+            badge.color === "yellow"
+              ? "from-neonYellow/28 to-neonOrange/18 text-neonYellow"
+              : badge.color === "cyan"
+                ? "from-neonCyan/24 to-fiestaPurple/18 text-neonCyan"
+                : "from-neonPink/26 to-fiestaPurple/18 text-neonPink";
+
+          return (
+            <div className="text-center" key={badge.label}>
+              <div className={`mx-auto flex h-14 w-14 items-center justify-center rounded-[1.1rem] border border-white/10 bg-gradient-to-br ${tone} shadow-neon sm:h-16 sm:w-16`}>
+                <Icon className="h-7 w-7" />
+              </div>
+              <p className="mt-2 truncate text-[10px] font-black text-white sm:text-xs">{badge.label}</p>
+              <p className="text-[9px] font-semibold text-white/48">Nivel {badge.level}</p>
+            </div>
+          );
+        })}
+      </div>
+    </section>
+  );
+}
+
+function ProfilePostGrid({ posts }) {
+  if (posts.length === 0) {
+    return (
+      <EmptyState
+        title="Todavía no hay publicaciones"
+        description="Cuando haya movimiento, aparecerá aquí."
+      />
+    );
+  }
+
+  return (
+    <div className="mt-3 grid grid-cols-3 gap-1.5 sm:gap-2">
+      {posts.map((post, index) => {
+        const media = post.media?.[0];
+        return (
+          <Link
+            className="relative aspect-square overflow-hidden rounded-[0.55rem] border border-white/8 bg-white/[0.055] sm:rounded-[0.85rem]"
+            key={post.id}
+            to={`/posts/${post.id}`}
+          >
+            {media?.type === "image" ? (
+              <img
+                alt={post.text || "Publicación"}
+                className="h-full w-full object-cover"
+                loading="lazy"
+                decoding="async"
+                src={optimizeCloudinaryImage(media.url, { width: 360, quality: "auto:eco" })}
+              />
+            ) : media?.type === "video" ? (
+              <>
+                {media.thumbnail_url ? (
+                  <img
+                    alt={post.text || "Video"}
+                    className="h-full w-full object-cover"
+                    loading="lazy"
+                    decoding="async"
+                    src={optimizeCloudinaryImage(media.thumbnail_url, { width: 360, quality: "auto:eco" })}
+                  />
+                ) : (
+                  <div className="h-full w-full bg-gradient-to-br from-fiestaPurple via-neonPink/50 to-neonCyan/40" />
+                )}
+                <Play className="absolute right-2 top-2 h-5 w-5 fill-white text-white drop-shadow" />
+              </>
+            ) : (
+              <div className="flex h-full w-full items-end bg-gradient-to-br from-neonPink/30 via-fiestaPurple/28 to-neonCyan/20 p-2">
+                <p className="line-clamp-4 text-xs font-black leading-4 text-white">
+                  {post.text || `BUCAN DEY ${index + 1}`}
+                </p>
+              </div>
+            )}
+          </Link>
+        );
+      })}
     </div>
   );
 }
@@ -452,276 +713,255 @@ function Profile() {
   }
 
   return (
-    <section className="min-h-[calc(100vh-7rem)]">
+    <section className="-mx-4 -mt-5 min-h-[calc(100vh-5rem)] bg-night pb-28 text-white sm:mx-0 sm:mt-0 sm:rounded-[2rem]">
       <motion.header
-        className="relative overflow-hidden rounded-[2rem] border border-white/10 bg-surface p-5 shadow-cyan"
+        className="relative overflow-hidden rounded-b-[2rem] border-b border-white/10 bg-night shadow-cyan sm:rounded-[2rem] sm:border"
         initial={{ opacity: 0, y: 18 }}
         animate={{ opacity: 1, y: 0 }}
       >
-        <div className="absolute inset-x-0 top-0 h-36 bg-gradient-to-br from-neonCyan/26 via-fiestaPurple/22 to-neonPink/20 blur-2xl" />
-        <div className="absolute right-8 top-5 h-24 w-24 rounded-full bg-neonPink/20 blur-3xl" />
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_24%_8%,rgba(255,79,216,.52),transparent_25%),radial-gradient(circle_at_75%_15%,rgba(0,217,255,.38),transparent_26%),linear-gradient(180deg,rgba(124,58,237,.35),rgba(7,11,20,.94)_58%)]" />
+        <div className="absolute inset-x-0 top-0 h-44 bg-[linear-gradient(125deg,transparent_0_24%,rgba(255,255,255,.08)_25%,transparent_27%_100%)] opacity-70" />
+        <div className="absolute bottom-20 right-4 h-16 w-28 rounded-full bg-black/55 blur-sm" />
+        <div className="absolute bottom-24 right-6 h-8 w-20 rounded-full border border-liveRed/30 bg-liveRed/16 shadow-live" />
+        <div className="absolute bottom-20 left-0 right-0 h-20 bg-gradient-to-t from-night via-night/80 to-transparent" />
 
-        <div className="relative">
-          <div className="flex items-start justify-between gap-4">
-            <div className="relative">
-              <div className="flex h-24 w-24 items-center justify-center rounded-full bg-gradient-to-br from-neonCyan via-fiestaPurple to-neonPink p-[3px] shadow-cyan">
-                {profileUser?.avatar_url ? (
-                  <img
-                    alt={profileUser.display_name}
-                    className="h-full w-full rounded-full border-4 border-night object-cover"
-                    src={profileUser.avatar_url}
-                  />
-                ) : (
-                  <div className="flex h-full w-full items-center justify-center rounded-full border-4 border-night bg-black/50 text-4xl font-black text-white">
-                    {initial.toUpperCase()}
-                  </div>
-                )}
-              </div>
-            </div>
-
-            <div className="flex flex-wrap justify-end gap-2">
-              {profileUser?.is_verified ? (
-                <span className="inline-flex items-center gap-1 rounded-full border border-neonCyan/30 bg-neonCyan/12 px-3 py-1 text-xs font-black text-neonCyan">
-                  <Check className="h-3.5 w-3.5" />
-                  Verificado
-                </span>
-              ) : null}
-              {profileUser?.role === "admin" ? (
-                <span className="inline-flex items-center gap-1 rounded-full border border-neonYellow/30 bg-neonYellow/12 px-3 py-1 text-xs font-black text-neonYellow">
-                  <ShieldCheck className="h-3.5 w-3.5" />
-                  Admin
-                </span>
-              ) : null}
-            </div>
+        <div className="relative px-4 pb-5 pt-20 sm:px-6 sm:pt-24">
+          <div className="absolute left-4 top-5 sm:left-6">
+            <ProfileAvatar profileUser={profileUser} initial={initial} />
+            {isOwnProfile ? (
+              <button
+                className="absolute -right-1 top-1 flex h-9 w-9 items-center justify-center rounded-full border border-white/10 bg-night/82 text-white shadow-cyan backdrop-blur-xl"
+                type="button"
+                onClick={() => setShowEditModal(true)}
+                aria-label="Editar perfil"
+              >
+                <Pencil className="h-4 w-4" />
+              </button>
+            ) : null}
           </div>
 
-          <div className="mt-5">
-            <h1 className="text-3xl font-black leading-tight text-white">
-              {profileUser?.display_name}
-            </h1>
-            <p className="mt-1 text-sm font-black text-neonPink">@{profileUser?.username}</p>
-            <p className="mt-3 flex flex-wrap items-center gap-2 text-sm font-bold text-white/64">
+          <div className="ml-36 min-h-32 pt-1 sm:ml-48">
+            <div className="flex min-w-0 items-center gap-2">
+              <h1 className="truncate text-3xl font-black leading-tight text-white sm:text-5xl">
+                {profileUser?.display_name}
+              </h1>
+              {profileUser?.is_verified ? (
+                <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-blue-500 text-white shadow-cyan">
+                  <Check className="h-4 w-4" strokeWidth={4} />
+                </span>
+              ) : null}
+            </div>
+            <div className="mt-1 flex flex-wrap items-center gap-2">
+              <p className="text-sm font-bold text-white/72">@{profileUser?.username}</p>
+              <span className="inline-flex items-center gap-1 rounded-full border border-green-400/20 bg-green-400/12 px-2 py-0.5 text-[10px] font-black text-green-300">
+                <span className="h-1.5 w-1.5 rounded-full bg-green-400 shadow-[0_0_12px_rgba(34,197,94,.9)]" />
+                En línea
+              </span>
+            </div>
+            <p className="mt-3 flex flex-wrap items-center gap-2 text-xs font-bold text-white/68 sm:text-sm">
               <MapPin className="h-4 w-4 text-neonCyan" />
-              {[profileUser?.city, profileUser?.country].filter(Boolean).join(" · ") ||
-                "Sin ubicación"}
+              {profileUser?.city || "Malabo"}
+              {profileUser?.country ? (
+                <>
+                  <span className="text-white/30">·</span>
+                  <span>🇬🇶 {profileUser.country}</span>
+                </>
+              ) : null}
             </p>
-            <p className="mt-4 rounded-[1.25rem] border border-white/10 bg-black/20 p-4 text-sm leading-6 text-white/72">
-              {profileUser?.bio || "Todavía no hay bio."}
-            </p>
+          </div>
+
+          <div className="mt-5 flex gap-2 overflow-x-auto pb-1 scrollbar-none">
+            <MoodPill icon={Sparkles} title="Motivado 😎" color="purple" />
+            <MoodPill icon={Music} title="Me Conozco" detail="Roku" color="pink" />
+            <MoodPill icon={LinkIcon} title={`linktr.ee/${profileUser?.username || "bucan"}`} color="cyan" />
           </div>
         </div>
       </motion.header>
 
-      {error ? (
-        <div className="mt-4 rounded-[1.2rem] border border-neonPink/30 bg-neonPink/10 px-4 py-3 text-sm font-semibold text-white">
-          {error}
-        </div>
-      ) : null}
-      {notice ? (
-        <div className="mt-4 rounded-[1.2rem] border border-neonCyan/30 bg-neonCyan/10 px-4 py-3 text-sm font-semibold text-white">
-          {notice}
-        </div>
-      ) : null}
-
-      <motion.div
-        className="mt-4 grid grid-cols-2 gap-3"
-        initial="hidden"
-        animate="show"
-        variants={{
-          hidden: {},
-          show: { transition: { staggerChildren: 0.05 } },
-        }}
-      >
-        {[
-          { label: "Posts", value: posts.length },
-          {
-            label: "Seguidores",
-            value: profileUser?.followers_count || 0,
-            to: `/users/${profileUser?.username}/followers`,
-          },
-          {
-            label: "Seguidos",
-            value: profileUser?.following_count || 0,
-            to: `/users/${profileUser?.username}/following`,
-          },
-          { label: "Likes", value: likesReceived },
-        ].map((stat) => (
-          <motion.div
-            key={stat.label}
-            variants={{ hidden: { opacity: 0, y: 12 }, show: { opacity: 1, y: 0 } }}
-          >
-            <StatCard {...stat} />
-          </motion.div>
-        ))}
-      </motion.div>
-
-      <div className="mt-4">
-        {isOwnProfile ? (
-          <div className="grid grid-cols-2 gap-3">
-            <motion.button
-              className="h-14 rounded-full bg-gradient-to-r from-neonCyan via-fiestaPurple to-neonPink text-sm font-black text-white shadow-cyan"
-              type="button"
-              onClick={() => setShowEditModal(true)}
-              whileTap={{ scale: 0.96 }}
-            >
-              <span className="inline-flex items-center gap-2">
-                <Pencil className="h-4 w-4" />
-                Editar
-              </span>
-            </motion.button>
-            <motion.button
-              className="h-14 rounded-full border border-liveRed/40 bg-liveRed/10 text-sm font-black text-white"
-              type="button"
-              onClick={logout}
-              whileTap={{ scale: 0.96 }}
-            >
-              <span className="inline-flex items-center gap-2">
-                <LogOut className="h-4 w-4" />
-                Salir
-              </span>
-            </motion.button>
-            <Link
-              className="flex h-14 items-center justify-center gap-2 rounded-full border border-white/10 bg-white/7 text-sm font-black text-white"
-              to="/stories/create"
-            >
-              <Film className="h-4 w-4" />
-              Crear story
-            </Link>
-            <Link
-              className="flex h-14 items-center justify-center gap-2 rounded-full border border-white/10 bg-white/7 text-sm font-black text-white"
-              to="/events/create"
-            >
-              <CalendarPlus className="h-4 w-4" />
-              Crear evento
-            </Link>
+      <div className="px-4 sm:px-0">
+        {error ? (
+          <div className="mt-4 rounded-[1.2rem] border border-neonPink/30 bg-neonPink/10 px-4 py-3 text-sm font-semibold text-white">
+            {error}
           </div>
-        ) : (
-          <div className="grid grid-cols-3 gap-2">
-            <motion.button
-              className={`h-14 rounded-full text-sm font-black disabled:opacity-60 ${
-                profileUser?.is_following
-                  ? "border border-neonPink/40 bg-neonPink/10 text-white"
-                  : "bg-gradient-to-r from-neonCyan via-fiestaPurple to-neonPink text-white shadow-cyan"
-              }`}
-              type="button"
-              onClick={handleToggleFollow}
-              disabled={isUpdatingFollow}
-              whileTap={{ scale: 0.96 }}
-            >
-              <span className="inline-flex items-center gap-1.5">
-                <UserPlus className="h-4 w-4" />
-                {isUpdatingFollow
-                  ? "..."
-                  : profileUser?.is_following
-                    ? "Dejar"
-                    : "Seguir"}
-              </span>
-            </motion.button>
-            <motion.button
-              className="h-14 rounded-full border border-white/10 bg-white/7 text-sm font-black text-white disabled:opacity-60"
-              type="button"
-              onClick={handleStartChat}
-              disabled={isStartingChat}
-              whileTap={{ scale: 0.96 }}
-            >
-              <span className="inline-flex items-center gap-1.5">
-                <Send className="h-4 w-4" />
-                {isStartingChat ? "..." : "Mensaje"}
-              </span>
-            </motion.button>
-            <motion.button
-              className="h-14 rounded-full border border-white/10 bg-white/7 text-sm font-black text-white"
-              type="button"
-              aria-label="Reportar usuario"
-              onClick={() => (isAuthenticated ? setShowReportModal(true) : navigate("/login"))}
-              whileTap={{ scale: 0.96 }}
-            >
-              <Flag className="mx-auto h-4 w-4" />
-            </motion.button>
+        ) : null}
+        {notice ? (
+          <div className="mt-4 rounded-[1.2rem] border border-neonCyan/30 bg-neonCyan/10 px-4 py-3 text-sm font-semibold text-white">
+            {notice}
           </div>
-        )}
-      </div>
+        ) : null}
 
-      {isOwnProfile ? (
+        <div className="-mt-1">
+          <ProfileStatBar
+            stats={[
+              { label: "Publicaciones", value: posts.length },
+              {
+                label: "Seguidores",
+                value: profileUser?.followers_count || 0,
+                to: `/users/${profileUser?.username}/followers`,
+              },
+              {
+                label: "Siguiendo",
+                value: profileUser?.following_count || 0,
+                to: `/users/${profileUser?.username}/following`,
+              },
+              { label: "Me gusta", value: likesReceived },
+            ]}
+          />
+        </div>
+
         <div className="mt-4">
-          <PushSettings />
-        </div>
-      ) : null}
-
-      <div className="scrollbar-none mt-6 flex gap-2 overflow-x-auto pb-1">
-        {tabs.map((tab) => {
-          const Icon = tab.icon;
-          const isActive = activeTab === tab.id;
-
-          return (
-            <button
-              className={`relative inline-flex h-11 shrink-0 items-center gap-2 rounded-full px-4 text-sm font-black transition ${
-                isActive
-                  ? "bg-white/12 text-white shadow-cyan"
-                  : "border border-white/10 bg-white/7 text-white/54"
-              }`}
-              key={tab.id}
-              type="button"
-              onClick={() => setActiveTab(tab.id)}
-            >
-              {isActive ? (
-                <motion.span
-                  className="absolute inset-x-3 -top-px h-0.5 rounded-full bg-gradient-to-r from-neonCyan to-neonPink"
-                  layoutId="profile-tab"
-                />
-              ) : null}
-              <Icon className="h-4 w-4" />
-              {tab.label}
-            </button>
-          );
-        })}
-      </div>
-
-      <motion.div
-        className="mt-3"
-        key={activeTab}
-        initial={{ opacity: 0, y: 12 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.22 }}
-      >
-        {activeTab === "posts" ? (
-          posts.length === 0 ? (
-            <EmptyState
-              title={isOwnProfile ? "Todavía no hay publicaciones" : "Aún no hay publicaciones"}
-              description="Cuando haya movimiento, aparecerá aquí."
-            />
-          ) : (
-            <div className="space-y-4">
-              {posts.map((post) => (
-                <PostCard key={post.id} post={post} />
-              ))}
+          {isOwnProfile ? (
+            <div className="grid grid-cols-4 gap-2">
+              <motion.button
+                className="col-span-2 h-12 rounded-[1rem] bg-gradient-to-r from-neonCyan via-fiestaPurple to-neonPink text-xs font-black text-white shadow-cyan"
+                type="button"
+                onClick={() => setShowEditModal(true)}
+                whileTap={{ scale: 0.96 }}
+              >
+                <span className="inline-flex items-center gap-2">
+                  <Pencil className="h-4 w-4" />
+                  Editar perfil
+                </span>
+              </motion.button>
+              <Link
+                className="flex h-12 items-center justify-center rounded-[1rem] border border-white/10 bg-white/7 text-white"
+                to="/stories/create"
+                aria-label="Crear story"
+              >
+                <Film className="h-4 w-4" />
+              </Link>
+              <motion.button
+                className="flex h-12 items-center justify-center rounded-[1rem] border border-liveRed/35 bg-liveRed/10 text-liveRed"
+                type="button"
+                onClick={logout}
+                whileTap={{ scale: 0.96 }}
+                aria-label="Salir"
+              >
+                <LogOut className="h-4 w-4" />
+              </motion.button>
             </div>
-          )
-        ) : null}
+          ) : (
+            <div className="grid grid-cols-[1fr_1fr_3.25rem] gap-2">
+              <motion.button
+                className={`h-12 rounded-[1rem] text-xs font-black disabled:opacity-60 ${
+                  profileUser?.is_following
+                    ? "border border-neonPink/40 bg-neonPink/10 text-white"
+                    : "bg-gradient-to-r from-neonCyan via-fiestaPurple to-neonPink text-white shadow-cyan"
+                }`}
+                type="button"
+                onClick={handleToggleFollow}
+                disabled={isUpdatingFollow}
+                whileTap={{ scale: 0.96 }}
+              >
+                <span className="inline-flex items-center gap-1.5">
+                  <UserPlus className="h-4 w-4" />
+                  {isUpdatingFollow ? "..." : profileUser?.is_following ? "Dejar" : "Seguir"}
+                </span>
+              </motion.button>
+              <motion.button
+                className="h-12 rounded-[1rem] border border-white/10 bg-white/7 text-xs font-black text-white disabled:opacity-60"
+                type="button"
+                onClick={handleStartChat}
+                disabled={isStartingChat}
+                whileTap={{ scale: 0.96 }}
+              >
+                <span className="inline-flex items-center gap-1.5">
+                  <MessageCircle className="h-4 w-4" />
+                  {isStartingChat ? "..." : "Mensaje"}
+                </span>
+              </motion.button>
+              <motion.button
+                className="flex h-12 items-center justify-center rounded-[1rem] border border-white/10 bg-white/7 text-white"
+                type="button"
+                aria-label="Reportar usuario"
+                onClick={() => (isAuthenticated ? setShowReportModal(true) : navigate("/login"))}
+                whileTap={{ scale: 0.96 }}
+              >
+                <Flag className="h-4 w-4" />
+              </motion.button>
+            </div>
+          )}
+        </div>
 
-        {activeTab === "media" ? <MediaGrid posts={posts} /> : null}
-
-        {activeTab === "events" ? (
-          <EmptyState
-            title="Este usuario todavía no ha creado eventos"
-            description="Los eventos completos aparecerán aquí cuando estén conectados al perfil."
+        <div className="mt-4 grid gap-3 lg:grid-cols-[1fr_16rem]">
+          <AboutCard
+            profileUser={profileUser}
+            isOwnProfile={isOwnProfile}
+            onEdit={() => setShowEditModal(true)}
           />
+          <LocationMusicCards profileUser={profileUser} />
+        </div>
+
+        <div className="mt-3">
+          <AchievementsStrip posts={posts} profileUser={profileUser} likesReceived={likesReceived} />
+        </div>
+
+        {isOwnProfile ? (
+          <div className="mt-3 overflow-hidden rounded-[1.3rem]">
+            <PushSettings />
+          </div>
         ) : null}
 
-        {activeTab === "stories" ? (
-          <EmptyState
-            title="No hay stories activas"
-            description="Las stories duran 24 horas y aparecerán aquí mientras estén vivas."
-          />
-        ) : null}
+        <div className="sticky top-0 z-10 -mx-4 mt-4 border-y border-white/8 bg-night/82 px-4 py-2 backdrop-blur-2xl sm:mx-0 sm:rounded-[1.2rem] sm:border">
+          <div className="scrollbar-none flex gap-1 overflow-x-auto">
+            {tabs.map((tab) => {
+              const Icon = tab.icon;
+              const isActive = activeTab === tab.id;
 
-        {activeTab === "lives" ? (
-          <EmptyState
-            title="No hay lives activos"
-            description="Cuando este usuario esté en directo, lo verás aquí."
-          />
-        ) : null}
-      </motion.div>
+              return (
+                <button
+                  className={`relative inline-flex h-10 shrink-0 items-center gap-1.5 px-3 text-[11px] font-black uppercase transition ${
+                    isActive ? "text-white" : "text-white/50"
+                  }`}
+                  key={tab.id}
+                  type="button"
+                  onClick={() => setActiveTab(tab.id)}
+                >
+                  {isActive ? (
+                    <motion.span
+                      className="absolute inset-x-2 bottom-0 h-0.5 rounded-full bg-neonPink shadow-neon"
+                      layoutId="profile-tab"
+                    />
+                  ) : null}
+                  <Icon className="h-4 w-4" />
+                  {tab.label}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        <motion.div
+          className="mt-3"
+          key={activeTab}
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.22 }}
+        >
+          {activeTab === "posts" ? <ProfilePostGrid posts={posts} /> : null}
+          {activeTab === "media" ? <MediaGrid posts={posts} /> : null}
+          {activeTab === "saved" ? (
+            <EmptyState title="Guardados todavía no está activo" description="Esta sección queda preparada para guardar publicaciones." />
+          ) : null}
+          {activeTab === "map" ? (
+            <EmptyState title="Mapa del perfil" description="Las publicaciones con ubicación aparecerán aquí." />
+          ) : null}
+          {activeTab === "likes" ? (
+            <EmptyState title={`${formatCompact(likesReceived)} me gusta recibidos`} description="Los likes detallados se conectarán cuando exista el endpoint específico." />
+          ) : null}
+          {activeTab === "badges" ? (
+            <AchievementsStrip posts={posts} profileUser={profileUser} likesReceived={likesReceived} />
+          ) : null}
+        </motion.div>
+
+        <Link
+          className="fixed bottom-28 right-5 z-20 flex h-14 w-14 items-center justify-center rounded-full bg-neonPink text-3xl font-light text-white shadow-neon sm:hidden"
+          to="/create"
+          aria-label="Publicar"
+        >
+          +
+        </Link>
+      </div>
 
       {showEditModal ? (
         <ProfileEditModal

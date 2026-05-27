@@ -7,9 +7,7 @@ import {
   ArrowLeft,
   CalendarDays,
   Camera,
-  ChevronDown,
   ChevronRight,
-  Eye,
   Globe2,
   Image as ImageIcon,
   LocateFixed,
@@ -80,6 +78,8 @@ const privacyOptions = [
   },
 ];
 
+const createLayoutOrder = ["live", "privacy", "composer", "tools", "eventDetails", "location"];
+
 function EditIcon(props) {
   return <ImageIcon {...props} />;
 }
@@ -129,6 +129,7 @@ function CreatePost() {
   const [mediaItems, setMediaItems] = useState([]);
   const [activeMode, setActiveMode] = useState("text");
   const [showLocationPicker, setShowLocationPicker] = useState(false);
+  const [isLocationExpanded, setIsLocationExpanded] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [isLocating, setIsLocating] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -277,8 +278,7 @@ function CreatePost() {
     }
 
     if (mode.id === "live") {
-      setActiveMode("live");
-      setForm((current) => ({ ...current, type: "live" }));
+      navigate("/lives/start");
       return;
     }
 
@@ -337,6 +337,104 @@ function CreatePost() {
     }
   }
 
+  function renderCreateBlock(blockId) {
+    switch (blockId) {
+      case "privacy":
+        return <InlinePrivacySelector form={form} updateField={updateField} />;
+      case "composer":
+        return isUploading || mediaItems.length ? (
+          <MediaFirstComposer
+            form={form}
+            updateField={updateField}
+            mediaItems={mediaItems}
+            setMediaItems={setMediaItems}
+            isUploading={isUploading}
+          />
+        ) : (
+          <TextComposer form={form} updateField={updateField} />
+        );
+      case "tools":
+        return (
+          <MiniPublishSelector
+            activeMode={activeMode}
+            isUploading={isUploading}
+            isLocationActive={showLocationPicker || Boolean(position)}
+            selectMode={selectMode}
+            setShowLocationPicker={setShowLocationPicker}
+            setIsLocationExpanded={setIsLocationExpanded}
+          />
+        );
+      case "live":
+        return <LiveStartBanner />;
+      case "eventDetails":
+        return isEventMode ? (
+          <div className="mt-4 rounded-[1.05rem] border border-fiestaPurple/24 bg-fiestaPurple/10 p-3 sm:mt-5 sm:rounded-[1.2rem] sm:p-4">
+            <p className="text-sm font-black uppercase tracking-[0.16em] text-neonPink">
+              Datos del evento
+            </p>
+            <div className="mt-4 grid gap-3 sm:grid-cols-2">
+              <input
+                className="h-11 rounded-[0.85rem] border border-white/10 bg-white/6 px-3 text-sm font-semibold text-white outline-none placeholder:text-white/34 focus:border-neonPink sm:h-12 sm:rounded-[0.9rem] sm:px-4"
+                name="event_title"
+                value={form.event_title}
+                onChange={updateField}
+                placeholder="Título"
+              />
+              <input
+                className="h-11 rounded-[0.85rem] border border-white/10 bg-white/6 px-3 text-sm font-semibold text-white outline-none placeholder:text-white/34 focus:border-neonPink sm:h-12 sm:rounded-[0.9rem] sm:px-4"
+                name="venue"
+                value={form.venue}
+                onChange={updateField}
+                placeholder="Lugar"
+              />
+              <input
+                className="h-11 rounded-[0.85rem] border border-white/10 bg-white/6 px-3 text-sm font-semibold text-white outline-none focus:border-neonPink sm:h-12 sm:rounded-[0.9rem] sm:px-4"
+                name="start_at"
+                value={form.start_at}
+                onChange={updateField}
+                type="datetime-local"
+              />
+              <input
+                className="h-11 rounded-[0.85rem] border border-white/10 bg-white/6 px-3 text-sm font-semibold text-white outline-none placeholder:text-white/34 focus:border-neonPink sm:h-12 sm:rounded-[0.9rem] sm:px-4"
+                name="price"
+                value={form.price}
+                onChange={updateField}
+                placeholder="Precio"
+              />
+            </div>
+            <label className="mt-3 flex items-center justify-between rounded-[0.85rem] border border-white/10 bg-white/6 px-3 py-2.5 sm:rounded-[0.9rem] sm:px-4 sm:py-3">
+              <span className="text-sm font-bold text-white">Evento abierto</span>
+              <input
+                className="h-5 w-5 accent-pink-500"
+                type="checkbox"
+                name="is_open"
+                checked={form.is_open}
+                onChange={updateField}
+              />
+            </label>
+          </div>
+        ) : null;
+      case "location":
+        return (
+          <LocationPanel
+            form={form}
+            updateField={updateField}
+            position={position}
+            showLocationPicker={showLocationPicker}
+            setShowLocationPicker={setShowLocationPicker}
+            isLocationExpanded={isLocationExpanded}
+            setIsLocationExpanded={setIsLocationExpanded}
+            handleUseCurrentLocation={handleUseCurrentLocation}
+            isLocating={isLocating}
+            locationError={locationError}
+            setSelectedLocation={setSelectedLocation}
+          />
+        );
+      default:
+        return null;
+    }
+  }
+
   return (
     <section className="relative -mx-4 min-h-[calc(100vh-7rem)] overflow-hidden bg-night px-3 pb-28 text-white sm:mx-0 sm:rounded-[2rem] sm:px-4 sm:pb-36">
       <div className="pointer-events-none absolute inset-x-0 top-0 h-56 overflow-hidden sm:h-72">
@@ -347,30 +445,30 @@ function CreatePost() {
       <div className="pointer-events-none absolute -right-24 top-96 h-72 w-72 rounded-full bg-neonPink/12 blur-3xl" />
 
       <form className="relative z-10 mx-auto max-w-6xl" onSubmit={handleSubmit}>
-        <header className="flex items-start gap-3 border-b border-white/10 py-4 sm:gap-4 sm:py-7">
+        <header className="flex items-start gap-3 border-b border-white/10 py-3 sm:gap-4 sm:py-7">
           <motion.button
-            className="mt-1 flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-white/10 bg-white/10 text-white shadow-cyan backdrop-blur-xl sm:h-12 sm:w-12"
+            className="mt-1 flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-white/10 bg-white/10 text-white shadow-cyan backdrop-blur-xl sm:h-12 sm:w-12"
             type="button"
             onClick={() => navigate(-1)}
             whileTap={{ scale: 0.94 }}
             aria-label="Volver"
           >
-            <ArrowLeft className="h-5 w-5" />
+            <ArrowLeft className="h-4 w-4 sm:h-5 sm:w-5" />
           </motion.button>
 
           <div className="min-w-0 flex-1">
             <motion.h1
-              className="text-3xl font-black uppercase leading-none tracking-tight text-neonPink sm:text-5xl"
+              className="text-2xl font-black uppercase leading-none tracking-tight text-neonPink sm:text-5xl"
               initial={{ opacity: 0, y: 12 }}
               animate={{ opacity: 1, y: 0 }}
             >
               Publicar
             </motion.h1>
-            <p className="mt-2 text-sm font-semibold text-white/82 sm:mt-3 sm:text-lg">
+            <p className="mt-1.5 text-xs font-semibold text-white/82 sm:mt-3 sm:text-lg">
               Comparte lo que está pasando ahora
             </p>
 
-            <div className="mt-4 flex flex-wrap gap-2 text-xs font-bold sm:mt-5 sm:gap-3 sm:text-sm">
+            <div className="mt-4 hidden flex-wrap gap-2 text-xs font-bold sm:mt-5 sm:flex sm:gap-3 sm:text-sm">
               <span className="inline-flex items-center gap-1.5 rounded-[0.7rem] border border-white/10 bg-white/7 px-3 py-1.5 backdrop-blur-xl sm:gap-2 sm:px-4 sm:py-2">
                 <MapPin className="h-3.5 w-3.5 text-neonPink sm:h-4 sm:w-4" />
                 {form.city || user?.city || "Malabo"}
@@ -386,171 +484,26 @@ function CreatePost() {
             </div>
           </div>
 
-          <div className="shrink-0">
-            {user?.avatar_url ? (
-              <img
-                alt={user.display_name || user.username}
-                className="h-11 w-11 rounded-full border-2 border-neonPink object-cover shadow-neon sm:h-16 sm:w-16"
-                src={user.avatar_url}
-              />
-            ) : (
-              <div className="flex h-11 w-11 items-center justify-center rounded-full border-2 border-neonPink bg-gradient-to-br from-neonPink via-fiestaPurple to-neonCyan text-base font-black shadow-neon sm:h-16 sm:w-16 sm:text-2xl">
-                {initials(user)}
-              </div>
-            )}
-          </div>
+          <PublishProfileOrb
+            user={user}
+            city={form.city || user?.city || "Malabo"}
+            activeUsers={publishStats.activeUsers}
+            eventsToday={publishStats.eventsToday}
+          />
         </header>
 
         <div className="mt-5 grid gap-4 sm:mt-7 sm:gap-6 lg:grid-cols-[1fr_24rem]">
           <main className="min-w-0 space-y-4 sm:space-y-6">
             <section className="rounded-[1.15rem] border border-neonPink/20 bg-white/[0.055] p-4 shadow-neon backdrop-blur-2xl sm:rounded-[1.45rem] sm:p-5">
-              <div className="flex items-start justify-between gap-3">
-                <div>
-                  <p className="flex items-center gap-2 text-xs font-black uppercase tracking-[0.18em] text-neonCyan">
-                    <Eye className="h-4 w-4" />
-                    Editor
-                  </p>
-                  <h2 className="mt-2 text-xl font-black text-white sm:text-2xl">
-                    {isLiveMode ? "Directo" : isEventMode ? "Publicación de evento" : "Nueva publicación"}
-                  </h2>
-                </div>
-                <span className="rounded-full border border-neonCyan/20 bg-neonCyan/10 px-3 py-1.5 text-xs font-black text-neonCyan">
-                  Editando
-                </span>
-              </div>
-
-              <InlinePrivacySelector form={form} updateField={updateField} />
-
-              {isLiveMode ? (
-                <div className="mt-4 rounded-[1.05rem] border border-liveRed/25 bg-liveRed/10 p-4 sm:mt-6 sm:rounded-[1.2rem] sm:p-5">
-                  <p className="text-sm font-black uppercase tracking-[0.16em] text-liveRed">Live</p>
-                  <p className="mt-2 text-xl font-black text-white sm:mt-3 sm:text-2xl">Entra en directo ahora</p>
-                  <p className="mt-2 text-sm font-semibold leading-6 text-white/62">
-                    El directo real se inicia desde la pantalla LiveKit preparada para BUCAN DEY.
-                  </p>
-                  <Link
-                    className="mt-4 inline-flex h-11 items-center gap-2 rounded-[0.9rem] bg-liveRed px-4 text-sm font-black text-white shadow-live sm:mt-5 sm:h-12 sm:px-5"
-                    to="/lives/start"
-                  >
-                    Empezar directo
-                    <ChevronRight className="h-4 w-4" />
-                  </Link>
-                </div>
-              ) : (
-                <>
-                  {isUploading || mediaItems.length ? (
-                    <MediaFirstComposer
-                      form={form}
-                      updateField={updateField}
-                      mediaItems={mediaItems}
-                      setMediaItems={setMediaItems}
-                      isUploading={isUploading}
-                    />
-                  ) : (
-                    <TextComposer form={form} updateField={updateField} />
-                  )}
-                </>
-              )}
-
-              <MiniPublishSelector
-                activeMode={activeMode}
-                isUploading={isUploading}
-                isLocationActive={showLocationPicker || Boolean(position)}
-                selectMode={selectMode}
-                setShowLocationPicker={setShowLocationPicker}
-              />
+              {createLayoutOrder.map((blockId) => (
+                <div key={blockId}>{renderCreateBlock(blockId)}</div>
+              ))}
 
               {uploadError ? (
                 <div className="mt-3 rounded-[1rem] border border-neonPink/30 bg-neonPink/10 px-4 py-3 text-sm font-semibold text-white sm:mt-4">
                   {uploadError}
                 </div>
               ) : null}
-
-              {isEventMode ? (
-                <div className="mt-4 rounded-[1.05rem] border border-fiestaPurple/24 bg-fiestaPurple/10 p-3 sm:mt-5 sm:rounded-[1.2rem] sm:p-4">
-                  <p className="text-sm font-black uppercase tracking-[0.16em] text-neonPink">
-                    Datos del evento
-                  </p>
-                  <div className="mt-4 grid gap-3 sm:grid-cols-2">
-                    <input
-                      className="h-11 rounded-[0.85rem] border border-white/10 bg-white/6 px-3 text-sm font-semibold text-white outline-none placeholder:text-white/34 focus:border-neonPink sm:h-12 sm:rounded-[0.9rem] sm:px-4"
-                      name="event_title"
-                      value={form.event_title}
-                      onChange={updateField}
-                      placeholder="Título"
-                    />
-                    <input
-                      className="h-11 rounded-[0.85rem] border border-white/10 bg-white/6 px-3 text-sm font-semibold text-white outline-none placeholder:text-white/34 focus:border-neonPink sm:h-12 sm:rounded-[0.9rem] sm:px-4"
-                      name="venue"
-                      value={form.venue}
-                      onChange={updateField}
-                      placeholder="Lugar"
-                    />
-                    <input
-                      className="h-11 rounded-[0.85rem] border border-white/10 bg-white/6 px-3 text-sm font-semibold text-white outline-none focus:border-neonPink sm:h-12 sm:rounded-[0.9rem] sm:px-4"
-                      name="start_at"
-                      value={form.start_at}
-                      onChange={updateField}
-                      type="datetime-local"
-                    />
-                    <input
-                      className="h-11 rounded-[0.85rem] border border-white/10 bg-white/6 px-3 text-sm font-semibold text-white outline-none placeholder:text-white/34 focus:border-neonPink sm:h-12 sm:rounded-[0.9rem] sm:px-4"
-                      name="price"
-                      value={form.price}
-                      onChange={updateField}
-                      placeholder="Precio"
-                    />
-                  </div>
-                  <label className="mt-3 flex items-center justify-between rounded-[0.85rem] border border-white/10 bg-white/6 px-3 py-2.5 sm:rounded-[0.9rem] sm:px-4 sm:py-3">
-                    <span className="text-sm font-bold text-white">Evento abierto</span>
-                    <input
-                      className="h-5 w-5 accent-pink-500"
-                      type="checkbox"
-                      name="is_open"
-                      checked={form.is_open}
-                      onChange={updateField}
-                    />
-                  </label>
-                </div>
-              ) : null}
-
-              <LocationPanel
-                form={form}
-                updateField={updateField}
-                position={position}
-                showLocationPicker={showLocationPicker}
-                setShowLocationPicker={setShowLocationPicker}
-                handleUseCurrentLocation={handleUseCurrentLocation}
-                isLocating={isLocating}
-                locationError={locationError}
-                setSelectedLocation={setSelectedLocation}
-              />
-            </section>
-
-            <MobileUtilityPanels
-              form={form}
-              position={position}
-            />
-
-            <section className="grid gap-4 sm:gap-5">
-              <FeatureRouteCard
-                icon={CalendarDays}
-                title="Evento"
-                subtitle="Publica un evento rápido"
-                body="Comparte los detalles de tu evento con la comunidad."
-                button="Crear evento completo"
-                to="/events/create"
-                tone="purple"
-              />
-              <FeatureRouteCard
-                icon={Radio}
-                title="Live"
-                subtitle="Entra en directo ahora"
-                body="Conectate en vivo con tu audiencia."
-                button="Empezar directo"
-                to="/lives/start"
-                tone="red"
-              />
             </section>
 
             {notice ? (
@@ -565,9 +518,6 @@ function CreatePost() {
             ) : null}
           </main>
 
-          <aside className="hidden min-w-0 space-y-5 lg:sticky lg:top-5 lg:block lg:self-start">
-            <LocationSummary form={form} position={position} />
-          </aside>
         </div>
 
         <input
@@ -594,8 +544,8 @@ function CreatePost() {
             disabled={isSubmitting || isUploading}
             whileTap={{ scale: 0.98 }}
           >
-            {isLiveMode ? <Radio className="h-5 w-5" /> : <Send className="h-5 w-5" />}
-            {isLiveMode ? "Empezar directo" : isSubmitting ? "Publicando..." : "Publicar ahora"}
+            <Send className="h-5 w-5" />
+            {isSubmitting ? "Publicando..." : "Publicar ahora"}
           </motion.button>
         </div>
       </form>
@@ -611,6 +561,41 @@ function ComposerFooter({ count }) {
         <span className="text-lg font-black sm:text-xl">#</span>
       </div>
       <span className="text-xs font-semibold text-white/52 sm:text-sm">{count}/2000</span>
+    </div>
+  );
+}
+
+function PublishProfileOrb({ user, city, activeUsers, eventsToday }) {
+  return (
+    <div
+      className="relative h-[4.8rem] w-[4.8rem] shrink-0 sm:h-16 sm:w-16"
+      aria-label={`${city}. ${activeUsers ?? "..."} usuarios activos. ${eventsToday ?? "..."} eventos hoy.`}
+    >
+      <div className="absolute inset-1 rounded-full border border-white/10 bg-white/8 shadow-cyan backdrop-blur-xl sm:inset-0 sm:border-0 sm:bg-transparent sm:shadow-none">
+        {user?.avatar_url ? (
+          <img
+            alt={user.display_name || user.username}
+            className="absolute left-1/2 top-1/2 h-12 w-12 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-neonPink object-cover shadow-neon sm:h-16 sm:w-16"
+            src={user.avatar_url}
+          />
+        ) : (
+          <div className="absolute left-1/2 top-1/2 flex h-12 w-12 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border-2 border-neonPink bg-gradient-to-br from-neonPink via-fiestaPurple to-neonCyan text-base font-black shadow-neon sm:h-16 sm:w-16 sm:text-2xl">
+            {initials(user)}
+          </div>
+        )}
+      </div>
+
+      <span className="absolute -right-1 top-1 inline-flex h-6 min-w-6 items-center justify-center rounded-full border border-green-300/25 bg-green-400/20 px-1 text-[10px] font-black text-green-200 shadow-[0_0_18px_rgba(34,197,94,.65)] backdrop-blur-xl sm:hidden">
+        {activeUsers ?? "..."}
+      </span>
+      <span className="absolute -left-1 bottom-1 inline-flex max-w-[4.35rem] items-center gap-1 rounded-full border border-white/10 bg-night/76 px-1.5 py-1 text-[9px] font-black text-white shadow-cyan backdrop-blur-xl sm:hidden">
+        <MapPin className="h-3 w-3 shrink-0 text-neonPink" />
+        <span className="truncate">{city}</span>
+      </span>
+      <span className="absolute -right-1 bottom-1 inline-flex items-center gap-1 rounded-full border border-neonPink/20 bg-neonPink/16 px-1.5 py-1 text-[9px] font-black text-white shadow-neon backdrop-blur-xl sm:hidden">
+        <CalendarDays className="h-3 w-3 text-neonPink" />
+        {eventsToday ?? "..."}
+      </span>
     </div>
   );
 }
@@ -744,58 +729,22 @@ function MediaFirstComposer({ form, updateField, mediaItems, setMediaItems, isUp
   );
 }
 
-function MobileUtilityPanels({ form, position }) {
-  const panels = [
-    {
-      id: "location",
-      icon: MapPin,
-      label: "Ubicación",
-      summary: selectedLocationLabel(form),
-      content: <LocationSummary form={form} position={position} compact />,
-    },
-  ];
-
-  return (
-    <section className="space-y-2 lg:hidden">
-      {panels.map((panel) => {
-        const Icon = panel.icon;
-        return (
-          <details
-            className="group overflow-hidden rounded-[1rem] border border-white/10 bg-white/[0.045] shadow-cyan backdrop-blur-2xl"
-            key={panel.id}
-          >
-            <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-3 py-3">
-              <span className="flex min-w-0 items-center gap-2">
-                <Icon className="h-4 w-4 shrink-0 text-neonCyan" />
-                <span className="text-sm font-black uppercase text-white">{panel.label}</span>
-              </span>
-              <span className="flex min-w-0 items-center gap-2 text-xs font-bold text-white/54">
-                <span className="truncate">{panel.summary}</span>
-                <ChevronDown className="h-4 w-4 transition group-open:rotate-180" />
-              </span>
-            </summary>
-            <div className="border-t border-white/10 p-2.5">{panel.content}</div>
-          </details>
-        );
-      })}
-    </section>
-  );
-}
-
 function MiniPublishSelector({
   activeMode,
   isUploading,
   isLocationActive,
   selectMode,
   setShowLocationPicker,
+  setIsLocationExpanded,
 }) {
   const tools = [
-    ...publishModes,
+    ...publishModes.filter((mode) => mode.id !== "live"),
     { id: "location", label: "Lugar", icon: MapPin, tone: "cyan" },
   ];
 
   function handleToolClick(tool) {
     if (tool.id === "location") {
+      setIsLocationExpanded(true);
       setShowLocationPicker((current) => !current);
       return;
     }
@@ -847,83 +796,188 @@ function MiniPublishSelector({
   );
 }
 
+function LiveStartBanner() {
+  return (
+    <Link
+      className="group mt-3 flex items-center gap-3 overflow-hidden rounded-[1rem] border border-liveRed/25 bg-gradient-to-r from-liveRed/16 via-neonPink/10 to-fiestaPurple/12 p-2.5 shadow-live backdrop-blur-xl transition hover:border-liveRed/40 hover:bg-liveRed/20 sm:mt-4 sm:rounded-[1.1rem] sm:p-3"
+      to="/lives/start"
+    >
+      <span className="relative flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-liveRed/18 text-liveRed shadow-live">
+        <span className="absolute inset-0 animate-ping rounded-full bg-liveRed/20" />
+        <Radio className="relative h-5 w-5" />
+      </span>
+      <span className="min-w-0 flex-1">
+        <span className="flex items-center gap-2 text-sm font-black uppercase text-white">
+          Live
+          <span className="rounded-full bg-liveRed px-2 py-0.5 text-[10px] font-black text-white shadow-live">
+            Directo
+          </span>
+        </span>
+        <span className="mt-1 block truncate text-xs font-semibold text-white/58">
+          Entra en directo ahora y conecta con tu audiencia.
+        </span>
+      </span>
+      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-white/10 bg-white/8 text-white transition group-hover:translate-x-0.5">
+        <ChevronRight className="h-4 w-4" />
+      </span>
+    </Link>
+  );
+}
+
 function LocationPanel({
   form,
   updateField,
   position,
   showLocationPicker,
   setShowLocationPicker,
+  isLocationExpanded,
+  setIsLocationExpanded,
   handleUseCurrentLocation,
   isLocating,
   locationError,
   setSelectedLocation,
 }) {
-  return (
-    <div className="mt-4 rounded-[1.05rem] border border-white/10 bg-night/38 p-3 sm:mt-5 sm:rounded-[1.15rem] sm:p-4">
-      <p className="text-sm font-black text-white sm:text-base">Ubicación (opcional)</p>
-      <div className="mt-3 grid gap-2 sm:mt-4 sm:grid-cols-2 sm:gap-3">
-        <input
-          className="h-11 rounded-[0.85rem] border border-white/10 bg-white/6 px-3 text-sm font-semibold text-white outline-none placeholder:text-white/34 focus:border-neonCyan sm:h-12 sm:rounded-[0.9rem] sm:px-4"
-          name="city"
-          value={form.city}
-          onChange={updateField}
-          placeholder="Ciudad"
-        />
-        <input
-          className="h-11 rounded-[0.85rem] border border-white/10 bg-white/6 px-3 text-sm font-semibold text-white outline-none placeholder:text-white/34 focus:border-neonCyan sm:h-12 sm:rounded-[0.9rem] sm:px-4"
-          name="area"
-          value={form.area}
-          onChange={updateField}
-          placeholder="Zona"
-        />
-      </div>
+  const locationTitle = position ? selectedLocationLabel(form) : "Añadir ubicación";
+  const locationSubtitle = position
+    ? `${form.show_on_map ? "Visible en mapa" : "Mapa desactivado"} · ${Number(form.lat).toFixed(4)}, ${Number(form.lng).toFixed(4)}`
+    : `${form.city || "Malabo"} · Mapa desactivado`;
 
+  return (
+    <div className="mt-3 overflow-hidden rounded-[1rem] border border-white/10 bg-night/38 shadow-cyan sm:mt-4 sm:rounded-[1.15rem]">
       <button
-        className="mt-3 flex w-full items-center justify-between rounded-[0.9rem] border border-white/10 bg-white/6 px-3 py-3 text-left sm:mt-4 sm:rounded-[0.95rem] sm:px-4 sm:py-4"
+        className="flex w-full items-center gap-3 px-3 py-3 text-left transition hover:bg-white/[0.035] sm:px-4 sm:py-3.5"
         type="button"
-        onClick={() => setShowLocationPicker((current) => !current)}
+        onClick={() => setIsLocationExpanded((current) => !current)}
+        aria-expanded={isLocationExpanded}
       >
-        <span className="flex items-center gap-3">
-          <span className="flex h-9 w-9 items-center justify-center rounded-full bg-fiestaPurple/18 text-fiestaPurple sm:h-10 sm:w-10">
-            <MapPin className="h-4 w-4 sm:h-5 sm:w-5" />
+        <span
+          className={[
+            "flex h-10 w-10 shrink-0 items-center justify-center rounded-full border",
+            position
+              ? "border-neonCyan/30 bg-neonCyan/14 text-neonCyan shadow-cyan"
+              : "border-white/10 bg-white/6 text-neonCyan",
+          ].join(" ")}
+        >
+          <MapPin className="h-5 w-5" />
+        </span>
+        <span className="min-w-0 flex-1">
+          <span className="flex items-center gap-2">
+            <span className="truncate text-sm font-black text-white sm:text-base">{locationTitle}</span>
+            <span
+              className={[
+                "rounded-full border px-2 py-0.5 text-[9px] font-black uppercase tracking-[0.08em]",
+                position
+                  ? "border-neonCyan/25 bg-neonCyan/12 text-neonCyan"
+                  : "border-white/10 bg-white/6 text-white/50",
+              ].join(" ")}
+            >
+              {position ? "Añadida" : "Opcional"}
+            </span>
           </span>
-          <span>
-            <span className="block text-sm font-black text-white">Añadir ubicación</span>
-            <span className="block text-xs font-semibold text-white/50 sm:text-sm">Ciudad, zona o punto en el mapa</span>
+          <span className="mt-0.5 block truncate text-xs font-semibold text-white/48">
+            {locationSubtitle}
           </span>
         </span>
-        <ChevronRight className="h-4 w-4 text-white/62 sm:h-5 sm:w-5" />
+        <span className="hidden rounded-full border border-white/10 bg-white/6 px-3 py-1 text-[10px] font-black uppercase tracking-[0.12em] text-neonPink sm:inline-flex">
+          Editar
+        </span>
+        <ChevronRight
+          className={[
+            "h-5 w-5 shrink-0 text-white/52 transition",
+            isLocationExpanded ? "rotate-90 text-neonCyan" : "",
+          ].join(" ")}
+        />
       </button>
 
-      <div className="mt-3 grid grid-cols-2 gap-2 sm:gap-3">
+      {isLocationExpanded ? (
+        <div className="border-t border-white/10 p-2.5 sm:p-3">
+          <div className="grid gap-2 sm:grid-cols-3">
         <button
-          className="flex h-11 items-center justify-center gap-1.5 rounded-[0.85rem] border border-white/10 bg-white/6 text-xs font-black text-white disabled:opacity-60 sm:h-12 sm:gap-2 sm:text-sm"
+          className={[
+            "group flex min-h-[3.5rem] items-center gap-3 rounded-[0.9rem] border px-3 text-left transition disabled:opacity-60 sm:min-h-[3.8rem]",
+            position
+              ? "border-neonCyan/25 bg-neonCyan/10 shadow-cyan"
+              : "border-white/10 bg-white/6 hover:border-neonCyan/25 hover:bg-neonCyan/10",
+          ].join(" ")}
           type="button"
           onClick={handleUseCurrentLocation}
           disabled={isLocating}
         >
-          <LocateFixed className="h-4 w-4" />
-          {isLocating ? "Buscando..." : "Usar mi ubicación"}
+          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-neonCyan/24 to-fiestaPurple/24 text-neonCyan shadow-cyan">
+            <LocateFixed className="h-4 w-4" />
+          </span>
+          <span className="min-w-0 flex-1">
+            <span className="block text-xs font-black text-white sm:text-sm">
+              {isLocating ? "Buscando ubicación..." : position ? selectedLocationLabel(form) : "Usar mi ubicación"}
+            </span>
+            <span className="mt-0.5 block truncate text-[11px] font-semibold text-white/48">
+              {position ? "Ubicación detectada" : "Un toque"}
+            </span>
+          </span>
         </button>
+
         <button
-          className="flex h-11 items-center justify-center gap-1.5 rounded-[0.85rem] border border-white/10 bg-white/6 text-xs font-black text-white sm:h-12 sm:gap-2 sm:text-sm"
+          className="flex min-h-[3.5rem] items-center justify-center gap-2 rounded-[0.9rem] border border-white/10 bg-white/6 px-4 text-xs font-black text-white transition hover:border-neonPink/25 hover:bg-neonPink/10 sm:min-h-[3.8rem]"
           type="button"
           onClick={() => setShowLocationPicker((current) => !current)}
         >
-          <MapIcon className="h-4 w-4" />
+          <MapIcon className="h-4 w-4 text-neonPink" />
           Elegir en mapa
         </button>
-      </div>
 
-      {position ? (
-        <div className="mt-3 rounded-[0.9rem] border border-neonCyan/25 bg-neonCyan/10 px-3 py-2.5 text-xs font-bold text-white sm:rounded-[0.95rem] sm:px-4 sm:py-3 sm:text-sm">
-          Ubicación seleccionada: {Number(form.lat).toFixed(4)}, {Number(form.lng).toFixed(4)}
-        </div>
-      ) : null}
+        <details className="group overflow-hidden rounded-[0.9rem] border border-white/10 bg-white/5">
+          <summary className="flex min-h-[3.5rem] cursor-pointer list-none items-center justify-between gap-2 px-3 py-2.5 sm:min-h-[3.8rem]">
+            <span className="min-w-0 text-xs font-black text-white">
+              Editar ciudad/zona
+            </span>
+            <span className="text-[10px] font-black uppercase tracking-[0.12em] text-neonPink">
+              Abrir
+            </span>
+          </summary>
+          <div className="grid gap-2 border-t border-white/10 p-2">
+            <input
+              className="h-10 rounded-[0.75rem] border border-white/10 bg-white/6 px-3 text-sm font-semibold text-white outline-none placeholder:text-white/34 focus:border-neonCyan"
+              name="city"
+              value={form.city}
+              onChange={updateField}
+              placeholder="Ciudad"
+            />
+            <input
+              className="h-10 rounded-[0.75rem] border border-white/10 bg-white/6 px-3 text-sm font-semibold text-white outline-none placeholder:text-white/34 focus:border-neonCyan"
+              name="area"
+              value={form.area}
+              onChange={updateField}
+              placeholder="Zona"
+            />
+          </div>
+        </details>
+          </div>
+
+        <label
+          className={[
+            "mt-2 flex cursor-pointer items-center justify-between gap-3 rounded-[0.9rem] border px-3 py-2.5 text-xs font-black transition",
+            form.show_on_map ? "border-neonPink/35 bg-neonPink/14 text-white shadow-neon" : "border-white/10 bg-white/5 text-white/58",
+          ].join(" ")}
+        >
+          <input
+            className="sr-only"
+            type="checkbox"
+            name="show_on_map"
+            checked={form.show_on_map}
+            onChange={updateField}
+          />
+          <span>
+            Visible en mapa
+            <span className="ml-2 font-semibold text-white/42">
+              {form.show_on_map ? "Activado" : "Desactivado"}
+            </span>
+          </span>
+          <span className={["h-3 w-3 rounded-full", form.show_on_map ? "bg-neonPink shadow-neon" : "bg-white/28"].join(" ")} />
+        </label>
 
       {showLocationPicker ? (
-        <div className="mt-3 overflow-hidden rounded-[1rem] border border-neonCyan/20 shadow-cyan sm:mt-4 sm:rounded-[1.1rem]">
-          <div className="h-56 w-full sm:h-72">
+        <div className="mt-2 overflow-hidden rounded-[1rem] border border-neonCyan/20 shadow-cyan sm:rounded-[1.1rem]">
+          <div className="h-52 w-full sm:h-72">
             <MapContainer
               center={position || MALABO_CENTER}
               className="bucan-map h-full w-full"
@@ -946,99 +1000,13 @@ function LocationPanel({
       ) : null}
 
       {locationError ? (
-        <div className="mt-3 rounded-[1rem] border border-neonPink/30 bg-neonPink/10 px-3 py-2.5 text-sm font-semibold text-white sm:px-4 sm:py-3">
+        <div className="mt-2 rounded-[1rem] border border-neonPink/30 bg-neonPink/10 px-3 py-2.5 text-sm font-semibold text-white sm:px-4 sm:py-3">
           {locationError}
         </div>
       ) : null}
-
-      <label className="mt-3 flex items-center justify-between border-t border-white/10 pt-3 sm:mt-4 sm:pt-4">
-        <span>
-          <span className="block text-sm font-black text-white">Mostrar en el mapa</span>
-          <span className="mt-1 block text-xs font-semibold text-white/50 sm:text-sm">
-            Tu publicación será visible en el mapa
-          </span>
-        </span>
-        <input
-          className="h-5 w-5 accent-pink-500 sm:h-6 sm:w-6"
-          type="checkbox"
-          name="show_on_map"
-          checked={form.show_on_map}
-          onChange={updateField}
-        />
-      </label>
+        </div>
+      ) : null}
     </div>
-  );
-}
-
-function LocationSummary({ form, position, compact = false }) {
-  return (
-    <section
-      className={[
-        "border border-white/10 bg-white/[0.045] shadow-cyan backdrop-blur-2xl",
-        compact ? "rounded-[0.9rem] p-3" : "rounded-[1.3rem] p-4",
-      ].join(" ")}
-    >
-      <h2 className={compact ? "flex items-center gap-2 text-sm font-black uppercase text-white" : "flex items-center gap-3 text-lg font-black uppercase text-white"}>
-        <MapPin className={compact ? "h-4 w-4 text-fiestaPurple" : "h-5 w-5 text-fiestaPurple"} />
-        Ubicación
-      </h2>
-      <div className={(compact ? "mt-3" : "mt-4") + " overflow-hidden rounded-[1rem] border border-white/10 bg-night"}>
-        <div className={(compact ? "h-24" : "h-36") + " relative bg-[linear-gradient(135deg,rgba(0,217,255,.14),rgba(124,58,237,.18)),repeating-linear-gradient(35deg,rgba(255,216,77,.17)_0_1px,transparent_1px_38px),repeating-linear-gradient(120deg,rgba(255,255,255,.06)_0_1px,transparent_1px_34px)]"}>
-          <span className={(compact ? "h-8 w-8 shadow-[0_0_0_13px_rgba(59,130,246,.18),0_0_24px_rgba(59,130,246,.7)]" : "h-10 w-10 shadow-[0_0_0_18px_rgba(59,130,246,.18),0_0_30px_rgba(59,130,246,.7)]") + " absolute left-1/2 top-1/2 flex -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full bg-blue-500"} />
-        </div>
-      </div>
-      <p className={(compact ? "mt-3 text-sm" : "mt-4") + " font-black text-white"}>{selectedLocationLabel(form)}, Guinea Ecuatorial</p>
-      <p className={(compact ? "text-xs" : "text-sm") + " mt-1 font-semibold text-white/54"}>
-        {position ? "Punto seleccionado" : "Centro de Malabo"}
-      </p>
-    </section>
-  );
-}
-
-function FeatureRouteCard({ icon: Icon, title, subtitle, body, button, to, tone }) {
-  const isRed = tone === "red";
-  return (
-    <section
-      className={[
-        "relative overflow-hidden rounded-[1.05rem] border bg-white/[0.045] p-4 shadow-cyan backdrop-blur-2xl sm:rounded-[1.25rem] sm:p-7",
-        isRed ? "border-liveRed/30" : "border-fiestaPurple/30",
-      ].join(" ")}
-    >
-      <div
-        className={[
-          "pointer-events-none absolute right-10 top-1/2 h-32 w-48 -translate-y-1/2 rounded-full blur-3xl",
-          isRed ? "bg-liveRed/22" : "bg-fiestaPurple/24",
-        ].join(" ")}
-      />
-      <div className="relative z-10 grid gap-4 sm:gap-5 md:grid-cols-[1fr_18rem] md:items-center">
-        <div>
-          <h2 className="flex items-center gap-2.5 text-base font-black uppercase text-white sm:gap-3 sm:text-lg">
-            <Icon className={isRed ? "h-5 w-5 text-liveRed sm:h-6 sm:w-6" : "h-5 w-5 text-fiestaPurple sm:h-6 sm:w-6"} />
-            {title}
-          </h2>
-          <p className="mt-2 text-base font-black text-white/72 sm:mt-3 sm:text-lg">{subtitle}</p>
-          <p className="mt-1.5 text-sm font-semibold leading-6 text-white/62 sm:mt-2 sm:text-base sm:leading-7">{body}</p>
-          <Link
-            className={[
-              "mt-4 inline-flex h-11 items-center gap-2 rounded-[0.85rem] px-4 text-sm font-black text-white sm:mt-5 sm:h-12 sm:px-5",
-              isRed ? "bg-liveRed shadow-live" : "border border-white/10 bg-white/8",
-            ].join(" ")}
-            to={to}
-          >
-            {button}
-            <ChevronRight className="h-4 w-4" />
-          </Link>
-        </div>
-        <div
-          className={[
-            "hidden min-h-36 rounded-[1.2rem] border bg-night/40 md:flex md:items-center md:justify-center",
-            isRed ? "border-liveRed/30 text-liveRed shadow-live" : "border-fiestaPurple/30 text-fiestaPurple shadow-neon",
-          ].join(" ")}
-        >
-          <Icon className="h-24 w-24" strokeWidth={1.2} />
-        </div>
-      </div>
-    </section>
   );
 }
 

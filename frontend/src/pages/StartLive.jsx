@@ -5,8 +5,6 @@ import { Room, RoomEvent, createLocalTracks } from "livekit-client";
 import apiClient from "../api/client.js";
 import { getApiErrorMessage } from "../utils/errors.js";
 
-const categories = ["fiesta", "bar", "cumpleaños", "evento", "ambiente", "música", "otro"];
-
 function StartLive() {
   const navigate = useNavigate();
   const videoRef = useRef(null);
@@ -102,22 +100,6 @@ function StartLive() {
     }
   }
 
-  function useCurrentLocation() {
-    setError("");
-    if (!navigator.geolocation) {
-      setError("Tu navegador no permite obtener ubicación.");
-      return;
-    }
-    navigator.geolocation.getCurrentPosition(
-      (position) => {
-        updateField("lat", position.coords.latitude);
-        updateField("lng", position.coords.longitude);
-      },
-      () => setError("No se pudo obtener tu ubicación para el mapa."),
-      { enableHighAccuracy: false, maximumAge: 60000, timeout: 10000 }
-    );
-  }
-
   async function endLive() {
     if (!live) return;
     try {
@@ -169,43 +151,31 @@ function StartLive() {
           </div>
         </div>
       ) : (
-        <form className="mt-6 space-y-4" onSubmit={startLive}>
-          <input className="w-full rounded-lg border border-white/10 bg-white/5 px-4 py-4 text-base font-bold text-white outline-none focus:border-neonPink" placeholder="Título del directo" value={form.title} onChange={(event) => updateField("title", event.target.value)} required />
-          <textarea className="min-h-28 w-full rounded-lg border border-white/10 bg-white/5 px-4 py-4 text-base font-semibold text-white outline-none focus:border-neonPink" placeholder="Descripción opcional" value={form.description} onChange={(event) => updateField("description", event.target.value)} />
-          <select className="w-full rounded-lg border border-white/10 bg-night px-4 py-4 text-base font-bold text-white" value={form.category} onChange={(event) => updateField("category", event.target.value)}>
-            {categories.map((category) => (
-              <option key={category} value={category}>{category}</option>
-            ))}
-          </select>
-          <div className="grid grid-cols-2 gap-3">
-            <input className="rounded-lg border border-white/10 bg-white/5 px-4 py-4 text-base font-bold text-white outline-none focus:border-neonPink" placeholder="Ciudad" value={form.city} onChange={(event) => updateField("city", event.target.value)} />
-            <input className="rounded-lg border border-white/10 bg-white/5 px-4 py-4 text-base font-bold text-white outline-none focus:border-neonPink" placeholder="Zona" value={form.area} onChange={(event) => updateField("area", event.target.value)} />
+        <form className="mt-6 overflow-hidden rounded-[1.4rem] border border-liveRed/25 bg-white/[0.055] p-4 shadow-live backdrop-blur-2xl sm:p-5" onSubmit={startLive}>
+          <div className="rounded-[1.15rem] border border-white/10 bg-night/55 p-4">
+            <label className="text-xs font-black uppercase tracking-[0.18em] text-liveRed">
+              Título del directo
+            </label>
+            <input
+              className="mt-3 w-full bg-transparent text-2xl font-black text-white outline-none placeholder:text-white/30"
+              placeholder="¿Qué está pasando?"
+              value={form.title}
+              onChange={(event) => updateField("title", event.target.value)}
+              required
+            />
           </div>
-          <select className="w-full rounded-lg border border-white/10 bg-night px-4 py-4 text-base font-bold text-white" value={form.visibility} onChange={(event) => updateField("visibility", event.target.value)}>
-            <option value="public">Público</option>
-            <option value="followers">Solo seguidores</option>
-          </select>
-          <select className="w-full rounded-lg border border-white/10 bg-night px-4 py-4 text-base font-bold text-white" value={form.bitrate_mode} onChange={(event) => updateField("bitrate_mode", event.target.value)}>
-            <option value="auto">Calidad auto</option>
-            <option value="low">Ahorro datos</option>
-            <option value="medium">Media</option>
-            <option value="high">Alta calidad</option>
-          </select>
-          <label className="flex items-center gap-3 rounded-lg border border-white/10 bg-surface p-4 text-sm font-bold text-white">
-            <input type="checkbox" checked={form.show_on_map} onChange={(event) => updateField("show_on_map", event.target.checked)} />
-            Mostrar en el mapa si hay ubicación
-          </label>
-          <button className="h-12 w-full rounded-lg border border-neonGreen/30 bg-neonGreen/10 text-sm font-black text-neonGreen" type="button" onClick={useCurrentLocation}>
-            Usar mi ubicación para el mapa
+
+          <button
+            className="mt-4 flex h-14 w-full items-center justify-center gap-2 rounded-[1rem] bg-gradient-to-r from-liveRed via-neonPink to-fiestaPurple text-base font-black text-white shadow-live disabled:opacity-60"
+            type="submit"
+            disabled={isStarting}
+          >
+            {isStarting ? "Conectando cámara..." : "Iniciar directo"}
           </button>
-          {form.lat && form.lng ? (
-            <p className="text-xs font-bold text-white/50">
-              Ubicación preparada: {form.lat.toFixed(4)}, {form.lng.toFixed(4)}
-            </p>
-          ) : null}
-          <button className="h-14 w-full rounded-lg bg-gradient-to-r from-neonGreen via-neonYellow to-neonPink text-base font-black text-night disabled:opacity-60" type="submit" disabled={isStarting}>
-            {isStarting ? "Conectando cámara..." : "Empezar directo"}
-          </button>
+
+          <p className="mt-3 text-center text-xs font-semibold leading-5 text-white/46">
+            BUCAN DEY usará cámara y micrófono solo cuando pulses iniciar.
+          </p>
         </form>
       )}
     </section>

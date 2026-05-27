@@ -12,7 +12,6 @@ import {
   Flame,
   Heart,
   Image as ImageIcon,
-  Link as LinkIcon,
   LogOut,
   MapPin,
   MessageCircle,
@@ -1426,12 +1425,6 @@ function Profile() {
       value: profileUser?.followers_count || 0,
       to: `/users/${profileUser?.username}/followers`,
     },
-    {
-      label: "Siguiendo",
-      value: profileUser?.following_count || 0,
-      to: `/users/${profileUser?.username}/following`,
-    },
-    { label: "Me gusta", value: likesReceived },
   ];
   const activeTheme =
     PROFILE_THEME_OPTIONS.find((theme) => theme.id === profilePreferences.theme) ||
@@ -1556,7 +1549,6 @@ function Profile() {
             <div className="mt-4 flex gap-1.5 overflow-x-auto pb-0.5 scrollbar-none sm:mt-5 sm:gap-2 sm:pb-1">
               <MoodPill icon={Sparkles} title="Motivado 😎" color="purple" />
               <MoodPill icon={Music} title="Me Conozco" detail="Roku" color="pink" />
-              <MoodPill icon={LinkIcon} title={`linktr.ee/${profileUser?.username || "bucan"}`} color="cyan" />
             </div>
           </div>
         </div>

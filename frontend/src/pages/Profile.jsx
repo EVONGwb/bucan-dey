@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { motion } from "framer-motion";
 import {
-  Award,
   Bookmark,
   Car,
   Check,
@@ -37,7 +36,6 @@ const tabs = [
   { id: "saved", label: "Guardados", icon: Bookmark },
   { id: "map", label: "Mapa", icon: MapPin },
   { id: "likes", label: "Likes", icon: Heart },
-  { id: "badges", label: "Logros", icon: Award },
 ];
 
 const REPORT_REASONS = [
@@ -348,43 +346,108 @@ function LocationMusicCards({ profileUser }) {
   );
 }
 
-function AchievementsStrip({ posts, profileUser, likesReceived }) {
-  const badges = [
+function getProfileBadges(posts, profileUser, likesReceived) {
+  return [
     { label: "Explorador", level: Math.max(1, Math.min(5, Math.ceil(posts.length / 3) || 1)), icon: Compass, color: "cyan" },
     { label: "Empresario", level: profileUser?.role === "admin" ? 5 : 2, icon: Car, color: "yellow" },
     { label: "Creador", level: Math.max(1, Math.min(5, Math.ceil(posts.length / 2) || 1)), icon: ImageIcon, color: "pink" },
     { label: "Popular", level: Math.max(1, Math.min(5, Math.ceil(likesReceived / 10) || 1)), icon: Flame, color: "pink" },
     { label: "Verificado", level: profileUser?.is_verified ? 5 : 1, icon: Check, color: "cyan" },
   ];
+}
 
+function badgeTone(color) {
+  if (color === "yellow") {
+    return "from-neonYellow/28 to-neonOrange/18 text-neonYellow";
+  }
+  if (color === "cyan") {
+    return "from-neonCyan/24 to-fiestaPurple/18 text-neonCyan";
+  }
+  return "from-neonPink/26 to-fiestaPurple/18 text-neonPink";
+}
+
+function CompactAchievementsButton({ badges, onClick }) {
+  const topLevel = Math.max(...badges.map((badge) => badge.level));
   return (
-    <section className="rounded-[1.1rem] border border-white/10 bg-white/[0.055] p-2 shadow-cyan backdrop-blur-2xl sm:rounded-[1.35rem] sm:p-4">
-      <div className="flex items-center justify-between">
-        <h2 className="text-[10px] font-black uppercase tracking-[0.12em] text-white/72 sm:text-xs">Logros</h2>
-        <button className="text-[9px] font-black text-neonCyan sm:text-[11px]" type="button">Ver todos</button>
-      </div>
-      <div className="mt-2 grid grid-cols-5 gap-1 sm:mt-4 sm:gap-2">
-        {badges.map((badge) => {
+    <motion.button
+      className="mt-1.5 grid w-full grid-cols-[1fr_auto] items-center gap-1 rounded-full border border-white/10 bg-night/72 px-2 py-1 text-left shadow-cyan backdrop-blur-xl active:scale-[0.98]"
+      type="button"
+      onClick={onClick}
+      whileTap={{ scale: 0.97 }}
+    >
+      <span className="min-w-0">
+        <span className="block text-[8px] font-black uppercase tracking-[0.14em] text-neonCyan">Logros</span>
+        <span className="block truncate text-[9px] font-black text-white">Nivel {topLevel}</span>
+      </span>
+      <span className="flex -space-x-1">
+        {badges.slice(0, 3).map((badge) => {
           const Icon = badge.icon;
-          const tone =
-            badge.color === "yellow"
-              ? "from-neonYellow/28 to-neonOrange/18 text-neonYellow"
-              : badge.color === "cyan"
-                ? "from-neonCyan/24 to-fiestaPurple/18 text-neonCyan"
-                : "from-neonPink/26 to-fiestaPurple/18 text-neonPink";
-
           return (
-            <div className="text-center" key={badge.label}>
-              <div className={`mx-auto flex h-9 w-9 items-center justify-center rounded-[0.75rem] border border-white/10 bg-gradient-to-br ${tone} shadow-neon sm:h-16 sm:w-16 sm:rounded-[1.1rem]`}>
-                <Icon className="h-4 w-4 sm:h-7 sm:w-7" />
-              </div>
-              <p className="mt-1 truncate text-[8px] font-black text-white sm:mt-2 sm:text-xs">{badge.label}</p>
-              <p className="text-[7px] font-semibold text-white/48 sm:text-[9px]">Nivel {badge.level}</p>
-            </div>
+            <span
+              className={`flex h-6 w-6 items-center justify-center rounded-full border border-white/10 bg-gradient-to-br ${badgeTone(badge.color)} shadow-neon`}
+              key={badge.label}
+            >
+              <Icon className="h-3 w-3" />
+            </span>
           );
         })}
-      </div>
-    </section>
+      </span>
+    </motion.button>
+  );
+}
+
+function AchievementsModal({ badges, onClose }) {
+  return (
+    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/72 px-4 pb-4 backdrop-blur-xl sm:items-center sm:pb-0">
+      <motion.section
+        className="w-full max-w-md rounded-[1.6rem] border border-white/10 bg-night/96 p-4 text-white shadow-neon"
+        initial={{ opacity: 0, y: 28, scale: 0.96 }}
+        animate={{ opacity: 1, y: 0, scale: 1 }}
+      >
+        <div className="flex items-center justify-between">
+          <div>
+            <p className="text-[10px] font-black uppercase tracking-[0.18em] text-neonCyan">Progreso</p>
+            <h2 className="mt-1 text-2xl font-black">Tus logros</h2>
+          </div>
+          <button
+            className="flex h-10 w-10 items-center justify-center rounded-full border border-white/10 bg-white/7 text-xl font-light"
+            type="button"
+            onClick={onClose}
+            aria-label="Cerrar logros"
+          >
+            ×
+          </button>
+        </div>
+
+        <div className="mt-4 space-y-2.5">
+          {badges.map((badge) => {
+            const Icon = badge.icon;
+            const percent = Math.min(100, Math.max(20, badge.level * 20));
+            return (
+              <div className="rounded-[1.1rem] border border-white/8 bg-white/[0.045] p-3" key={badge.label}>
+                <div className="flex items-center gap-3">
+                  <div className={`flex h-11 w-11 items-center justify-center rounded-[0.9rem] border border-white/10 bg-gradient-to-br ${badgeTone(badge.color)} shadow-neon`}>
+                    <Icon className="h-5 w-5" />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center justify-between gap-3">
+                      <p className="truncate text-sm font-black">{badge.label}</p>
+                      <p className="text-xs font-black text-white/64">Nivel {badge.level}/5</p>
+                    </div>
+                    <div className="mt-2 h-2 overflow-hidden rounded-full bg-white/8">
+                      <div
+                        className="h-full rounded-full bg-gradient-to-r from-neonCyan via-fiestaPurple to-neonPink shadow-neon"
+                        style={{ width: `${percent}%` }}
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </motion.section>
+    </div>
   );
 }
 
@@ -669,6 +732,7 @@ function Profile() {
   const [isUpdatingFollow, setIsUpdatingFollow] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [showReportModal, setShowReportModal] = useState(false);
+  const [showAchievementsModal, setShowAchievementsModal] = useState(false);
 
   const targetUsername = username || user?.username;
   const isOwnProfile = useMemo(
@@ -750,6 +814,7 @@ function Profile() {
     0
   );
   const mediaCount = posts.reduce((total, post) => total + (post.media?.length || 0), 0);
+  const badges = getProfileBadges(posts, profileUser, likesReceived);
 
   if (isLoading) {
     return (
@@ -799,6 +864,10 @@ function Profile() {
               initial={initial}
               canCreateStory={isOwnProfile}
               onCreateStory={() => navigate("/stories/create")}
+            />
+            <CompactAchievementsButton
+              badges={badges}
+              onClick={() => setShowAchievementsModal(true)}
             />
             {isOwnProfile ? (
               <button
@@ -965,10 +1034,6 @@ function Profile() {
           </div>
         </section>
 
-        <div className="mt-2 sm:mt-3">
-          <AchievementsStrip posts={posts} profileUser={profileUser} likesReceived={likesReceived} />
-        </div>
-
         {isOwnProfile ? (
           <div className="mt-3 overflow-hidden rounded-[1.3rem]">
             <PushSettings />
@@ -1022,9 +1087,6 @@ function Profile() {
           {activeTab === "likes" ? (
             <EmptyState title={`${formatCompact(likesReceived)} me gusta recibidos`} description="Los likes detallados se conectarán cuando exista el endpoint específico." />
           ) : null}
-          {activeTab === "badges" ? (
-            <AchievementsStrip posts={posts} profileUser={profileUser} likesReceived={likesReceived} />
-          ) : null}
         </motion.div>
 
         <Link
@@ -1050,6 +1112,10 @@ function Profile() {
           onClose={() => setShowReportModal(false)}
           onReported={() => setNotice("Reporte enviado a moderación.")}
         />
+      ) : null}
+
+      {showAchievementsModal ? (
+        <AchievementsModal badges={badges} onClose={() => setShowAchievementsModal(false)} />
       ) : null}
     </section>
   );

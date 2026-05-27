@@ -148,15 +148,15 @@ function ProfileAvatar({ profileUser, initial, size = "large" }) {
 function ProfileStatBar({ stats }) {
   return (
     <motion.div
-      className="grid grid-cols-4 overflow-hidden rounded-[1.35rem] border border-white/10 bg-white/[0.055] shadow-cyan backdrop-blur-2xl"
+      className="grid grid-cols-4 overflow-hidden rounded-[1.05rem] border border-white/8 bg-black/20 backdrop-blur-xl"
       initial={{ opacity: 0, y: 14 }}
       animate={{ opacity: 1, y: 0 }}
     >
       {stats.map((stat, index) => {
         const content = (
-          <div className="min-h-[4.7rem] px-2 py-3 text-center">
-            <p className="text-base font-black text-white sm:text-xl">{formatCompact(stat.value)}</p>
-            <p className="mt-1 text-[10px] font-bold leading-tight text-white/58 sm:text-xs">
+          <div className="min-h-[4rem] px-1.5 py-2.5 text-center sm:min-h-[4.7rem] sm:px-2 sm:py-3">
+            <p className="text-sm font-black text-white sm:text-xl">{formatCompact(stat.value)}</p>
+            <p className="mt-1 text-[9px] font-bold leading-tight text-white/58 sm:text-xs">
               {stat.label}
             </p>
           </div>
@@ -300,12 +300,12 @@ function AchievementsStrip({ posts, profileUser, likesReceived }) {
   ];
 
   return (
-    <section className="rounded-[1.3rem] border border-white/10 bg-white/[0.055] p-4 shadow-cyan backdrop-blur-2xl">
+    <section className="rounded-[1.35rem] border border-white/10 bg-white/[0.055] p-2.5 shadow-cyan backdrop-blur-2xl sm:p-4">
       <div className="flex items-center justify-between">
-        <h2 className="text-xs font-black uppercase tracking-[0.12em] text-white/72">Logros</h2>
+        <h2 className="text-[10px] font-black uppercase tracking-[0.12em] text-white/72 sm:text-xs">Logros</h2>
         <button className="text-[11px] font-black text-neonCyan" type="button">Ver todos</button>
       </div>
-      <div className="mt-4 grid grid-cols-5 gap-2">
+      <div className="mt-3 grid grid-cols-5 gap-1.5 sm:mt-4 sm:gap-2">
         {badges.map((badge) => {
           const Icon = badge.icon;
           const tone =
@@ -317,11 +317,11 @@ function AchievementsStrip({ posts, profileUser, likesReceived }) {
 
           return (
             <div className="text-center" key={badge.label}>
-              <div className={`mx-auto flex h-14 w-14 items-center justify-center rounded-[1.1rem] border border-white/10 bg-gradient-to-br ${tone} shadow-neon sm:h-16 sm:w-16`}>
-                <Icon className="h-7 w-7" />
+              <div className={`mx-auto flex h-11 w-11 items-center justify-center rounded-[0.9rem] border border-white/10 bg-gradient-to-br ${tone} shadow-neon sm:h-16 sm:w-16 sm:rounded-[1.1rem]`}>
+                <Icon className="h-5 w-5 sm:h-7 sm:w-7" />
               </div>
-              <p className="mt-2 truncate text-[10px] font-black text-white sm:text-xs">{badge.label}</p>
-              <p className="text-[9px] font-semibold text-white/48">Nivel {badge.level}</p>
+              <p className="mt-1.5 truncate text-[9px] font-black text-white sm:mt-2 sm:text-xs">{badge.label}</p>
+              <p className="text-[8px] font-semibold text-white/48 sm:text-[9px]">Nivel {badge.level}</p>
             </div>
           );
         })}
@@ -790,7 +790,7 @@ function Profile() {
           </div>
         ) : null}
 
-        <div className="-mt-1">
+        <section className="-mt-1 rounded-[1.35rem] border border-white/10 bg-white/[0.055] p-2 shadow-cyan backdrop-blur-2xl sm:rounded-[1.6rem]">
           <ProfileStatBar
             stats={[
               { label: "Publicaciones", value: posts.length },
@@ -807,13 +807,12 @@ function Profile() {
               { label: "Me gusta", value: likesReceived },
             ]}
           />
-        </div>
 
-        <div className="mt-4">
+        <div className="mt-2">
           {isOwnProfile ? (
             <div className="grid grid-cols-4 gap-2">
               <motion.button
-                className="col-span-2 h-12 rounded-[1rem] bg-gradient-to-r from-neonCyan via-fiestaPurple to-neonPink text-xs font-black text-white shadow-cyan"
+                className="col-span-2 h-10 rounded-[0.9rem] bg-gradient-to-r from-neonCyan via-fiestaPurple to-neonPink text-xs font-black text-white shadow-cyan sm:h-12 sm:rounded-[1rem]"
                 type="button"
                 onClick={() => setShowEditModal(true)}
                 whileTap={{ scale: 0.96 }}
@@ -824,14 +823,14 @@ function Profile() {
                 </span>
               </motion.button>
               <Link
-                className="flex h-12 items-center justify-center rounded-[1rem] border border-white/10 bg-white/7 text-white"
+                className="flex h-10 items-center justify-center rounded-[0.9rem] border border-white/10 bg-white/7 text-white sm:h-12 sm:rounded-[1rem]"
                 to="/stories/create"
                 aria-label="Crear story"
               >
                 <Film className="h-4 w-4" />
               </Link>
               <motion.button
-                className="flex h-12 items-center justify-center rounded-[1rem] border border-liveRed/35 bg-liveRed/10 text-liveRed"
+                className="flex h-10 items-center justify-center rounded-[0.9rem] border border-liveRed/35 bg-liveRed/10 text-liveRed sm:h-12 sm:rounded-[1rem]"
                 type="button"
                 onClick={logout}
                 whileTap={{ scale: 0.96 }}
@@ -843,7 +842,7 @@ function Profile() {
           ) : (
             <div className="grid grid-cols-[1fr_1fr_3.25rem] gap-2">
               <motion.button
-                className={`h-12 rounded-[1rem] text-xs font-black disabled:opacity-60 ${
+                className={`h-10 rounded-[0.9rem] text-xs font-black disabled:opacity-60 sm:h-12 sm:rounded-[1rem] ${
                   profileUser?.is_following
                     ? "border border-neonPink/40 bg-neonPink/10 text-white"
                     : "bg-gradient-to-r from-neonCyan via-fiestaPurple to-neonPink text-white shadow-cyan"
@@ -859,7 +858,7 @@ function Profile() {
                 </span>
               </motion.button>
               <motion.button
-                className="h-12 rounded-[1rem] border border-white/10 bg-white/7 text-xs font-black text-white disabled:opacity-60"
+                className="h-10 rounded-[0.9rem] border border-white/10 bg-white/7 text-xs font-black text-white disabled:opacity-60 sm:h-12 sm:rounded-[1rem]"
                 type="button"
                 onClick={handleStartChat}
                 disabled={isStartingChat}
@@ -871,7 +870,7 @@ function Profile() {
                 </span>
               </motion.button>
               <motion.button
-                className="flex h-12 items-center justify-center rounded-[1rem] border border-white/10 bg-white/7 text-white"
+                className="flex h-10 items-center justify-center rounded-[0.9rem] border border-white/10 bg-white/7 text-white sm:h-12 sm:rounded-[1rem]"
                 type="button"
                 aria-label="Reportar usuario"
                 onClick={() => (isAuthenticated ? setShowReportModal(true) : navigate("/login"))}
@@ -882,6 +881,7 @@ function Profile() {
             </div>
           )}
         </div>
+        </section>
 
         <section className="mt-4 rounded-[1.35rem] border border-white/10 bg-white/[0.055] p-2.5 shadow-cyan backdrop-blur-2xl sm:rounded-[1.6rem] sm:p-3">
           <div className="grid grid-cols-[minmax(0,1.08fr)_minmax(8rem,.92fr)] gap-2 sm:gap-3 lg:grid-cols-[1fr_16rem]">
@@ -904,7 +904,7 @@ function Profile() {
           </div>
         ) : null}
 
-        <div className="sticky top-0 z-10 -mx-4 mt-4 border-y border-white/8 bg-night/82 px-4 py-2 backdrop-blur-2xl sm:mx-0 sm:rounded-[1.2rem] sm:border">
+        <div className="sticky top-0 z-10 -mx-4 mt-3 border-y border-white/8 bg-night/82 px-3 py-1.5 backdrop-blur-2xl sm:mx-0 sm:rounded-[1.2rem] sm:border sm:px-4 sm:py-2">
           <div className="scrollbar-none flex gap-1 overflow-x-auto">
             {tabs.map((tab) => {
               const Icon = tab.icon;
@@ -912,7 +912,7 @@ function Profile() {
 
               return (
                 <button
-                  className={`relative inline-flex h-10 shrink-0 items-center gap-1.5 px-3 text-[11px] font-black uppercase transition ${
+                  className={`relative inline-flex h-9 shrink-0 items-center gap-1 px-2.5 text-[10px] font-black uppercase transition sm:h-10 sm:gap-1.5 sm:px-3 sm:text-[11px] ${
                     isActive ? "text-white" : "text-white/50"
                   }`}
                   key={tab.id}
@@ -925,7 +925,7 @@ function Profile() {
                       layoutId="profile-tab"
                     />
                   ) : null}
-                  <Icon className="h-4 w-4" />
+                  <Icon className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                   {tab.label}
                 </button>
               );

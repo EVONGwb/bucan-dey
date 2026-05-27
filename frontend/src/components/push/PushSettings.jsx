@@ -95,52 +95,65 @@ function PushSettings() {
 
   return (
     <motion.div
-      className="glass-panel rounded-[1.75rem] p-4"
+      className="glass-panel rounded-[1.35rem] p-2.5 sm:rounded-[1.6rem] sm:p-3"
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
     >
-      <div>
-        <p className="inline-flex items-center gap-2 text-xs font-black uppercase tracking-[0.16em] text-neonCyan">
-          <Bell className="h-4 w-4" />
-          Notificaciones Push
+      <details className="group">
+        <summary className="flex cursor-pointer list-none items-center justify-between gap-3 rounded-[1rem] border border-white/8 bg-black/20 px-3 py-2.5">
+          <span className="inline-flex min-w-0 items-center gap-2">
+            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[0.8rem] bg-neonCyan/12 text-neonCyan">
+              <Bell className="h-4 w-4" />
+            </span>
+            <span className="min-w-0">
+              <span className="block text-xs font-black uppercase tracking-[0.12em] text-white">
+                Notificaciones Push
+              </span>
+              <span className="mt-0.5 block truncate text-[10px] font-semibold text-white/50">
+                {state.isSubscribed ? "Suscrito" : "No suscrito"} · {permissionLabel(state.permission)}
+              </span>
+            </span>
+          </span>
+          <span className="rounded-full border border-white/10 bg-white/6 px-2.5 py-1 text-[10px] font-black text-neonCyan">
+            Ajustar
+          </span>
+        </summary>
+
+        <p className="mt-3 px-2 text-xs leading-5 text-white/58 sm:text-sm sm:leading-6">
+          Activa avisos de mensajes, comentarios y movimiento aunque no tengas la app abierta.
         </p>
-        <p className="mt-2 text-sm leading-6 text-white/68">
-          Activa las notificaciones para enterarte de mensajes, comentarios y
-          movimiento en BUCAN DEY aunque no tengas la app abierta.
-        </p>
-      </div>
 
-      <div className="mt-4 grid grid-cols-2 gap-3 text-xs font-bold uppercase tracking-[0.12em]">
-        <div className="rounded-[1.15rem] border border-white/10 bg-black/24 p-3 text-white/55">
-          Estado
-          <p className="mt-1 flex items-center gap-1.5 text-sm normal-case tracking-normal text-white">
-            <Smartphone className="h-4 w-4 text-neonCyan" />
-            {state.isSubscribed ? "Suscrito" : "No suscrito"}
-          </p>
+        <div className="mt-3 grid grid-cols-2 gap-2 text-[10px] font-bold uppercase tracking-[0.12em] sm:gap-3 sm:text-xs">
+          <div className="rounded-[1rem] border border-white/10 bg-black/24 p-2.5 text-white/55 sm:p-3">
+            Estado
+            <p className="mt-1 flex items-center gap-1.5 text-xs normal-case tracking-normal text-white sm:text-sm">
+              <Smartphone className="h-4 w-4 text-neonCyan" />
+              {state.isSubscribed ? "Suscrito" : "No suscrito"}
+            </p>
+          </div>
+          <div className="rounded-[1rem] border border-white/10 bg-black/24 p-2.5 text-white/55 sm:p-3">
+            Permiso
+            <p className="mt-1 text-xs normal-case tracking-normal text-white sm:text-sm">
+              {permissionLabel(state.permission)}
+            </p>
+          </div>
         </div>
-        <div className="rounded-[1.15rem] border border-white/10 bg-black/24 p-3 text-white/55">
-          Permiso
-          <p className="mt-1 text-sm normal-case tracking-normal text-white">
-            {permissionLabel(state.permission)}
-          </p>
-        </div>
-      </div>
 
-      {error ? (
-        <div className="mt-4 rounded-[1.1rem] border border-neonPink/30 bg-neonPink/10 px-4 py-3 text-sm font-semibold text-white">
-          {error}
-        </div>
-      ) : null}
+        {error ? (
+          <div className="mt-3 rounded-[1rem] border border-neonPink/30 bg-neonPink/10 px-3 py-2.5 text-xs font-semibold text-white sm:text-sm">
+            {error}
+          </div>
+        ) : null}
 
-      {message ? (
-        <div className="mt-4 rounded-[1.1rem] border border-neonCyan/30 bg-neonCyan/10 px-4 py-3 text-sm font-semibold text-white">
-          {message}
-        </div>
-      ) : null}
+        {message ? (
+          <div className="mt-3 rounded-[1rem] border border-neonCyan/30 bg-neonCyan/10 px-3 py-2.5 text-xs font-semibold text-white sm:text-sm">
+            {message}
+          </div>
+        ) : null}
 
-      <div className="mt-4 grid gap-3 sm:grid-cols-3">
+      <div className="mt-3 grid grid-cols-3 gap-2 sm:gap-3">
         <motion.button
-          className="h-12 rounded-full bg-gradient-to-r from-neonCyan via-fiestaPurple to-neonPink text-sm font-black text-white shadow-cyan disabled:opacity-50"
+          className="h-10 rounded-[0.9rem] bg-gradient-to-r from-neonCyan via-fiestaPurple to-neonPink text-xs font-black text-white shadow-cyan disabled:opacity-50 sm:h-12 sm:rounded-full sm:text-sm"
           type="button"
           onClick={handleEnable}
           disabled={!state.isSupported || state.isSubscribed || isBusy}
@@ -152,7 +165,7 @@ function PushSettings() {
           </span>
         </motion.button>
         <motion.button
-          className="h-12 rounded-full border border-neonPink/40 bg-neonPink/10 text-sm font-black text-white disabled:opacity-50"
+          className="h-10 rounded-[0.9rem] border border-neonPink/40 bg-neonPink/10 text-xs font-black text-white disabled:opacity-50 sm:h-12 sm:rounded-full sm:text-sm"
           type="button"
           onClick={handleDisable}
           disabled={!state.isSupported || !state.isSubscribed || isBusy}
@@ -164,7 +177,7 @@ function PushSettings() {
           </span>
         </motion.button>
         <motion.button
-          className="h-12 rounded-full border border-white/10 bg-white/7 text-sm font-black text-white disabled:opacity-50"
+          className="h-10 rounded-[0.9rem] border border-white/10 bg-white/7 text-xs font-black text-white disabled:opacity-50 sm:h-12 sm:rounded-full sm:text-sm"
           type="button"
           onClick={handleTest}
           disabled={!state.isSupported || !state.isSubscribed || isBusy}
@@ -176,6 +189,7 @@ function PushSettings() {
           </span>
         </motion.button>
       </div>
+      </details>
     </motion.div>
   );
 }

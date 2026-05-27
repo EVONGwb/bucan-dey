@@ -125,26 +125,36 @@ function formatCompact(value) {
 }
 
 function ProfileAvatar({ profileUser, initial, size = "large" }) {
-  const sizeClass = size === "large" ? "h-[7.55rem] w-[7.55rem] sm:h-40 sm:w-40" : "h-11 w-11";
-  const avatarSrc = profileUser?.avatar_url || PREMIUM_PROFILE_AVATAR;
-  const usesPremiumFallback = !profileUser?.avatar_url;
+  const isHero = size === "large";
+  const sizeClass = isHero ? "h-[8.15rem] w-[8.15rem] sm:h-44 sm:w-44" : "h-11 w-11";
+  const avatarSrc = isHero ? PREMIUM_PROFILE_AVATAR : profileUser?.avatar_url || PREMIUM_PROFILE_AVATAR;
+  const usesPremiumVisual = avatarSrc === PREMIUM_PROFILE_AVATAR;
   const frameShape = {
     clipPath: "polygon(17% 0%, 83% 0%, 100% 18%, 92% 77%, 50% 100%, 8% 77%, 0% 18%)",
   };
 
   return (
     <div
-      className={`relative flex ${sizeClass} items-center justify-center bg-gradient-to-br from-neonPink via-fiestaPurple to-neonCyan p-[3px] shadow-neon`}
-      style={frameShape}
+      className={`relative flex ${sizeClass} items-center justify-center ${
+        usesPremiumVisual
+          ? "rounded-[1.8rem] bg-transparent shadow-[0_0_38px_rgba(255,79,216,.2)]"
+          : "bg-gradient-to-br from-neonPink via-fiestaPurple to-neonCyan p-[3px] shadow-neon"
+      }`}
+      style={usesPremiumVisual ? undefined : frameShape}
     >
-      <div className="absolute -inset-2 bg-neonPink/18 blur-xl" style={frameShape} />
+      <div
+        className={`absolute -inset-2 blur-xl ${usesPremiumVisual ? "rounded-[2rem] bg-neonPink/12" : "bg-neonPink/18"}`}
+        style={usesPremiumVisual ? undefined : frameShape}
+      />
       <img
         alt={profileUser?.display_name || `Avatar ${initial}`}
-        className="relative h-full w-full border-[3px] border-night object-cover sm:border-4"
+        className={`relative h-full w-full object-cover ${
+          usesPremiumVisual ? "rounded-[1.75rem]" : "border-[3px] border-night sm:border-4"
+        }`}
         src={avatarSrc}
-        style={frameShape}
+        style={usesPremiumVisual ? undefined : frameShape}
       />
-      {usesPremiumFallback ? null : (
+      {usesPremiumVisual ? null : (
         <span className="absolute right-2 bottom-3 h-4 w-4 rounded-full border-[3px] border-night bg-green-400 shadow-[0_0_18px_rgba(34,197,94,.85)] sm:h-5 sm:w-5" />
       )}
     </div>

@@ -403,46 +403,51 @@ function AboutCard({ profileUser, isOwnProfile, onEdit }) {
   );
 }
 
-function LocationMusicCards({ profileUser }) {
+function LocationCard({ profileUser }) {
   return (
-    <div className="grid h-full gap-1.5 sm:gap-3">
-      <section className="overflow-hidden rounded-[0.9rem] border border-white/8 bg-black/20 p-2 backdrop-blur-xl sm:rounded-[1.2rem] sm:p-3">
-        <div className="flex items-center justify-between">
-          <h2 className="text-[9px] font-black uppercase tracking-[0.1em] text-white/72 sm:text-xs">Mi ubicación</h2>
-          <Link className="text-[9px] font-black text-neonCyan sm:text-[11px]" to="/map">
-            Ver mapa
-          </Link>
+    <section className="h-full overflow-hidden rounded-[1rem] border border-white/8 bg-black/20 p-2 backdrop-blur-xl sm:rounded-[1.2rem] sm:p-3">
+      <div className="flex items-center justify-between">
+        <h2 className="text-[9px] font-black uppercase tracking-[0.1em] text-white/72 sm:text-xs">Mi ubicación</h2>
+        <Link className="text-[9px] font-black text-neonCyan sm:text-[11px]" to="/map">
+          Ver mapa
+        </Link>
+      </div>
+      <div className="mt-1.5 grid gap-1.5 sm:mt-3 sm:grid-cols-[5rem_1fr] sm:gap-3">
+        <div className="relative h-12 overflow-hidden rounded-[0.72rem] border border-neonPink/20 bg-[radial-gradient(circle_at_55%_40%,rgba(255,79,216,.55),transparent_18%),linear-gradient(135deg,rgba(0,217,255,.16),rgba(124,58,237,.16)),repeating-linear-gradient(35deg,rgba(255,255,255,.08)_0_1px,transparent_1px_18px)] sm:h-20 sm:rounded-[1rem]">
+          <MapPin className="absolute left-1/2 top-1/2 h-6 w-6 -translate-x-1/2 -translate-y-1/2 text-neonPink drop-shadow-[0_0_16px_rgba(255,79,216,.9)] sm:h-9 sm:w-9" />
         </div>
-        <div className="mt-1.5 grid gap-1.5 sm:mt-3 sm:grid-cols-[5rem_1fr] sm:gap-3">
-          <div className="relative h-12 overflow-hidden rounded-[0.72rem] border border-neonPink/20 bg-[radial-gradient(circle_at_55%_40%,rgba(255,79,216,.55),transparent_18%),linear-gradient(135deg,rgba(0,217,255,.16),rgba(124,58,237,.16)),repeating-linear-gradient(35deg,rgba(255,255,255,.08)_0_1px,transparent_1px_18px)] sm:h-20 sm:rounded-[1rem]">
-            <MapPin className="absolute left-1/2 top-1/2 h-6 w-6 -translate-x-1/2 -translate-y-1/2 text-neonPink drop-shadow-[0_0_16px_rgba(255,79,216,.9)] sm:h-9 sm:w-9" />
-          </div>
-          <div className="min-w-0 self-center">
-            <p className="truncate text-[10px] font-black uppercase text-white sm:text-sm">
-              {profileUser?.city || "Malabo"}
-            </p>
-            <p className="mt-0.5 line-clamp-1 text-[8px] font-semibold leading-3 text-white/56 sm:mt-1 sm:text-xs sm:leading-5">
-              Último lugar: Arena Blanca
-            </p>
-          </div>
+        <div className="min-w-0 self-center">
+          <p className="truncate text-[10px] font-black uppercase text-white sm:text-sm">
+            {profileUser?.city || "Malabo"}
+          </p>
+          <p className="mt-0.5 line-clamp-1 text-[8px] font-semibold leading-3 text-white/56 sm:mt-1 sm:text-xs sm:leading-5">
+            Último lugar: Arena Blanca
+          </p>
         </div>
-      </section>
+      </div>
+    </section>
+  );
+}
 
-      <section className="rounded-[0.9rem] border border-white/8 bg-black/20 p-2 backdrop-blur-xl sm:rounded-[1.2rem] sm:p-3">
-        <div className="flex items-center justify-between">
-          <h2 className="text-[9px] font-black uppercase tracking-[0.1em] text-white/72 sm:text-xs">Sonando ahora</h2>
-          <span className="text-[9px] font-black text-neonCyan sm:text-[11px]">Ver todo</span>
+function MusicCard() {
+  return (
+    <section className="rounded-[1rem] border border-white/8 bg-black/20 p-2 backdrop-blur-xl sm:rounded-[1.2rem] sm:p-3">
+      <div className="flex items-center justify-between">
+        <h2 className="text-[9px] font-black uppercase tracking-[0.1em] text-white/72 sm:text-xs">Sonando ahora</h2>
+        <span className="text-[9px] font-black text-neonCyan sm:text-[11px]">Ver todo</span>
+      </div>
+      <div className="mt-1.5 flex items-center gap-2 sm:mt-3 sm:gap-3">
+        <div className="h-10 w-10 shrink-0 overflow-hidden rounded-[0.75rem] bg-gradient-to-br from-neonPink via-fiestaPurple to-neonCyan sm:h-14 sm:w-14 sm:rounded-[0.9rem]" />
+        <div className="min-w-0 flex-1">
+          <p className="truncate text-[10px] font-black text-white sm:text-sm">Me Conozco</p>
+          <p className="text-[8px] font-semibold text-white/52 sm:text-xs">Roku</p>
         </div>
-        <div className="mt-1.5 flex items-center gap-1.5 sm:mt-3 sm:gap-3">
-          <div className="h-9 w-9 shrink-0 overflow-hidden rounded-[0.65rem] bg-gradient-to-br from-neonPink via-fiestaPurple to-neonCyan sm:h-14 sm:w-14 sm:rounded-[0.9rem]" />
-          <div className="min-w-0 flex-1">
-            <p className="truncate text-[10px] font-black text-white sm:text-sm">Me Conozco</p>
-            <p className="text-[8px] font-semibold text-white/52 sm:text-xs">Roku</p>
-          </div>
-          <Music className="h-3.5 w-3.5 shrink-0 text-neonCyan sm:h-5 sm:w-5" />
+        <div className="flex items-center gap-1.5 rounded-full border border-neonCyan/15 bg-neonCyan/8 px-2 py-1 text-neonCyan sm:gap-2 sm:px-3 sm:py-1.5">
+          <Music className="h-3.5 w-3.5 shrink-0 sm:h-5 sm:w-5" />
+          <span className="text-[8px] font-black uppercase tracking-[0.12em] sm:text-[10px]">Play</span>
         </div>
-      </section>
-    </div>
+      </div>
+    </section>
   );
 }
 
@@ -1654,13 +1659,16 @@ function Profile() {
         </section>
 
         <section className="mt-2 rounded-[1.15rem] border border-white/10 bg-white/[0.055] p-1.5 shadow-cyan backdrop-blur-2xl sm:mt-4 sm:rounded-[1.6rem] sm:p-3">
-          <div className="grid grid-cols-[minmax(0,1.08fr)_minmax(7.2rem,.92fr)] gap-1.5 sm:gap-3 lg:grid-cols-[1fr_16rem]">
-            <AboutCard
-              profileUser={profileUser}
-              isOwnProfile={isOwnProfile}
-              onEdit={() => setShowEditModal(true)}
-            />
-            <LocationMusicCards profileUser={profileUser} />
+          <div className="grid gap-1.5 sm:gap-3">
+            <div className="grid grid-cols-[minmax(0,1fr)_minmax(7.4rem,0.82fr)] items-stretch gap-1.5 sm:grid-cols-[minmax(0,1fr)_minmax(13rem,0.82fr)] sm:gap-3">
+              <AboutCard
+                profileUser={profileUser}
+                isOwnProfile={isOwnProfile}
+                onEdit={() => setShowEditModal(true)}
+              />
+              <LocationCard profileUser={profileUser} />
+            </div>
+            <MusicCard />
           </div>
         </section>
 

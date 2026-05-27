@@ -302,35 +302,29 @@ function ProfileAvatar({ profileUser, initial, size = "large", canCreateStory = 
   );
 }
 
-function ProfileStatBar({ stats }) {
+function CompactProfileStats({ stats }) {
   return (
     <motion.div
-      className="grid grid-cols-4 overflow-hidden rounded-[1.05rem] border border-white/8 bg-black/20 backdrop-blur-xl"
+      className="mt-1 grid w-[8.15rem] grid-cols-2 gap-1 sm:w-44"
       initial={{ opacity: 0, y: 14 }}
       animate={{ opacity: 1, y: 0 }}
     >
-      {stats.map((stat, index) => {
+      {stats.map((stat) => {
         const content = (
-          <div className="min-h-[3.35rem] px-1 py-2 text-center sm:min-h-[4.7rem] sm:px-2 sm:py-3">
-            <p className="text-[13px] font-black text-white sm:text-xl">{formatCompact(stat.value)}</p>
-            <p className="mt-0.5 text-[8px] font-bold leading-tight text-white/58 sm:mt-1 sm:text-xs">
+          <div className="rounded-[0.7rem] border border-white/10 bg-night/74 px-1.5 py-1 text-center shadow-[0_0_14px_rgba(0,217,255,.12)] backdrop-blur-xl sm:rounded-[0.85rem] sm:px-2 sm:py-1.5">
+            <p className="text-[10px] font-black leading-none text-white sm:text-sm">{formatCompact(stat.value)}</p>
+            <p className="mt-0.5 truncate text-[6.5px] font-black uppercase tracking-[0.04em] text-white/48 sm:text-[9px]">
               {stat.label}
             </p>
           </div>
         );
 
         return stat.to ? (
-          <Link
-            className={index ? "border-l border-white/8" : ""}
-            key={stat.label}
-            to={stat.to}
-          >
+          <Link key={stat.label} to={stat.to}>
             {content}
           </Link>
         ) : (
-          <div className={index ? "border-l border-white/8" : ""} key={stat.label}>
-            {content}
-          </div>
+          <div key={stat.label}>{content}</div>
         );
       })}
     </motion.div>
@@ -1425,6 +1419,20 @@ function Profile() {
   );
   const mediaCount = posts.reduce((total, post) => total + (post.media?.length || 0), 0);
   const badges = getProfileBadges(posts, profileUser, likesReceived);
+  const profileStats = [
+    { label: "Publicaciones", value: posts.length },
+    {
+      label: "Seguidores",
+      value: profileUser?.followers_count || 0,
+      to: `/users/${profileUser?.username}/followers`,
+    },
+    {
+      label: "Siguiendo",
+      value: profileUser?.following_count || 0,
+      to: `/users/${profileUser?.username}/following`,
+    },
+    { label: "Me gusta", value: likesReceived },
+  ];
   const activeTheme =
     PROFILE_THEME_OPTIONS.find((theme) => theme.id === profilePreferences.theme) ||
     PROFILE_THEME_OPTIONS[0];
@@ -1499,6 +1507,7 @@ function Profile() {
               badges={badges}
               onClick={() => setShowAchievementsModal(true)}
             />
+            <CompactProfileStats stats={profileStats} />
             {isOwnProfile ? (
               <button
                 className="absolute -right-0 top-0 flex h-7 w-7 items-center justify-center rounded-full border border-white/10 bg-night/82 text-white shadow-cyan backdrop-blur-xl sm:h-9 sm:w-9"
@@ -1511,7 +1520,7 @@ function Profile() {
             ) : null}
           </div>
 
-          <div className="ml-[8.7rem] min-h-[7.6rem] pt-2 sm:ml-48 sm:min-h-32 sm:pt-1">
+          <div className="ml-[8.7rem] min-h-[10rem] pt-2 sm:ml-48 sm:min-h-[15rem] sm:pt-1">
             <div className="flex min-w-0 items-center gap-2">
               <h1 className="truncate text-[1.72rem] font-black leading-none text-white drop-shadow sm:text-5xl">
                 {profileUser?.display_name}
@@ -1566,24 +1575,7 @@ function Profile() {
         ) : null}
 
         <section className="-mt-1 rounded-[1.1rem] border border-white/10 bg-white/[0.055] p-1.5 shadow-cyan backdrop-blur-2xl sm:rounded-[1.6rem] sm:p-2">
-          <ProfileStatBar
-            stats={[
-              { label: "Publicaciones", value: posts.length },
-              {
-                label: "Seguidores",
-                value: profileUser?.followers_count || 0,
-                to: `/users/${profileUser?.username}/followers`,
-              },
-              {
-                label: "Siguiendo",
-                value: profileUser?.following_count || 0,
-                to: `/users/${profileUser?.username}/following`,
-              },
-              { label: "Me gusta", value: likesReceived },
-            ]}
-          />
-
-        <div className="mt-2">
+        <div>
           {isOwnProfile ? (
             <div className="grid grid-cols-4 gap-2">
               <motion.button

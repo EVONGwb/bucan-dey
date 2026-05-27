@@ -1,7 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { motion } from "framer-motion";
 import {
+  AtSign,
   Bookmark,
+  Camera,
   Car,
   Check,
   Compass,
@@ -18,8 +20,12 @@ import {
   Pencil,
   Play,
   PlusCircle,
+  Save,
+  ShieldCheck,
   Sparkles,
   UserPlus,
+  UserRound,
+  X,
 } from "lucide-react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 
@@ -510,6 +516,8 @@ function ProfilePostGrid({ posts }) {
 
 function ProfileEditModal({ profileUser, onClose, onSaved }) {
   const { completeOnboarding } = useAuth();
+  const [activeEditTab, setActiveEditTab] = useState("basic");
+  const [showAvatarUrl, setShowAvatarUrl] = useState(false);
   const [form, setForm] = useState({
     display_name: profileUser.display_name || "",
     username: profileUser.username || "",
@@ -520,6 +528,14 @@ function ProfileEditModal({ profileUser, onClose, onSaved }) {
   });
   const [error, setError] = useState("");
   const [isSaving, setIsSaving] = useState(false);
+  const avatarPreview = form.avatar_url.trim();
+  const fieldClass =
+    "h-12 w-full rounded-[1rem] border border-white/10 bg-white/7 pl-11 pr-4 text-sm font-bold text-white outline-none transition placeholder:text-white/30 focus:border-neonCyan focus:bg-neonCyan/8 sm:h-13";
+  const tabs = [
+    { id: "basic", label: "Básico", icon: UserRound },
+    { id: "style", label: "Estilo", icon: Sparkles },
+    { id: "privacy", label: "Privacidad", icon: ShieldCheck },
+  ];
 
   function updateField(event) {
     setForm((current) => ({
@@ -553,76 +569,221 @@ function ProfileEditModal({ profileUser, onClose, onSaved }) {
   }
 
   return (
-    <div className="fixed inset-0 z-40 flex items-end bg-black/72 px-4 pb-4 backdrop-blur-sm">
+    <div className="fixed inset-0 z-40 flex items-end justify-center bg-black/76 px-3 pb-3 backdrop-blur-xl sm:items-center sm:px-4 sm:pb-0">
       <motion.form
-        className="glass-panel mx-auto max-h-[88vh] w-full max-w-md overflow-y-auto rounded-[1.75rem] p-5"
-        initial={{ opacity: 0, y: 40 }}
-        animate={{ opacity: 1, y: 0 }}
+        className="relative w-full max-w-md overflow-hidden rounded-t-[1.9rem] border border-white/10 bg-night/96 text-white shadow-[0_0_42px_rgba(0,217,255,.18),0_0_70px_rgba(255,79,216,.16)] sm:rounded-[1.9rem]"
+        initial={{ opacity: 0, y: 46, scale: 0.98 }}
+        animate={{ opacity: 1, y: 0, scale: 1 }}
         onSubmit={handleSubmit}
       >
-        <div className="flex items-start justify-between gap-3">
-          <div>
-            <p className="text-xs font-black uppercase tracking-[0.18em] text-neonCyan">
-              Perfil
-            </p>
-            <h2 className="mt-2 text-2xl font-black text-white">Editar perfil</h2>
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_16%_0%,rgba(255,79,216,.24),transparent_30%),radial-gradient(circle_at_82%_14%,rgba(0,217,255,.22),transparent_28%)]" />
+        <div className="relative max-h-[91vh] overflow-y-auto px-4 pb-24 pt-3 sm:px-5 sm:pt-4">
+          <div className="mx-auto mb-3 h-1 w-12 rounded-full bg-white/22" />
+
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <p className="text-[10px] font-black uppercase tracking-[0.2em] text-neonCyan">
+                Perfil
+              </p>
+              <h2 className="mt-1 text-2xl font-black leading-none text-white">Editar perfil</h2>
+              <p className="mt-1 text-xs font-semibold text-white/52">
+                Actualiza cómo te ve la comunidad
+              </p>
+            </div>
+            <button
+              className="flex h-10 w-10 items-center justify-center rounded-full border border-white/10 bg-white/7 text-white"
+              type="button"
+              onClick={onClose}
+              aria-label="Cerrar editor"
+            >
+              <X className="h-5 w-5" />
+            </button>
           </div>
-          <button
-            className="rounded-full border border-white/10 bg-white/7 px-4 py-2 text-sm font-black text-white"
-            type="button"
-            onClick={onClose}
-          >
-            Cerrar
-          </button>
+
+          <div className="mt-4 rounded-[1.4rem] border border-white/10 bg-white/[0.045] p-3 backdrop-blur-2xl">
+            <div className="flex items-center gap-3">
+              <div className="relative h-20 w-20 shrink-0 rounded-full bg-gradient-to-br from-neonPink via-fiestaPurple to-neonCyan p-[3px] shadow-neon">
+                {avatarPreview ? (
+                  <img
+                    alt="Avatar"
+                    className="h-full w-full rounded-full border-[3px] border-night object-cover"
+                    src={avatarPreview}
+                  />
+                ) : (
+                  <div className="flex h-full w-full items-center justify-center rounded-full border-[3px] border-night bg-gradient-to-br from-fiestaPurple via-neonPink to-neonCyan text-2xl font-black">
+                    {(form.display_name || form.username || "B").charAt(0).toUpperCase()}
+                  </div>
+                )}
+                <span className="absolute -right-1 bottom-1 flex h-7 w-7 items-center justify-center rounded-full border-[3px] border-night bg-neonPink text-white shadow-neon">
+                  <Pencil className="h-3.5 w-3.5" />
+                </span>
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-lg font-black">{form.display_name || "Tu perfil"}</p>
+                <p className="truncate text-sm font-bold text-white/56">@{form.username || "usuario"}</p>
+                <button
+                  className="mt-2 inline-flex items-center gap-1.5 rounded-full border border-neonCyan/25 bg-neonCyan/10 px-3 py-1.5 text-[11px] font-black text-neonCyan"
+                  type="button"
+                  onClick={() => setShowAvatarUrl((current) => !current)}
+                >
+                  <Camera className="h-3.5 w-3.5" />
+                  Cambiar foto
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div className="mt-3 grid grid-cols-3 gap-1 rounded-full border border-white/10 bg-black/20 p-1">
+            {tabs.map((tab) => {
+              const Icon = tab.icon;
+              const isActive = activeEditTab === tab.id;
+              return (
+                <button
+                  className={`flex h-9 items-center justify-center gap-1 rounded-full text-[10px] font-black transition ${
+                    isActive
+                      ? "bg-gradient-to-r from-neonPink via-fiestaPurple to-neonCyan text-white shadow-neon"
+                      : "text-white/54"
+                  }`}
+                  key={tab.id}
+                  type="button"
+                  onClick={() => setActiveEditTab(tab.id)}
+                >
+                  <Icon className="h-3.5 w-3.5" />
+                  {tab.label}
+                </button>
+              );
+            })}
+          </div>
+
+          {activeEditTab === "basic" ? (
+            <div className="mt-4 space-y-3">
+              {[
+                ["display_name", "Nombre visible", "Tu nombre", UserRound],
+                ["username", "Usuario", "bucan_user", AtSign],
+                ["city", "Ciudad", "Malabo", MapPin],
+                ["country", "País", "Guinea Ecuatorial", Flag],
+              ].map(([name, label, placeholder, Icon]) => (
+                <label className="block" key={name}>
+                  <span className="mb-1.5 block text-xs font-black text-white/72">{label}</span>
+                  <span className="relative block">
+                    <Icon className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-neonCyan" />
+                    <input
+                      className={fieldClass}
+                      name={name}
+                      value={form[name]}
+                      onChange={updateField}
+                      placeholder={placeholder}
+                      required
+                    />
+                    {name === "username" && form.username.trim().length >= 3 ? (
+                      <Check className="absolute right-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-green-400" />
+                    ) : null}
+                  </span>
+                </label>
+              ))}
+
+              <label className="block">
+                <div className="mb-1.5 flex items-center justify-between">
+                  <span className="text-xs font-black text-white/72">Bio</span>
+                  <span className="text-[10px] font-black text-white/38">{form.bio.length}/300</span>
+                </div>
+                <textarea
+                  className="min-h-20 w-full resize-none rounded-[1rem] border border-white/10 bg-white/7 px-4 py-3 text-sm font-bold text-white outline-none transition placeholder:text-white/30 focus:border-neonCyan focus:bg-neonCyan/8"
+                  maxLength={300}
+                  name="bio"
+                  value={form.bio}
+                  onChange={updateField}
+                  placeholder="Cuéntale algo a tu gente."
+                />
+              </label>
+
+              {showAvatarUrl ? (
+                <label className="block rounded-[1rem] border border-white/8 bg-white/[0.04] p-3">
+                  <span className="mb-1.5 block text-xs font-black text-white/72">Avatar URL</span>
+                  <span className="relative block">
+                    <LinkIcon className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-neonPink" />
+                    <input
+                      className={fieldClass}
+                      name="avatar_url"
+                      value={form.avatar_url}
+                      onChange={updateField}
+                      placeholder="https://..."
+                    />
+                  </span>
+                </label>
+              ) : null}
+            </div>
+          ) : null}
+
+          {activeEditTab === "style" ? (
+            <div className="mt-4 rounded-[1.2rem] border border-white/10 bg-white/[0.045] p-4">
+              <div className="flex items-center gap-3">
+                <Sparkles className="h-5 w-5 text-neonPink" />
+                <div>
+                  <p className="text-sm font-black">Estilo premium activo</p>
+                  <p className="mt-1 text-xs font-semibold leading-5 text-white/54">
+                    La portada, el glow y los logros se ajustan automáticamente al perfil UI V2.
+                  </p>
+                </div>
+              </div>
+            </div>
+          ) : null}
+
+          {activeEditTab === "privacy" ? (
+            <div className="mt-4 rounded-[1.2rem] border border-white/10 bg-white/[0.045] p-4">
+              <div className="flex items-center gap-3">
+                <ShieldCheck className="h-5 w-5 text-neonCyan" />
+                <div>
+                  <p className="text-sm font-black">Perfil público</p>
+                  <p className="mt-1 text-xs font-semibold leading-5 text-white/54">
+                    Tu perfil puede verse en BUCAN DEY. La privacidad de publicaciones se controla al publicar.
+                  </p>
+                </div>
+              </div>
+              <div className="mt-3 flex flex-wrap gap-2">
+                <span className="rounded-full border border-green-400/20 bg-green-400/10 px-3 py-1.5 text-[10px] font-black text-green-300">En línea</span>
+                <span className="rounded-full border border-neonCyan/20 bg-neonCyan/10 px-3 py-1.5 text-[10px] font-black text-neonCyan">Comunidad</span>
+                <span className="rounded-full border border-neonPink/20 bg-neonPink/10 px-3 py-1.5 text-[10px] font-black text-neonPink">BUCAN DEY</span>
+              </div>
+            </div>
+          ) : null}
+
+          <p className="mt-4 text-center text-[11px] font-bold text-white/42">
+            Los cambios se verán al instante
+          </p>
+
+          {error ? (
+            <div className="mt-3 rounded-[1rem] border border-neonPink/30 bg-neonPink/10 px-4 py-3 text-sm font-bold text-white">
+              {error}
+            </div>
+          ) : null}
         </div>
 
-        <div className="mt-5 space-y-4">
-          {[
-            ["display_name", "Nombre visible", "Tu nombre"],
-            ["username", "Usuario", "bucan_user"],
-            ["city", "Ciudad", "Malabo"],
-            ["country", "País", "Guinea Ecuatorial"],
-            ["avatar_url", "Avatar URL", "https://..."],
-          ].map(([name, label, placeholder]) => (
-            <label className="block" key={name}>
-              <span className="text-sm font-bold text-white/76">{label}</span>
-              <input
-                className="mt-2 h-14 w-full rounded-[1.1rem] border border-white/10 bg-white/7 px-4 text-sm font-semibold text-white outline-none transition placeholder:text-white/30 focus:border-neonCyan"
-                name={name}
-                value={form[name]}
-                onChange={updateField}
-                placeholder={placeholder}
-                required={name !== "avatar_url"}
-              />
-            </label>
-          ))}
-
-          <label className="block">
-            <span className="text-sm font-bold text-white/76">Bio</span>
-            <textarea
-              className="mt-2 min-h-24 w-full resize-none rounded-[1.1rem] border border-white/10 bg-white/7 px-4 py-3 text-sm font-semibold text-white outline-none transition placeholder:text-white/30 focus:border-neonCyan"
-              maxLength={300}
-              name="bio"
-              value={form.bio}
-              onChange={updateField}
-              placeholder="Cuéntale algo a tu gente."
-            />
-          </label>
-        </div>
-
-        {error ? (
-          <div className="mt-4 rounded-[1.1rem] border border-neonPink/30 bg-neonPink/10 px-4 py-3 text-sm font-semibold text-white">
-            {error}
+        <div className="absolute inset-x-0 bottom-0 border-t border-white/10 bg-night/86 px-4 py-3 backdrop-blur-2xl">
+          <div className="grid grid-cols-[0.8fr_1.2fr] gap-2">
+            <button
+              className="h-12 rounded-full border border-white/10 bg-white/7 text-sm font-black text-white"
+              type="button"
+              onClick={onClose}
+            >
+              Cancelar
+            </button>
+            <button
+              className="inline-flex h-12 items-center justify-center gap-2 rounded-full bg-gradient-to-r from-neonPink via-fiestaPurple to-neonCyan text-sm font-black text-white shadow-neon disabled:opacity-60"
+              type="submit"
+              disabled={isSaving}
+            >
+              {isSaving ? (
+                "Guardando..."
+              ) : (
+                <>
+                  <Save className="h-4 w-4" />
+                  Guardar cambios
+                </>
+              )}
+            </button>
           </div>
-        ) : null}
-
-        <button
-          className="mt-5 h-14 w-full rounded-full bg-gradient-to-r from-neonCyan via-fiestaPurple to-neonPink text-sm font-black text-white shadow-cyan disabled:opacity-60"
-          type="submit"
-          disabled={isSaving}
-        >
-          {isSaving ? "Guardando..." : "Guardar cambios"}
-        </button>
+        </div>
       </motion.form>
     </div>
   );

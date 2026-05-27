@@ -123,10 +123,10 @@ function formatCompact(value) {
 }
 
 function ProfileAvatar({ profileUser, initial, size = "large" }) {
-  const sizeClass = size === "large" ? "h-28 w-28 sm:h-40 sm:w-40" : "h-11 w-11";
+  const sizeClass = size === "large" ? "h-[7.55rem] w-[7.55rem] sm:h-40 sm:w-40" : "h-11 w-11";
   const textClass = size === "large" ? "text-4xl sm:text-5xl" : "text-base";
   const frameShape = {
-    clipPath: "polygon(18% 0%, 82% 0%, 100% 18%, 100% 78%, 78% 100%, 0% 100%, 0% 18%)",
+    clipPath: "polygon(17% 0%, 83% 0%, 100% 18%, 92% 77%, 50% 100%, 8% 77%, 0% 18%)",
   };
 
   return (
@@ -150,7 +150,7 @@ function ProfileAvatar({ profileUser, initial, size = "large" }) {
           {initial.toUpperCase()}
         </div>
       )}
-      <span className="absolute -right-0.5 bottom-3 h-4 w-4 rounded-full border-[3px] border-night bg-green-400 shadow-[0_0_18px_rgba(34,197,94,.85)] sm:h-5 sm:w-5" />
+      <span className="absolute right-2 bottom-3 h-4 w-4 rounded-full border-[3px] border-night bg-green-400 shadow-[0_0_18px_rgba(34,197,94,.85)] sm:h-5 sm:w-5" />
     </div>
   );
 }
@@ -729,18 +729,27 @@ function Profile() {
         initial={{ opacity: 0, y: 18 }}
         animate={{ opacity: 1, y: 0 }}
       >
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_24%_8%,rgba(255,79,216,.52),transparent_25%),radial-gradient(circle_at_75%_15%,rgba(0,217,255,.38),transparent_26%),linear-gradient(180deg,rgba(124,58,237,.35),rgba(7,11,20,.94)_58%)]" />
-        <div className="absolute inset-x-0 top-0 h-44 bg-[linear-gradient(125deg,transparent_0_24%,rgba(255,255,255,.08)_25%,transparent_27%_100%)] opacity-70" />
-        <div className="absolute bottom-14 right-4 h-12 w-24 rounded-full bg-black/55 blur-sm sm:bottom-20 sm:h-16 sm:w-28" />
-        <div className="absolute bottom-[4.25rem] right-6 h-6 w-16 rounded-full border border-liveRed/30 bg-liveRed/16 shadow-live sm:bottom-24 sm:h-8 sm:w-20" />
-        <div className="absolute bottom-14 left-0 right-0 h-16 bg-gradient-to-t from-night via-night/80 to-transparent sm:bottom-20 sm:h-20" />
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_18%_0%,rgba(255,79,216,.72),transparent_25%),radial-gradient(circle_at_62%_5%,rgba(0,217,255,.44),transparent_28%),linear-gradient(180deg,rgba(124,58,237,.42),rgba(7,11,20,.96)_68%)]" />
+        <div className="absolute inset-x-0 top-0 h-28 bg-[linear-gradient(115deg,rgba(255,79,216,.26),transparent_26%),linear-gradient(160deg,transparent_0_42%,rgba(0,217,255,.18)_44%,transparent_58%)] blur-[1px] sm:h-44" />
+        <div className="absolute bottom-12 left-[31%] right-[16%] flex h-20 items-end justify-around opacity-45 sm:bottom-20 sm:h-28">
+          {[34, 56, 42, 74, 50, 88, 38, 68, 48, 76, 55].map((height, index) => (
+            <span
+              className="w-[5px] rounded-t-sm bg-gradient-to-t from-neonCyan/30 via-fiestaPurple/40 to-white/40 shadow-cyan sm:w-2"
+              key={`${height}-${index}`}
+              style={{ height: `${height}%` }}
+            />
+          ))}
+        </div>
+        <div className="absolute bottom-[3.7rem] right-3 h-10 w-[6.4rem] rounded-[45%_55%_38%_42%] bg-black/62 shadow-[0_0_30px_rgba(255,48,64,.35)] sm:bottom-24 sm:h-14 sm:w-32" />
+        <div className="absolute bottom-[4.45rem] right-6 h-2 w-8 rounded-full bg-liveRed/60 shadow-live sm:bottom-[7.1rem] sm:h-3 sm:w-12" />
+        <div className="absolute bottom-11 left-0 right-0 h-16 bg-gradient-to-t from-night via-night/76 to-transparent sm:bottom-20 sm:h-20" />
 
-        <div className="relative px-4 pb-3 pt-16 sm:px-6 sm:pb-5 sm:pt-24">
-          <div className="absolute left-4 top-4 sm:left-6 sm:top-5">
+        <div className="relative px-4 pb-3 pt-12 sm:px-6 sm:pb-5 sm:pt-24">
+          <div className="absolute left-4 top-3 sm:left-6 sm:top-5">
             <ProfileAvatar profileUser={profileUser} initial={initial} />
             {isOwnProfile ? (
               <button
-                className="absolute -right-1 top-1 flex h-7 w-7 items-center justify-center rounded-full border border-white/10 bg-night/82 text-white shadow-cyan backdrop-blur-xl sm:h-9 sm:w-9"
+                className="absolute -right-0 top-0 flex h-7 w-7 items-center justify-center rounded-full border border-white/10 bg-night/82 text-white shadow-cyan backdrop-blur-xl sm:h-9 sm:w-9"
                 type="button"
                 onClick={() => setShowEditModal(true)}
                 aria-label="Editar perfil"
@@ -750,9 +759,9 @@ function Profile() {
             ) : null}
           </div>
 
-          <div className="ml-32 min-h-28 pt-0.5 sm:ml-48 sm:min-h-32 sm:pt-1">
+          <div className="ml-[8.7rem] min-h-[7.6rem] pt-2 sm:ml-48 sm:min-h-32 sm:pt-1">
             <div className="flex min-w-0 items-center gap-2">
-              <h1 className="truncate text-2xl font-black leading-tight text-white sm:text-5xl">
+              <h1 className="truncate text-[1.72rem] font-black leading-none text-white drop-shadow sm:text-5xl">
                 {profileUser?.display_name}
               </h1>
               {profileUser?.is_verified ? (
@@ -761,16 +770,16 @@ function Profile() {
                 </span>
               ) : null}
             </div>
-            <div className="mt-0.5 flex flex-wrap items-center gap-1.5 sm:mt-1 sm:gap-2">
-              <p className="text-xs font-bold text-white/72 sm:text-sm">@{profileUser?.username}</p>
+            <div className="mt-1 flex flex-wrap items-center gap-1.5 sm:mt-1 sm:gap-2">
+              <p className="text-[0.8rem] font-bold text-white/72 sm:text-sm">@{profileUser?.username}</p>
               <span className="inline-flex items-center gap-1 rounded-full border border-green-400/20 bg-green-400/12 px-1.5 py-0.5 text-[8px] font-black text-green-300 sm:px-2 sm:text-[10px]">
                 <span className="h-1.5 w-1.5 rounded-full bg-green-400 shadow-[0_0_12px_rgba(34,197,94,.9)]" />
                 En línea
               </span>
             </div>
-            <p className="mt-2 flex flex-wrap items-center gap-1.5 text-[10px] font-bold text-white/68 sm:mt-3 sm:gap-2 sm:text-sm">
-              <MapPin className="h-3.5 w-3.5 text-neonCyan sm:h-4 sm:w-4" />
+            <p className="mt-3 flex flex-wrap items-center gap-1.5 text-[0.68rem] font-bold text-white/68 sm:mt-3 sm:gap-2 sm:text-sm">
               {profileUser?.city || "Malabo"}
+              <span className="hidden sm:inline">, Bioko Norte</span>
               {profileUser?.country ? (
                 <>
                   <span className="text-white/30">·</span>
@@ -778,12 +787,11 @@ function Profile() {
                 </>
               ) : null}
             </p>
-          </div>
-
-          <div className="mt-3 flex gap-1.5 overflow-x-auto pb-0.5 scrollbar-none sm:mt-5 sm:gap-2 sm:pb-1">
-            <MoodPill icon={Sparkles} title="Motivado 😎" color="purple" />
-            <MoodPill icon={Music} title="Me Conozco" detail="Roku" color="pink" />
-            <MoodPill icon={LinkIcon} title={`linktr.ee/${profileUser?.username || "bucan"}`} color="cyan" />
+            <div className="mt-4 flex gap-1.5 overflow-x-auto pb-0.5 scrollbar-none sm:mt-5 sm:gap-2 sm:pb-1">
+              <MoodPill icon={Sparkles} title="Motivado 😎" color="purple" />
+              <MoodPill icon={Music} title="Me Conozco" detail="Roku" color="pink" />
+              <MoodPill icon={LinkIcon} title={`linktr.ee/${profileUser?.username || "bucan"}`} color="cyan" />
+            </div>
           </div>
         </div>
       </motion.header>

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { motion } from "framer-motion";
 import {
   Award,
@@ -18,6 +18,7 @@ import {
   Music,
   Pencil,
   Play,
+  PlusCircle,
   Sparkles,
   UserPlus,
 } from "lucide-react";
@@ -122,13 +123,59 @@ function formatCompact(value) {
   }).format(Number(value || 0));
 }
 
-function ProfileAvatar({ profileUser, initial, size = "large" }) {
+function ProfileAvatar({ profileUser, initial, size = "large", canCreateStory = false, onCreateStory }) {
+  const holdTimerRef = useRef(null);
+  const didLongPressRef = useRef(false);
   const isHero = size === "large";
   const sizeClass = isHero ? "h-[8.15rem] w-[8.15rem] sm:h-44 sm:w-44" : "h-11 w-11";
+  const AvatarShell = canCreateStory ? "button" : "div";
+
+  function clearCreateStoryHold() {
+    if (holdTimerRef.current) {
+      window.clearTimeout(holdTimerRef.current);
+      holdTimerRef.current = null;
+    }
+  }
+
+  function startCreateStoryHold() {
+    if (!canCreateStory || !onCreateStory) return;
+    clearCreateStoryHold();
+    didLongPressRef.current = false;
+    holdTimerRef.current = window.setTimeout(() => {
+      didLongPressRef.current = true;
+      onCreateStory();
+    }, 620);
+  }
+
+  function handleAvatarClick(event) {
+    if (didLongPressRef.current) {
+      event.preventDefault();
+      didLongPressRef.current = false;
+    }
+  }
+
+  function handleAvatarKeyDown(event) {
+    if (!canCreateStory || !onCreateStory) return;
+    if (event.key === "Enter" || event.key === " ") {
+      event.preventDefault();
+      onCreateStory();
+    }
+  }
 
   return (
-    <div
-      className={`relative flex ${sizeClass} items-center justify-center rounded-full bg-gradient-to-br from-neonPink via-fiestaPurple to-neonCyan p-[3px] shadow-[0_0_24px_rgba(255,79,216,.5),0_0_34px_rgba(0,217,255,.26)] sm:p-1`}
+    <AvatarShell
+      aria-label={canCreateStory ? "Mantener pulsado para crear estado" : undefined}
+      className={`relative flex ${sizeClass} items-center justify-center rounded-full bg-gradient-to-br from-neonPink via-fiestaPurple to-neonCyan p-[3px] shadow-[0_0_24px_rgba(255,79,216,.5),0_0_34px_rgba(0,217,255,.26)] transition active:scale-[0.98] sm:p-1 ${
+        canCreateStory ? "cursor-pointer select-none" : ""
+      }`}
+      type={canCreateStory ? "button" : undefined}
+      onClick={canCreateStory ? handleAvatarClick : undefined}
+      onContextMenu={canCreateStory ? (event) => event.preventDefault() : undefined}
+      onKeyDown={canCreateStory ? handleAvatarKeyDown : undefined}
+      onPointerCancel={canCreateStory ? clearCreateStoryHold : undefined}
+      onPointerDown={canCreateStory ? startCreateStoryHold : undefined}
+      onPointerLeave={canCreateStory ? clearCreateStoryHold : undefined}
+      onPointerUp={canCreateStory ? clearCreateStoryHold : undefined}
     >
       <div className="absolute -inset-2 rounded-full bg-neonPink/18 blur-xl" />
       {profileUser?.avatar_url ? (
@@ -146,8 +193,13 @@ function ProfileAvatar({ profileUser, initial, size = "large" }) {
           {initial.toUpperCase()}
         </div>
       )}
+      {canCreateStory ? (
+        <span className="absolute -left-0.5 bottom-2 flex h-7 w-7 items-center justify-center rounded-full border-[3px] border-night bg-neonPink text-white shadow-[0_0_18px_rgba(255,79,216,.82)] sm:h-8 sm:w-8">
+          <PlusCircle className="h-4 w-4 sm:h-[1.1rem] sm:w-[1.1rem]" />
+        </span>
+      ) : null}
       <span className="absolute right-2 bottom-3 h-4 w-4 rounded-full border-[3px] border-night bg-green-400 shadow-[0_0_18px_rgba(34,197,94,.85)] sm:h-5 sm:w-5" />
-    </div>
+    </AvatarShell>
   );
 }
 
@@ -742,7 +794,12 @@ function Profile() {
 
         <div className="relative px-4 pb-3 pt-12 sm:px-6 sm:pb-5 sm:pt-24">
           <div className="absolute left-4 top-3 sm:left-6 sm:top-5">
-            <ProfileAvatar profileUser={profileUser} initial={initial} />
+            <ProfileAvatar
+              profileUser={profileUser}
+              initial={initial}
+              canCreateStory={isOwnProfile}
+              onCreateStory={() => navigate("/stories/create")}
+            />
             {isOwnProfile ? (
               <button
                 className="absolute -right-0 top-0 flex h-7 w-7 items-center justify-center rounded-full border border-white/10 bg-night/82 text-white shadow-cyan backdrop-blur-xl sm:h-9 sm:w-9"

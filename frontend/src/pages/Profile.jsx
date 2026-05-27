@@ -52,6 +52,74 @@ const REPORT_REASONS = [
   { value: "otro", label: "Otro" },
 ];
 
+const PROFILE_THEME_OPTIONS = [
+  {
+    id: "neon",
+    label: "Neón",
+    preview: "from-neonPink via-fiestaPurple to-neonCyan",
+    hero:
+      "bg-[radial-gradient(circle_at_18%_0%,rgba(255,79,216,.72),transparent_25%),radial-gradient(circle_at_62%_5%,rgba(0,217,255,.44),transparent_28%),linear-gradient(180deg,rgba(124,58,237,.42),rgba(7,11,20,.96)_68%)]",
+  },
+  {
+    id: "cyan",
+    label: "Cyan",
+    preview: "from-neonCyan via-blue-500 to-fiestaPurple",
+    hero:
+      "bg-[radial-gradient(circle_at_18%_0%,rgba(0,217,255,.72),transparent_25%),radial-gradient(circle_at_72%_8%,rgba(59,130,246,.46),transparent_30%),linear-gradient(180deg,rgba(14,165,233,.34),rgba(7,11,20,.96)_68%)]",
+  },
+  {
+    id: "pink",
+    label: "Rosa",
+    preview: "from-neonPink via-fuchsia-500 to-liveRed",
+    hero:
+      "bg-[radial-gradient(circle_at_18%_0%,rgba(255,79,216,.78),transparent_25%),radial-gradient(circle_at_72%_8%,rgba(255,48,64,.45),transparent_30%),linear-gradient(180deg,rgba(190,24,93,.42),rgba(7,11,20,.96)_68%)]",
+  },
+  {
+    id: "gold",
+    label: "Oro",
+    preview: "from-neonYellow via-neonOrange to-neonPink",
+    hero:
+      "bg-[radial-gradient(circle_at_18%_0%,rgba(255,216,77,.72),transparent_25%),radial-gradient(circle_at_72%_8%,rgba(249,115,22,.42),transparent_30%),linear-gradient(180deg,rgba(180,83,9,.35),rgba(7,11,20,.96)_68%)]",
+  },
+  {
+    id: "dark",
+    label: "Oscuro",
+    preview: "from-slate-900 via-slate-700 to-black",
+    hero:
+      "bg-[radial-gradient(circle_at_18%_0%,rgba(148,163,184,.28),transparent_25%),radial-gradient(circle_at_72%_8%,rgba(15,23,42,.62),transparent_30%),linear-gradient(180deg,rgba(15,23,42,.78),rgba(7,11,20,.96)_68%)]",
+  },
+];
+
+const DEFAULT_PROFILE_PREFERENCES = {
+  allow_messages: true,
+  cover_url: "",
+  profile_visibility: "public",
+  show_online_status: true,
+  theme: "neon",
+};
+
+function getProfilePreferenceKey(username) {
+  return `bucan-profile-preferences:${username || "me"}`;
+}
+
+function loadProfilePreferences(username) {
+  if (typeof window === "undefined") return DEFAULT_PROFILE_PREFERENCES;
+  try {
+    const raw = window.localStorage.getItem(getProfilePreferenceKey(username));
+    return raw ? { ...DEFAULT_PROFILE_PREFERENCES, ...JSON.parse(raw) } : DEFAULT_PROFILE_PREFERENCES;
+  } catch {
+    return DEFAULT_PROFILE_PREFERENCES;
+  }
+}
+
+function saveProfilePreferences(username, preferences) {
+  if (typeof window === "undefined") return;
+  window.localStorage.setItem(
+    getProfilePreferenceKey(username),
+    JSON.stringify({ ...DEFAULT_PROFILE_PREFERENCES, ...preferences })
+  );
+}
+
 function EmptyState({ title, description }) {
   return (
     <div className="glass-panel mt-4 rounded-[1.75rem] p-6 text-center">
@@ -514,10 +582,14 @@ function ProfilePostGrid({ posts }) {
   );
 }
 
-function ProfileEditModal({ profileUser, onClose, onSaved }) {
+function ProfileEditModal({ profileUser, onClose, onPreferencesSaved, onSaved, preferences }) {
   const { completeOnboarding } = useAuth();
   const [activeEditTab, setActiveEditTab] = useState("basic");
   const [showAvatarUrl, setShowAvatarUrl] = useState(false);
+  const [styleForm, setStyleForm] = useState({
+    ...DEFAULT_PROFILE_PREFERENCES,
+    ...preferences,
+  });
   const [form, setForm] = useState({
     display_name: profileUser.display_name || "",
     username: profileUser.username || "",
@@ -530,7 +602,7 @@ function ProfileEditModal({ profileUser, onClose, onSaved }) {
   const [isSaving, setIsSaving] = useState(false);
   const avatarPreview = form.avatar_url.trim();
   const fieldClass =
-    "h-12 w-full rounded-[1rem] border border-white/10 bg-white/7 pl-11 pr-4 text-sm font-bold text-white outline-none transition placeholder:text-white/30 focus:border-neonCyan focus:bg-neonCyan/8 sm:h-13";
+    "h-10 w-full rounded-[0.85rem] border border-white/10 bg-white/7 pl-9 pr-3 text-[12px] font-bold text-white outline-none transition placeholder:text-white/30 focus:border-neonCyan focus:bg-neonCyan/8 sm:h-11 sm:text-sm";
   const tabs = [
     { id: "basic", label: "Básico", icon: UserRound },
     { id: "style", label: "Estilo", icon: Sparkles },
@@ -541,6 +613,13 @@ function ProfileEditModal({ profileUser, onClose, onSaved }) {
     setForm((current) => ({
       ...current,
       [event.target.name]: event.target.value,
+    }));
+  }
+
+  function updatePreference(name, value) {
+    setStyleForm((current) => ({
+      ...current,
+      [name]: value,
     }));
   }
 
@@ -559,6 +638,7 @@ function ProfileEditModal({ profileUser, onClose, onSaved }) {
         bio: form.bio.trim(),
         avatar_url: form.avatar_url.trim() || null,
       });
+      onPreferencesSaved(styleForm);
       onSaved(updated);
       onClose();
     } catch (err) {
@@ -656,17 +736,18 @@ function ProfileEditModal({ profileUser, onClose, onSaved }) {
           </div>
 
           {activeEditTab === "basic" ? (
-            <div className="mt-4 space-y-3">
-              {[
-                ["display_name", "Nombre visible", "Tu nombre", UserRound],
-                ["username", "Usuario", "bucan_user", AtSign],
-                ["city", "Ciudad", "Malabo", MapPin],
-                ["country", "País", "Guinea Ecuatorial", Flag],
-              ].map(([name, label, placeholder, Icon]) => (
-                <label className="block" key={name}>
-                  <span className="mb-1.5 block text-xs font-black text-white/72">{label}</span>
+            <div className="mt-4 space-y-2.5">
+              <div className="grid grid-cols-2 gap-2">
+                {[
+                  ["display_name", "Nombre visible", "Tu nombre", UserRound],
+                  ["username", "Usuario", "bucan_user", AtSign],
+                  ["city", "Ciudad", "Malabo", MapPin],
+                  ["country", "País", "Guinea Ecuatorial", Flag],
+                ].map(([name, label, placeholder, Icon]) => (
+                <label className="min-w-0" key={name}>
+                  <span className="mb-1 block truncate text-[10px] font-black text-white/72">{label}</span>
                   <span className="relative block">
-                    <Icon className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-neonCyan" />
+                    <Icon className="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-neonCyan" />
                     <input
                       className={fieldClass}
                       name={name}
@@ -676,19 +757,20 @@ function ProfileEditModal({ profileUser, onClose, onSaved }) {
                       required
                     />
                     {name === "username" && form.username.trim().length >= 3 ? (
-                      <Check className="absolute right-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-green-400" />
+                      <Check className="absolute right-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-green-400" />
                     ) : null}
                   </span>
                 </label>
-              ))}
+                ))}
+              </div>
 
               <label className="block">
-                <div className="mb-1.5 flex items-center justify-between">
-                  <span className="text-xs font-black text-white/72">Bio</span>
+                <div className="mb-1 flex items-center justify-between">
+                  <span className="text-[10px] font-black text-white/72">Biografía</span>
                   <span className="text-[10px] font-black text-white/38">{form.bio.length}/300</span>
                 </div>
                 <textarea
-                  className="min-h-20 w-full resize-none rounded-[1rem] border border-white/10 bg-white/7 px-4 py-3 text-sm font-bold text-white outline-none transition placeholder:text-white/30 focus:border-neonCyan focus:bg-neonCyan/8"
+                  className="min-h-16 w-full resize-none rounded-[0.95rem] border border-white/10 bg-white/7 px-3 py-2.5 text-[12px] font-bold text-white outline-none transition placeholder:text-white/30 focus:border-neonCyan focus:bg-neonCyan/8 sm:text-sm"
                   maxLength={300}
                   name="bio"
                   value={form.bio}
@@ -698,10 +780,10 @@ function ProfileEditModal({ profileUser, onClose, onSaved }) {
               </label>
 
               {showAvatarUrl ? (
-                <label className="block rounded-[1rem] border border-white/8 bg-white/[0.04] p-3">
-                  <span className="mb-1.5 block text-xs font-black text-white/72">Avatar URL</span>
+                <label className="block rounded-[0.95rem] border border-white/8 bg-white/[0.04] p-2.5">
+                  <span className="mb-1 block text-[10px] font-black text-white/72">Avatar URL</span>
                   <span className="relative block">
-                    <LinkIcon className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-neonPink" />
+                    <LinkIcon className="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-neonPink" />
                     <input
                       className={fieldClass}
                       name="avatar_url"
@@ -716,34 +798,144 @@ function ProfileEditModal({ profileUser, onClose, onSaved }) {
           ) : null}
 
           {activeEditTab === "style" ? (
-            <div className="mt-4 rounded-[1.2rem] border border-white/10 bg-white/[0.045] p-4">
-              <div className="flex items-center gap-3">
-                <Sparkles className="h-5 w-5 text-neonPink" />
-                <div>
-                  <p className="text-sm font-black">Estilo premium activo</p>
-                  <p className="mt-1 text-xs font-semibold leading-5 text-white/54">
-                    La portada, el glow y los logros se ajustan automáticamente al perfil UI V2.
+            <div className="mt-4 space-y-3">
+              <div className="overflow-hidden rounded-[1.2rem] border border-white/10 bg-white/[0.045]">
+                <div className="relative h-24">
+                  {styleForm.cover_url ? (
+                    <img
+                      alt="Portada"
+                      className="absolute inset-0 h-full w-full object-cover"
+                      src={styleForm.cover_url}
+                    />
+                  ) : null}
+                  <div
+                    className={`absolute inset-0 ${
+                      PROFILE_THEME_OPTIONS.find((theme) => theme.id === styleForm.theme)?.hero ||
+                      PROFILE_THEME_OPTIONS[0].hero
+                    }`}
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-night/86 to-transparent" />
+                  <div className="absolute bottom-3 left-3">
+                    <p className="text-[10px] font-black uppercase tracking-[0.16em] text-white/62">
+                      Portada
+                    </p>
+                    <p className="text-sm font-black text-white">Vista previa del perfil</p>
+                  </div>
+                </div>
+                <div className="p-3">
+                  <span className="relative block">
+                    <LinkIcon className="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-neonPink" />
+                    <input
+                      className={fieldClass}
+                      name="cover_url"
+                      value={styleForm.cover_url}
+                      onChange={(event) => updatePreference("cover_url", event.target.value)}
+                      placeholder="URL de portada personalizada"
+                    />
+                  </span>
+                  <p className="mt-1.5 text-[10px] font-semibold text-white/42">
+                    Temporalmente se guarda en este dispositivo. Luego lo conectamos a Cloudinary/backend.
                   </p>
+                </div>
+              </div>
+
+              <div className="rounded-[1.2rem] border border-white/10 bg-white/[0.045] p-3">
+                <p className="text-xs font-black text-white/72">Tema del perfil</p>
+                <div className="mt-2 grid grid-cols-5 gap-2">
+                  {PROFILE_THEME_OPTIONS.map((theme) => {
+                    const isSelected = styleForm.theme === theme.id;
+                    return (
+                      <button
+                        className={`rounded-[0.9rem] border p-1.5 transition ${
+                          isSelected ? "border-neonPink bg-neonPink/10 shadow-neon" : "border-white/8 bg-black/20"
+                        }`}
+                        key={theme.id}
+                        type="button"
+                        onClick={() => updatePreference("theme", theme.id)}
+                      >
+                        <span className={`block h-8 rounded-[0.65rem] bg-gradient-to-br ${theme.preview}`} />
+                        <span className="mt-1 block truncate text-[9px] font-black text-white/72">
+                          {theme.label}
+                        </span>
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
             </div>
           ) : null}
 
           {activeEditTab === "privacy" ? (
-            <div className="mt-4 rounded-[1.2rem] border border-white/10 bg-white/[0.045] p-4">
-              <div className="flex items-center gap-3">
-                <ShieldCheck className="h-5 w-5 text-neonCyan" />
-                <div>
-                  <p className="text-sm font-black">Perfil público</p>
-                  <p className="mt-1 text-xs font-semibold leading-5 text-white/54">
-                    Tu perfil puede verse en BUCAN DEY. La privacidad de publicaciones se controla al publicar.
-                  </p>
+            <div className="mt-4 space-y-3">
+              <div className="rounded-[1.2rem] border border-white/10 bg-white/[0.045] p-3">
+                <p className="text-xs font-black text-white/72">Visibilidad del perfil</p>
+                <div className="mt-2 grid grid-cols-3 gap-1 rounded-full border border-white/10 bg-black/20 p-1">
+                  {[
+                    ["public", "Público"],
+                    ["followers", "Seguidores"],
+                    ["private", "Privado"],
+                  ].map(([value, label]) => (
+                    <button
+                      className={`h-8 rounded-full text-[10px] font-black transition ${
+                        styleForm.profile_visibility === value
+                          ? "bg-neonCyan text-night shadow-cyan"
+                          : "text-white/52"
+                      }`}
+                      key={value}
+                      type="button"
+                      onClick={() => updatePreference("profile_visibility", value)}
+                    >
+                      {label}
+                    </button>
+                  ))}
                 </div>
               </div>
-              <div className="mt-3 flex flex-wrap gap-2">
-                <span className="rounded-full border border-green-400/20 bg-green-400/10 px-3 py-1.5 text-[10px] font-black text-green-300">En línea</span>
-                <span className="rounded-full border border-neonCyan/20 bg-neonCyan/10 px-3 py-1.5 text-[10px] font-black text-neonCyan">Comunidad</span>
-                <span className="rounded-full border border-neonPink/20 bg-neonPink/10 px-3 py-1.5 text-[10px] font-black text-neonPink">BUCAN DEY</span>
+
+              <div className="rounded-[1.2rem] border border-white/10 bg-white/[0.045] p-3">
+                {[
+                  ["show_online_status", "Mostrar estado en línea", "Permite que otros vean si estás activo."],
+                  ["allow_messages", "Permitir mensajes", "Otros usuarios podrán abrir chat contigo."],
+                ].map(([name, title, description]) => (
+                  <button
+                    className="flex w-full items-center justify-between gap-3 border-b border-white/8 py-2.5 text-left last:border-b-0"
+                    key={name}
+                    type="button"
+                    onClick={() => updatePreference(name, !styleForm[name])}
+                  >
+                    <span>
+                      <span className="block text-xs font-black text-white">{title}</span>
+                      <span className="mt-0.5 block text-[10px] font-semibold leading-4 text-white/46">
+                        {description}
+                      </span>
+                    </span>
+                    <span
+                      className={`relative h-6 w-11 shrink-0 rounded-full border transition ${
+                        styleForm[name] ? "border-neonCyan/40 bg-neonCyan/30" : "border-white/10 bg-white/8"
+                      }`}
+                    >
+                      <span
+                        className={`absolute top-1 h-4 w-4 rounded-full bg-white transition ${
+                          styleForm[name] ? "left-6" : "left-1"
+                        }`}
+                      />
+                    </span>
+                  </button>
+                ))}
+              </div>
+
+              <div className="overflow-hidden rounded-[1.2rem] border border-white/10 bg-white/[0.045]">
+                <div className="flex items-center gap-3 px-3 pt-3">
+                  <ShieldCheck className="h-5 w-5 text-neonCyan" />
+                  <div>
+                    <p className="text-sm font-black">Notificaciones push</p>
+                    <p className="mt-0.5 text-[10px] font-semibold text-white/46">
+                      Activa o prueba avisos desde el perfil.
+                    </p>
+                  </div>
+                </div>
+                <div className="mt-2">
+                  <PushSettings />
+                </div>
               </div>
             </div>
           ) : null}
@@ -894,6 +1086,7 @@ function Profile() {
   const [showEditModal, setShowEditModal] = useState(false);
   const [showReportModal, setShowReportModal] = useState(false);
   const [showAchievementsModal, setShowAchievementsModal] = useState(false);
+  const [profilePreferences, setProfilePreferences] = useState(DEFAULT_PROFILE_PREFERENCES);
 
   const targetUsername = username || user?.username;
   const isOwnProfile = useMemo(
@@ -923,6 +1116,17 @@ function Profile() {
 
     loadProfile();
   }, [targetUsername, user?.username]);
+
+  useEffect(() => {
+    if (!targetUsername) return;
+    setProfilePreferences(loadProfilePreferences(targetUsername));
+  }, [targetUsername]);
+
+  function handlePreferencesSaved(nextPreferences) {
+    const merged = { ...DEFAULT_PROFILE_PREFERENCES, ...nextPreferences };
+    saveProfilePreferences(targetUsername, merged);
+    setProfilePreferences(merged);
+  }
 
   async function handleStartChat() {
     if (!isAuthenticated) {
@@ -976,6 +1180,9 @@ function Profile() {
   );
   const mediaCount = posts.reduce((total, post) => total + (post.media?.length || 0), 0);
   const badges = getProfileBadges(posts, profileUser, likesReceived);
+  const activeTheme =
+    PROFILE_THEME_OPTIONS.find((theme) => theme.id === profilePreferences.theme) ||
+    PROFILE_THEME_OPTIONS[0];
 
   if (isLoading) {
     return (
@@ -1003,7 +1210,14 @@ function Profile() {
         initial={{ opacity: 0, y: 18 }}
         animate={{ opacity: 1, y: 0 }}
       >
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_18%_0%,rgba(255,79,216,.72),transparent_25%),radial-gradient(circle_at_62%_5%,rgba(0,217,255,.44),transparent_28%),linear-gradient(180deg,rgba(124,58,237,.42),rgba(7,11,20,.96)_68%)]" />
+        {profilePreferences.cover_url ? (
+          <img
+            alt="Portada del perfil"
+            className="absolute inset-0 h-full w-full object-cover"
+            src={profilePreferences.cover_url}
+          />
+        ) : null}
+        <div className={`absolute inset-0 ${activeTheme.hero}`} />
         <div className="absolute inset-x-0 top-0 h-28 bg-[linear-gradient(115deg,rgba(255,79,216,.26),transparent_26%),linear-gradient(160deg,transparent_0_42%,rgba(0,217,255,.18)_44%,transparent_58%)] blur-[1px] sm:h-44" />
         <div className="absolute bottom-12 left-[31%] right-[16%] flex h-20 items-end justify-around opacity-45 sm:bottom-20 sm:h-28">
           {[34, 56, 42, 74, 50, 88, 38, 68, 48, 76, 55].map((height, index) => (
@@ -1057,7 +1271,7 @@ function Profile() {
               <p className="text-[0.8rem] font-bold text-white/72 sm:text-sm">@{profileUser?.username}</p>
               <span className="inline-flex items-center gap-1 rounded-full border border-green-400/20 bg-green-400/12 px-1.5 py-0.5 text-[8px] font-black text-green-300 sm:px-2 sm:text-[10px]">
                 <span className="h-1.5 w-1.5 rounded-full bg-green-400 shadow-[0_0_12px_rgba(34,197,94,.9)]" />
-                En línea
+                {profilePreferences.show_online_status ? "En línea" : "Oculto"}
               </span>
             </div>
             <p className="mt-3 flex flex-wrap items-center gap-1.5 text-[0.68rem] font-bold text-white/68 sm:mt-3 sm:gap-2 sm:text-sm">
@@ -1195,12 +1409,6 @@ function Profile() {
           </div>
         </section>
 
-        {isOwnProfile ? (
-          <div className="mt-3 overflow-hidden rounded-[1.3rem]">
-            <PushSettings />
-          </div>
-        ) : null}
-
         <div className="sticky top-0 z-10 -mx-3 mt-2 border-y border-white/8 bg-night/82 px-2 py-1 backdrop-blur-2xl sm:mx-0 sm:mt-3 sm:rounded-[1.2rem] sm:border sm:px-4 sm:py-2">
           <div className="scrollbar-none flex gap-1 overflow-x-auto">
             {tabs.map((tab) => {
@@ -1262,7 +1470,9 @@ function Profile() {
       {showEditModal ? (
         <ProfileEditModal
           profileUser={profileUser}
+          preferences={profilePreferences}
           onClose={() => setShowEditModal(false)}
+          onPreferencesSaved={handlePreferencesSaved}
           onSaved={(updated) => setProfileUser(updated)}
         />
       ) : null}

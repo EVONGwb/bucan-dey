@@ -209,28 +209,28 @@ function AboutCard({ profileUser, isOwnProfile, onEdit }) {
   ];
 
   return (
-    <section className="rounded-[1.3rem] border border-white/10 bg-white/[0.055] p-4 shadow-cyan backdrop-blur-2xl">
+    <section className="h-full rounded-[1rem] border border-white/8 bg-black/20 p-3 backdrop-blur-xl sm:rounded-[1.2rem] sm:p-4">
       <div className="flex items-center justify-between gap-3">
-        <h2 className="text-xs font-black uppercase tracking-[0.12em] text-white/72">Sobre mí</h2>
+        <h2 className="text-[10px] font-black uppercase tracking-[0.12em] text-white/72 sm:text-xs">Sobre mí</h2>
         {isOwnProfile ? (
-          <button className="text-xs font-black text-neonCyan" type="button" onClick={onEdit}>
+          <button className="text-[10px] font-black text-neonCyan sm:text-xs" type="button" onClick={onEdit}>
             Editar
           </button>
         ) : null}
       </div>
-      <div className="mt-4 space-y-2 text-sm font-semibold leading-6 text-white/78">
+      <div className="mt-3 space-y-1.5 text-[11px] font-semibold leading-5 text-white/78 sm:mt-4 sm:space-y-2 sm:text-sm sm:leading-6">
         {aboutLines.map((line, index) => (
-          <p key={`${line}-${index}`}>
-            <span className="mr-2">{["👋", "💼", "✨", "🌍"][index]}</span>
+          <p className="line-clamp-2" key={`${line}-${index}`}>
+            <span className="mr-1.5 sm:mr-2">{["👋", "💼", "✨", "🌍"][index]}</span>
             {line}
           </p>
         ))}
       </div>
-      <div className="mt-5 flex flex-wrap gap-2">
+      <div className="mt-3 flex flex-wrap gap-1.5 sm:mt-5 sm:gap-2">
         {["Emprendedor", "Creador digital", "Visionario"].map((tag, index) => (
           <span
             className={[
-              "rounded-[0.75rem] border px-3 py-1.5 text-xs font-black",
+              "rounded-[0.65rem] border px-2 py-1 text-[10px] font-black sm:rounded-[0.75rem] sm:px-3 sm:py-1.5 sm:text-xs",
               index === 0
                 ? "border-neonCyan/20 bg-neonCyan/10 text-neonCyan"
                 : index === 1
@@ -249,41 +249,41 @@ function AboutCard({ profileUser, isOwnProfile, onEdit }) {
 
 function LocationMusicCards({ profileUser }) {
   return (
-    <div className="grid gap-3">
-      <section className="overflow-hidden rounded-[1.3rem] border border-white/10 bg-white/[0.055] p-3 shadow-cyan backdrop-blur-2xl">
+    <div className="grid h-full gap-2 sm:gap-3">
+      <section className="overflow-hidden rounded-[1rem] border border-white/8 bg-black/20 p-2.5 backdrop-blur-xl sm:rounded-[1.2rem] sm:p-3">
         <div className="flex items-center justify-between">
-          <h2 className="text-xs font-black uppercase tracking-[0.12em] text-white/72">Mi ubicación</h2>
-          <Link className="text-[11px] font-black text-neonCyan" to="/map">
+          <h2 className="text-[9px] font-black uppercase tracking-[0.1em] text-white/72 sm:text-xs">Mi ubicación</h2>
+          <Link className="text-[9px] font-black text-neonCyan sm:text-[11px]" to="/map">
             Ver mapa
           </Link>
         </div>
-        <div className="mt-3 grid grid-cols-[5.4rem_1fr] gap-3">
-          <div className="relative h-20 overflow-hidden rounded-[1rem] border border-neonPink/20 bg-[radial-gradient(circle_at_55%_40%,rgba(255,79,216,.55),transparent_18%),linear-gradient(135deg,rgba(0,217,255,.16),rgba(124,58,237,.16)),repeating-linear-gradient(35deg,rgba(255,255,255,.08)_0_1px,transparent_1px_18px)]">
-            <MapPin className="absolute left-1/2 top-1/2 h-9 w-9 -translate-x-1/2 -translate-y-1/2 text-neonPink drop-shadow-[0_0_16px_rgba(255,79,216,.9)]" />
+        <div className="mt-2 grid gap-2 sm:mt-3 sm:grid-cols-[5rem_1fr] sm:gap-3">
+          <div className="relative h-16 overflow-hidden rounded-[0.85rem] border border-neonPink/20 bg-[radial-gradient(circle_at_55%_40%,rgba(255,79,216,.55),transparent_18%),linear-gradient(135deg,rgba(0,217,255,.16),rgba(124,58,237,.16)),repeating-linear-gradient(35deg,rgba(255,255,255,.08)_0_1px,transparent_1px_18px)] sm:h-20 sm:rounded-[1rem]">
+            <MapPin className="absolute left-1/2 top-1/2 h-8 w-8 -translate-x-1/2 -translate-y-1/2 text-neonPink drop-shadow-[0_0_16px_rgba(255,79,216,.9)] sm:h-9 sm:w-9" />
           </div>
           <div className="min-w-0 self-center">
-            <p className="truncate text-sm font-black uppercase text-white">
+            <p className="truncate text-xs font-black uppercase text-white sm:text-sm">
               {profileUser?.city || "Malabo"}
             </p>
-            <p className="mt-1 text-xs font-semibold leading-5 text-white/56">
+            <p className="mt-0.5 line-clamp-2 text-[10px] font-semibold leading-4 text-white/56 sm:mt-1 sm:text-xs sm:leading-5">
               Último lugar: Arena Blanca
             </p>
           </div>
         </div>
       </section>
 
-      <section className="rounded-[1.3rem] border border-white/10 bg-white/[0.055] p-3 shadow-cyan backdrop-blur-2xl">
+      <section className="rounded-[1rem] border border-white/8 bg-black/20 p-2.5 backdrop-blur-xl sm:rounded-[1.2rem] sm:p-3">
         <div className="flex items-center justify-between">
-          <h2 className="text-xs font-black uppercase tracking-[0.12em] text-white/72">Sonando ahora</h2>
-          <span className="text-[11px] font-black text-neonCyan">Ver todo</span>
+          <h2 className="text-[9px] font-black uppercase tracking-[0.1em] text-white/72 sm:text-xs">Sonando ahora</h2>
+          <span className="text-[9px] font-black text-neonCyan sm:text-[11px]">Ver todo</span>
         </div>
-        <div className="mt-3 flex items-center gap-3">
-          <div className="h-14 w-14 overflow-hidden rounded-[0.9rem] bg-gradient-to-br from-neonPink via-fiestaPurple to-neonCyan" />
+        <div className="mt-2 flex items-center gap-2 sm:mt-3 sm:gap-3">
+          <div className="h-11 w-11 shrink-0 overflow-hidden rounded-[0.75rem] bg-gradient-to-br from-neonPink via-fiestaPurple to-neonCyan sm:h-14 sm:w-14 sm:rounded-[0.9rem]" />
           <div className="min-w-0 flex-1">
-            <p className="truncate text-sm font-black text-white">Me Conozco</p>
-            <p className="text-xs font-semibold text-white/52">Roku</p>
+            <p className="truncate text-xs font-black text-white sm:text-sm">Me Conozco</p>
+            <p className="text-[10px] font-semibold text-white/52 sm:text-xs">Roku</p>
           </div>
-          <Music className="h-5 w-5 text-neonCyan" />
+          <Music className="h-4 w-4 shrink-0 text-neonCyan sm:h-5 sm:w-5" />
         </div>
       </section>
     </div>
@@ -883,14 +883,16 @@ function Profile() {
           )}
         </div>
 
-        <div className="mt-4 grid gap-3 lg:grid-cols-[1fr_16rem]">
-          <AboutCard
-            profileUser={profileUser}
-            isOwnProfile={isOwnProfile}
-            onEdit={() => setShowEditModal(true)}
-          />
-          <LocationMusicCards profileUser={profileUser} />
-        </div>
+        <section className="mt-4 rounded-[1.35rem] border border-white/10 bg-white/[0.055] p-2.5 shadow-cyan backdrop-blur-2xl sm:rounded-[1.6rem] sm:p-3">
+          <div className="grid grid-cols-[minmax(0,1.08fr)_minmax(8rem,.92fr)] gap-2 sm:gap-3 lg:grid-cols-[1fr_16rem]">
+            <AboutCard
+              profileUser={profileUser}
+              isOwnProfile={isOwnProfile}
+              onEdit={() => setShowEditModal(true)}
+            />
+            <LocationMusicCards profileUser={profileUser} />
+          </div>
+        </section>
 
         <div className="mt-3">
           <AchievementsStrip posts={posts} profileUser={profileUser} likesReceived={likesReceived} />

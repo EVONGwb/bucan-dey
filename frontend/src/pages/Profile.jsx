@@ -123,24 +123,34 @@ function formatCompact(value) {
 }
 
 function ProfileAvatar({ profileUser, initial, size = "large" }) {
-  const sizeClass = size === "large" ? "h-32 w-32 sm:h-40 sm:w-40" : "h-11 w-11";
-  const textClass = size === "large" ? "text-5xl" : "text-base";
+  const sizeClass = size === "large" ? "h-28 w-28 sm:h-40 sm:w-40" : "h-11 w-11";
+  const textClass = size === "large" ? "text-4xl sm:text-5xl" : "text-base";
+  const frameShape = {
+    clipPath: "polygon(18% 0%, 82% 0%, 100% 18%, 100% 78%, 78% 100%, 0% 100%, 0% 18%)",
+  };
 
   return (
-    <div className={`relative flex ${sizeClass} items-center justify-center rounded-[2.25rem] bg-gradient-to-br from-neonPink via-fiestaPurple to-neonCyan p-[3px] shadow-neon`}>
-      <div className="absolute -inset-2 rounded-[2.6rem] bg-neonPink/18 blur-xl" />
+    <div
+      className={`relative flex ${sizeClass} items-center justify-center bg-gradient-to-br from-neonPink via-fiestaPurple to-neonCyan p-[3px] shadow-neon`}
+      style={frameShape}
+    >
+      <div className="absolute -inset-2 bg-neonPink/18 blur-xl" style={frameShape} />
       {profileUser?.avatar_url ? (
         <img
           alt={profileUser.display_name}
-          className="relative h-full w-full rounded-[2rem] border-4 border-night object-cover"
+          className="relative h-full w-full border-[3px] border-night object-cover sm:border-4"
           src={profileUser.avatar_url}
+          style={frameShape}
         />
       ) : (
-        <div className={`relative flex h-full w-full items-center justify-center rounded-[2rem] border-4 border-night bg-gradient-to-br from-surface to-night font-black text-white ${textClass}`}>
+        <div
+          className={`relative flex h-full w-full items-center justify-center border-[3px] border-night bg-gradient-to-br from-surface to-night font-black text-white sm:border-4 ${textClass}`}
+          style={frameShape}
+        >
           {initial.toUpperCase()}
         </div>
       )}
-      <span className="absolute -right-1 bottom-3 h-5 w-5 rounded-full border-[3px] border-night bg-green-400 shadow-[0_0_18px_rgba(34,197,94,.85)]" />
+      <span className="absolute -right-0.5 bottom-3 h-4 w-4 rounded-full border-[3px] border-night bg-green-400 shadow-[0_0_18px_rgba(34,197,94,.85)] sm:h-5 sm:w-5" />
     </div>
   );
 }
@@ -154,9 +164,9 @@ function ProfileStatBar({ stats }) {
     >
       {stats.map((stat, index) => {
         const content = (
-          <div className="min-h-[4rem] px-1.5 py-2.5 text-center sm:min-h-[4.7rem] sm:px-2 sm:py-3">
-            <p className="text-sm font-black text-white sm:text-xl">{formatCompact(stat.value)}</p>
-            <p className="mt-1 text-[9px] font-bold leading-tight text-white/58 sm:text-xs">
+          <div className="min-h-[3.35rem] px-1 py-2 text-center sm:min-h-[4.7rem] sm:px-2 sm:py-3">
+            <p className="text-[13px] font-black text-white sm:text-xl">{formatCompact(stat.value)}</p>
+            <p className="mt-0.5 text-[8px] font-bold leading-tight text-white/58 sm:mt-1 sm:text-xs">
               {stat.label}
             </p>
           </div>
@@ -188,11 +198,11 @@ function MoodPill({ icon: Icon, title, detail, color = "pink", to }) {
         ? "border-fiestaPurple/25 bg-fiestaPurple/10 text-neonPink"
         : "border-neonPink/20 bg-neonPink/10 text-neonPink";
   const content = (
-    <span className={`inline-flex min-w-0 items-center gap-2 rounded-[0.85rem] border px-3 py-2 ${className}`}>
-      <Icon className="h-4 w-4 shrink-0" />
+    <span className={`inline-flex min-w-0 items-center gap-1.5 rounded-[0.72rem] border px-2.5 py-1.5 sm:gap-2 sm:rounded-[0.85rem] sm:px-3 sm:py-2 ${className}`}>
+      <Icon className="h-3.5 w-3.5 shrink-0 sm:h-4 sm:w-4" />
       <span className="min-w-0">
-        <span className="block truncate text-xs font-black text-white">{title}</span>
-        {detail ? <span className="block truncate text-[10px] font-semibold text-white/48">{detail}</span> : null}
+        <span className="block truncate text-[10px] font-black text-white sm:text-xs">{title}</span>
+        {detail ? <span className="block truncate text-[8px] font-semibold text-white/48 sm:text-[10px]">{detail}</span> : null}
       </span>
     </span>
   );
@@ -218,19 +228,19 @@ function AboutCard({ profileUser, isOwnProfile, onEdit }) {
           </button>
         ) : null}
       </div>
-      <div className="mt-3 space-y-1.5 text-[11px] font-semibold leading-5 text-white/78 sm:mt-4 sm:space-y-2 sm:text-sm sm:leading-6">
+      <div className="mt-2.5 space-y-1 text-[10px] font-semibold leading-4 text-white/78 sm:mt-4 sm:space-y-2 sm:text-sm sm:leading-6">
         {aboutLines.map((line, index) => (
-          <p className="line-clamp-2" key={`${line}-${index}`}>
+          <p className="line-clamp-1 sm:line-clamp-2" key={`${line}-${index}`}>
             <span className="mr-1.5 sm:mr-2">{["👋", "💼", "✨", "🌍"][index]}</span>
             {line}
           </p>
         ))}
       </div>
-      <div className="mt-3 flex flex-wrap gap-1.5 sm:mt-5 sm:gap-2">
+      <div className="mt-2 flex flex-wrap gap-1 sm:mt-5 sm:gap-2">
         {["Emprendedor", "Creador digital", "Visionario"].map((tag, index) => (
           <span
             className={[
-              "rounded-[0.65rem] border px-2 py-1 text-[10px] font-black sm:rounded-[0.75rem] sm:px-3 sm:py-1.5 sm:text-xs",
+              "rounded-[0.55rem] border px-1.5 py-0.5 text-[8px] font-black sm:rounded-[0.75rem] sm:px-3 sm:py-1.5 sm:text-xs",
               index === 0
                 ? "border-neonCyan/20 bg-neonCyan/10 text-neonCyan"
                 : index === 1
@@ -249,41 +259,41 @@ function AboutCard({ profileUser, isOwnProfile, onEdit }) {
 
 function LocationMusicCards({ profileUser }) {
   return (
-    <div className="grid h-full gap-2 sm:gap-3">
-      <section className="overflow-hidden rounded-[1rem] border border-white/8 bg-black/20 p-2.5 backdrop-blur-xl sm:rounded-[1.2rem] sm:p-3">
+    <div className="grid h-full gap-1.5 sm:gap-3">
+      <section className="overflow-hidden rounded-[0.9rem] border border-white/8 bg-black/20 p-2 backdrop-blur-xl sm:rounded-[1.2rem] sm:p-3">
         <div className="flex items-center justify-between">
           <h2 className="text-[9px] font-black uppercase tracking-[0.1em] text-white/72 sm:text-xs">Mi ubicación</h2>
           <Link className="text-[9px] font-black text-neonCyan sm:text-[11px]" to="/map">
             Ver mapa
           </Link>
         </div>
-        <div className="mt-2 grid gap-2 sm:mt-3 sm:grid-cols-[5rem_1fr] sm:gap-3">
-          <div className="relative h-16 overflow-hidden rounded-[0.85rem] border border-neonPink/20 bg-[radial-gradient(circle_at_55%_40%,rgba(255,79,216,.55),transparent_18%),linear-gradient(135deg,rgba(0,217,255,.16),rgba(124,58,237,.16)),repeating-linear-gradient(35deg,rgba(255,255,255,.08)_0_1px,transparent_1px_18px)] sm:h-20 sm:rounded-[1rem]">
-            <MapPin className="absolute left-1/2 top-1/2 h-8 w-8 -translate-x-1/2 -translate-y-1/2 text-neonPink drop-shadow-[0_0_16px_rgba(255,79,216,.9)] sm:h-9 sm:w-9" />
+        <div className="mt-1.5 grid gap-1.5 sm:mt-3 sm:grid-cols-[5rem_1fr] sm:gap-3">
+          <div className="relative h-12 overflow-hidden rounded-[0.72rem] border border-neonPink/20 bg-[radial-gradient(circle_at_55%_40%,rgba(255,79,216,.55),transparent_18%),linear-gradient(135deg,rgba(0,217,255,.16),rgba(124,58,237,.16)),repeating-linear-gradient(35deg,rgba(255,255,255,.08)_0_1px,transparent_1px_18px)] sm:h-20 sm:rounded-[1rem]">
+            <MapPin className="absolute left-1/2 top-1/2 h-6 w-6 -translate-x-1/2 -translate-y-1/2 text-neonPink drop-shadow-[0_0_16px_rgba(255,79,216,.9)] sm:h-9 sm:w-9" />
           </div>
           <div className="min-w-0 self-center">
-            <p className="truncate text-xs font-black uppercase text-white sm:text-sm">
+            <p className="truncate text-[10px] font-black uppercase text-white sm:text-sm">
               {profileUser?.city || "Malabo"}
             </p>
-            <p className="mt-0.5 line-clamp-2 text-[10px] font-semibold leading-4 text-white/56 sm:mt-1 sm:text-xs sm:leading-5">
+            <p className="mt-0.5 line-clamp-1 text-[8px] font-semibold leading-3 text-white/56 sm:mt-1 sm:text-xs sm:leading-5">
               Último lugar: Arena Blanca
             </p>
           </div>
         </div>
       </section>
 
-      <section className="rounded-[1rem] border border-white/8 bg-black/20 p-2.5 backdrop-blur-xl sm:rounded-[1.2rem] sm:p-3">
+      <section className="rounded-[0.9rem] border border-white/8 bg-black/20 p-2 backdrop-blur-xl sm:rounded-[1.2rem] sm:p-3">
         <div className="flex items-center justify-between">
           <h2 className="text-[9px] font-black uppercase tracking-[0.1em] text-white/72 sm:text-xs">Sonando ahora</h2>
           <span className="text-[9px] font-black text-neonCyan sm:text-[11px]">Ver todo</span>
         </div>
-        <div className="mt-2 flex items-center gap-2 sm:mt-3 sm:gap-3">
-          <div className="h-11 w-11 shrink-0 overflow-hidden rounded-[0.75rem] bg-gradient-to-br from-neonPink via-fiestaPurple to-neonCyan sm:h-14 sm:w-14 sm:rounded-[0.9rem]" />
+        <div className="mt-1.5 flex items-center gap-1.5 sm:mt-3 sm:gap-3">
+          <div className="h-9 w-9 shrink-0 overflow-hidden rounded-[0.65rem] bg-gradient-to-br from-neonPink via-fiestaPurple to-neonCyan sm:h-14 sm:w-14 sm:rounded-[0.9rem]" />
           <div className="min-w-0 flex-1">
-            <p className="truncate text-xs font-black text-white sm:text-sm">Me Conozco</p>
-            <p className="text-[10px] font-semibold text-white/52 sm:text-xs">Roku</p>
+            <p className="truncate text-[10px] font-black text-white sm:text-sm">Me Conozco</p>
+            <p className="text-[8px] font-semibold text-white/52 sm:text-xs">Roku</p>
           </div>
-          <Music className="h-4 w-4 shrink-0 text-neonCyan sm:h-5 sm:w-5" />
+          <Music className="h-3.5 w-3.5 shrink-0 text-neonCyan sm:h-5 sm:w-5" />
         </div>
       </section>
     </div>
@@ -300,12 +310,12 @@ function AchievementsStrip({ posts, profileUser, likesReceived }) {
   ];
 
   return (
-    <section className="rounded-[1.35rem] border border-white/10 bg-white/[0.055] p-2.5 shadow-cyan backdrop-blur-2xl sm:p-4">
+    <section className="rounded-[1.1rem] border border-white/10 bg-white/[0.055] p-2 shadow-cyan backdrop-blur-2xl sm:rounded-[1.35rem] sm:p-4">
       <div className="flex items-center justify-between">
         <h2 className="text-[10px] font-black uppercase tracking-[0.12em] text-white/72 sm:text-xs">Logros</h2>
-        <button className="text-[11px] font-black text-neonCyan" type="button">Ver todos</button>
+        <button className="text-[9px] font-black text-neonCyan sm:text-[11px]" type="button">Ver todos</button>
       </div>
-      <div className="mt-3 grid grid-cols-5 gap-1.5 sm:mt-4 sm:gap-2">
+      <div className="mt-2 grid grid-cols-5 gap-1 sm:mt-4 sm:gap-2">
         {badges.map((badge) => {
           const Icon = badge.icon;
           const tone =
@@ -317,11 +327,11 @@ function AchievementsStrip({ posts, profileUser, likesReceived }) {
 
           return (
             <div className="text-center" key={badge.label}>
-              <div className={`mx-auto flex h-11 w-11 items-center justify-center rounded-[0.9rem] border border-white/10 bg-gradient-to-br ${tone} shadow-neon sm:h-16 sm:w-16 sm:rounded-[1.1rem]`}>
-                <Icon className="h-5 w-5 sm:h-7 sm:w-7" />
+              <div className={`mx-auto flex h-9 w-9 items-center justify-center rounded-[0.75rem] border border-white/10 bg-gradient-to-br ${tone} shadow-neon sm:h-16 sm:w-16 sm:rounded-[1.1rem]`}>
+                <Icon className="h-4 w-4 sm:h-7 sm:w-7" />
               </div>
-              <p className="mt-1.5 truncate text-[9px] font-black text-white sm:mt-2 sm:text-xs">{badge.label}</p>
-              <p className="text-[8px] font-semibold text-white/48 sm:text-[9px]">Nivel {badge.level}</p>
+              <p className="mt-1 truncate text-[8px] font-black text-white sm:mt-2 sm:text-xs">{badge.label}</p>
+              <p className="text-[7px] font-semibold text-white/48 sm:text-[9px]">Nivel {badge.level}</p>
             </div>
           );
         })}
@@ -715,51 +725,51 @@ function Profile() {
   return (
     <section className="-mx-4 -mt-5 min-h-[calc(100vh-5rem)] bg-night pb-28 text-white sm:mx-0 sm:mt-0 sm:rounded-[2rem]">
       <motion.header
-        className="relative overflow-hidden rounded-b-[2rem] border-b border-white/10 bg-night shadow-cyan sm:rounded-[2rem] sm:border"
+        className="relative overflow-hidden rounded-b-[1.6rem] border-b border-white/10 bg-night shadow-cyan sm:rounded-[2rem] sm:border"
         initial={{ opacity: 0, y: 18 }}
         animate={{ opacity: 1, y: 0 }}
       >
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_24%_8%,rgba(255,79,216,.52),transparent_25%),radial-gradient(circle_at_75%_15%,rgba(0,217,255,.38),transparent_26%),linear-gradient(180deg,rgba(124,58,237,.35),rgba(7,11,20,.94)_58%)]" />
         <div className="absolute inset-x-0 top-0 h-44 bg-[linear-gradient(125deg,transparent_0_24%,rgba(255,255,255,.08)_25%,transparent_27%_100%)] opacity-70" />
-        <div className="absolute bottom-20 right-4 h-16 w-28 rounded-full bg-black/55 blur-sm" />
-        <div className="absolute bottom-24 right-6 h-8 w-20 rounded-full border border-liveRed/30 bg-liveRed/16 shadow-live" />
-        <div className="absolute bottom-20 left-0 right-0 h-20 bg-gradient-to-t from-night via-night/80 to-transparent" />
+        <div className="absolute bottom-14 right-4 h-12 w-24 rounded-full bg-black/55 blur-sm sm:bottom-20 sm:h-16 sm:w-28" />
+        <div className="absolute bottom-[4.25rem] right-6 h-6 w-16 rounded-full border border-liveRed/30 bg-liveRed/16 shadow-live sm:bottom-24 sm:h-8 sm:w-20" />
+        <div className="absolute bottom-14 left-0 right-0 h-16 bg-gradient-to-t from-night via-night/80 to-transparent sm:bottom-20 sm:h-20" />
 
-        <div className="relative px-4 pb-5 pt-20 sm:px-6 sm:pt-24">
-          <div className="absolute left-4 top-5 sm:left-6">
+        <div className="relative px-4 pb-3 pt-16 sm:px-6 sm:pb-5 sm:pt-24">
+          <div className="absolute left-4 top-4 sm:left-6 sm:top-5">
             <ProfileAvatar profileUser={profileUser} initial={initial} />
             {isOwnProfile ? (
               <button
-                className="absolute -right-1 top-1 flex h-9 w-9 items-center justify-center rounded-full border border-white/10 bg-night/82 text-white shadow-cyan backdrop-blur-xl"
+                className="absolute -right-1 top-1 flex h-7 w-7 items-center justify-center rounded-full border border-white/10 bg-night/82 text-white shadow-cyan backdrop-blur-xl sm:h-9 sm:w-9"
                 type="button"
                 onClick={() => setShowEditModal(true)}
                 aria-label="Editar perfil"
               >
-                <Pencil className="h-4 w-4" />
+                <Pencil className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
               </button>
             ) : null}
           </div>
 
-          <div className="ml-36 min-h-32 pt-1 sm:ml-48">
+          <div className="ml-32 min-h-28 pt-0.5 sm:ml-48 sm:min-h-32 sm:pt-1">
             <div className="flex min-w-0 items-center gap-2">
-              <h1 className="truncate text-3xl font-black leading-tight text-white sm:text-5xl">
+              <h1 className="truncate text-2xl font-black leading-tight text-white sm:text-5xl">
                 {profileUser?.display_name}
               </h1>
               {profileUser?.is_verified ? (
-                <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-blue-500 text-white shadow-cyan">
-                  <Check className="h-4 w-4" strokeWidth={4} />
+                <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-blue-500 text-white shadow-cyan sm:h-6 sm:w-6">
+                  <Check className="h-3.5 w-3.5 sm:h-4 sm:w-4" strokeWidth={4} />
                 </span>
               ) : null}
             </div>
-            <div className="mt-1 flex flex-wrap items-center gap-2">
-              <p className="text-sm font-bold text-white/72">@{profileUser?.username}</p>
-              <span className="inline-flex items-center gap-1 rounded-full border border-green-400/20 bg-green-400/12 px-2 py-0.5 text-[10px] font-black text-green-300">
+            <div className="mt-0.5 flex flex-wrap items-center gap-1.5 sm:mt-1 sm:gap-2">
+              <p className="text-xs font-bold text-white/72 sm:text-sm">@{profileUser?.username}</p>
+              <span className="inline-flex items-center gap-1 rounded-full border border-green-400/20 bg-green-400/12 px-1.5 py-0.5 text-[8px] font-black text-green-300 sm:px-2 sm:text-[10px]">
                 <span className="h-1.5 w-1.5 rounded-full bg-green-400 shadow-[0_0_12px_rgba(34,197,94,.9)]" />
                 En línea
               </span>
             </div>
-            <p className="mt-3 flex flex-wrap items-center gap-2 text-xs font-bold text-white/68 sm:text-sm">
-              <MapPin className="h-4 w-4 text-neonCyan" />
+            <p className="mt-2 flex flex-wrap items-center gap-1.5 text-[10px] font-bold text-white/68 sm:mt-3 sm:gap-2 sm:text-sm">
+              <MapPin className="h-3.5 w-3.5 text-neonCyan sm:h-4 sm:w-4" />
               {profileUser?.city || "Malabo"}
               {profileUser?.country ? (
                 <>
@@ -770,7 +780,7 @@ function Profile() {
             </p>
           </div>
 
-          <div className="mt-5 flex gap-2 overflow-x-auto pb-1 scrollbar-none">
+          <div className="mt-3 flex gap-1.5 overflow-x-auto pb-0.5 scrollbar-none sm:mt-5 sm:gap-2 sm:pb-1">
             <MoodPill icon={Sparkles} title="Motivado 😎" color="purple" />
             <MoodPill icon={Music} title="Me Conozco" detail="Roku" color="pink" />
             <MoodPill icon={LinkIcon} title={`linktr.ee/${profileUser?.username || "bucan"}`} color="cyan" />
@@ -778,7 +788,7 @@ function Profile() {
         </div>
       </motion.header>
 
-      <div className="px-4 sm:px-0">
+      <div className="px-3 sm:px-0">
         {error ? (
           <div className="mt-4 rounded-[1.2rem] border border-neonPink/30 bg-neonPink/10 px-4 py-3 text-sm font-semibold text-white">
             {error}
@@ -790,7 +800,7 @@ function Profile() {
           </div>
         ) : null}
 
-        <section className="-mt-1 rounded-[1.35rem] border border-white/10 bg-white/[0.055] p-2 shadow-cyan backdrop-blur-2xl sm:rounded-[1.6rem]">
+        <section className="-mt-1 rounded-[1.1rem] border border-white/10 bg-white/[0.055] p-1.5 shadow-cyan backdrop-blur-2xl sm:rounded-[1.6rem] sm:p-2">
           <ProfileStatBar
             stats={[
               { label: "Publicaciones", value: posts.length },
@@ -812,37 +822,37 @@ function Profile() {
           {isOwnProfile ? (
             <div className="grid grid-cols-4 gap-2">
               <motion.button
-                className="col-span-2 h-10 rounded-[0.9rem] bg-gradient-to-r from-neonCyan via-fiestaPurple to-neonPink text-xs font-black text-white shadow-cyan sm:h-12 sm:rounded-[1rem]"
+                className="col-span-2 h-9 rounded-[0.78rem] bg-gradient-to-r from-neonCyan via-fiestaPurple to-neonPink text-[10px] font-black text-white shadow-cyan sm:h-12 sm:rounded-[1rem] sm:text-xs"
                 type="button"
                 onClick={() => setShowEditModal(true)}
                 whileTap={{ scale: 0.96 }}
               >
                 <span className="inline-flex items-center gap-2">
-                  <Pencil className="h-4 w-4" />
+                  <Pencil className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                   Editar perfil
                 </span>
               </motion.button>
               <Link
-                className="flex h-10 items-center justify-center rounded-[0.9rem] border border-white/10 bg-white/7 text-white sm:h-12 sm:rounded-[1rem]"
+                className="flex h-9 items-center justify-center rounded-[0.78rem] border border-white/10 bg-white/7 text-white sm:h-12 sm:rounded-[1rem]"
                 to="/stories/create"
                 aria-label="Crear story"
               >
-                <Film className="h-4 w-4" />
+                <Film className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
               </Link>
               <motion.button
-                className="flex h-10 items-center justify-center rounded-[0.9rem] border border-liveRed/35 bg-liveRed/10 text-liveRed sm:h-12 sm:rounded-[1rem]"
+                className="flex h-9 items-center justify-center rounded-[0.78rem] border border-liveRed/35 bg-liveRed/10 text-liveRed sm:h-12 sm:rounded-[1rem]"
                 type="button"
                 onClick={logout}
                 whileTap={{ scale: 0.96 }}
                 aria-label="Salir"
               >
-                <LogOut className="h-4 w-4" />
+                <LogOut className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
               </motion.button>
             </div>
           ) : (
             <div className="grid grid-cols-[1fr_1fr_3.25rem] gap-2">
               <motion.button
-                className={`h-10 rounded-[0.9rem] text-xs font-black disabled:opacity-60 sm:h-12 sm:rounded-[1rem] ${
+                className={`h-9 rounded-[0.78rem] text-[10px] font-black disabled:opacity-60 sm:h-12 sm:rounded-[1rem] sm:text-xs ${
                   profileUser?.is_following
                     ? "border border-neonPink/40 bg-neonPink/10 text-white"
                     : "bg-gradient-to-r from-neonCyan via-fiestaPurple to-neonPink text-white shadow-cyan"
@@ -853,38 +863,38 @@ function Profile() {
                 whileTap={{ scale: 0.96 }}
               >
                 <span className="inline-flex items-center gap-1.5">
-                  <UserPlus className="h-4 w-4" />
+                  <UserPlus className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                   {isUpdatingFollow ? "..." : profileUser?.is_following ? "Dejar" : "Seguir"}
                 </span>
               </motion.button>
               <motion.button
-                className="h-10 rounded-[0.9rem] border border-white/10 bg-white/7 text-xs font-black text-white disabled:opacity-60 sm:h-12 sm:rounded-[1rem]"
+                className="h-9 rounded-[0.78rem] border border-white/10 bg-white/7 text-[10px] font-black text-white disabled:opacity-60 sm:h-12 sm:rounded-[1rem] sm:text-xs"
                 type="button"
                 onClick={handleStartChat}
                 disabled={isStartingChat}
                 whileTap={{ scale: 0.96 }}
               >
                 <span className="inline-flex items-center gap-1.5">
-                  <MessageCircle className="h-4 w-4" />
+                  <MessageCircle className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                   {isStartingChat ? "..." : "Mensaje"}
                 </span>
               </motion.button>
               <motion.button
-                className="flex h-10 items-center justify-center rounded-[0.9rem] border border-white/10 bg-white/7 text-white sm:h-12 sm:rounded-[1rem]"
+                className="flex h-9 items-center justify-center rounded-[0.78rem] border border-white/10 bg-white/7 text-white sm:h-12 sm:rounded-[1rem]"
                 type="button"
                 aria-label="Reportar usuario"
                 onClick={() => (isAuthenticated ? setShowReportModal(true) : navigate("/login"))}
                 whileTap={{ scale: 0.96 }}
               >
-                <Flag className="h-4 w-4" />
+                <Flag className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
               </motion.button>
             </div>
           )}
         </div>
         </section>
 
-        <section className="mt-4 rounded-[1.35rem] border border-white/10 bg-white/[0.055] p-2.5 shadow-cyan backdrop-blur-2xl sm:rounded-[1.6rem] sm:p-3">
-          <div className="grid grid-cols-[minmax(0,1.08fr)_minmax(8rem,.92fr)] gap-2 sm:gap-3 lg:grid-cols-[1fr_16rem]">
+        <section className="mt-2 rounded-[1.15rem] border border-white/10 bg-white/[0.055] p-1.5 shadow-cyan backdrop-blur-2xl sm:mt-4 sm:rounded-[1.6rem] sm:p-3">
+          <div className="grid grid-cols-[minmax(0,1.08fr)_minmax(7.2rem,.92fr)] gap-1.5 sm:gap-3 lg:grid-cols-[1fr_16rem]">
             <AboutCard
               profileUser={profileUser}
               isOwnProfile={isOwnProfile}
@@ -894,7 +904,7 @@ function Profile() {
           </div>
         </section>
 
-        <div className="mt-3">
+        <div className="mt-2 sm:mt-3">
           <AchievementsStrip posts={posts} profileUser={profileUser} likesReceived={likesReceived} />
         </div>
 
@@ -904,7 +914,7 @@ function Profile() {
           </div>
         ) : null}
 
-        <div className="sticky top-0 z-10 -mx-4 mt-3 border-y border-white/8 bg-night/82 px-3 py-1.5 backdrop-blur-2xl sm:mx-0 sm:rounded-[1.2rem] sm:border sm:px-4 sm:py-2">
+        <div className="sticky top-0 z-10 -mx-3 mt-2 border-y border-white/8 bg-night/82 px-2 py-1 backdrop-blur-2xl sm:mx-0 sm:mt-3 sm:rounded-[1.2rem] sm:border sm:px-4 sm:py-2">
           <div className="scrollbar-none flex gap-1 overflow-x-auto">
             {tabs.map((tab) => {
               const Icon = tab.icon;
@@ -912,7 +922,7 @@ function Profile() {
 
               return (
                 <button
-                  className={`relative inline-flex h-9 shrink-0 items-center gap-1 px-2.5 text-[10px] font-black uppercase transition sm:h-10 sm:gap-1.5 sm:px-3 sm:text-[11px] ${
+                  className={`relative inline-flex h-8 shrink-0 items-center gap-1 px-2 text-[9px] font-black uppercase transition sm:h-10 sm:gap-1.5 sm:px-3 sm:text-[11px] ${
                     isActive ? "text-white" : "text-white/50"
                   }`}
                   key={tab.id}
@@ -925,7 +935,7 @@ function Profile() {
                       layoutId="profile-tab"
                     />
                   ) : null}
-                  <Icon className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                  <Icon className="h-3 w-3 sm:h-4 sm:w-4" />
                   {tab.label}
                 </button>
               );
@@ -934,7 +944,7 @@ function Profile() {
         </div>
 
         <motion.div
-          className="mt-3"
+          className="mt-2 sm:mt-3"
           key={activeTab}
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
@@ -957,7 +967,7 @@ function Profile() {
         </motion.div>
 
         <Link
-          className="fixed bottom-28 right-5 z-20 flex h-14 w-14 items-center justify-center rounded-full bg-neonPink text-3xl font-light text-white shadow-neon sm:hidden"
+          className="fixed bottom-24 right-4 z-20 flex h-12 w-12 items-center justify-center rounded-full bg-neonPink text-2xl font-light text-white shadow-neon sm:hidden"
           to="/create"
           aria-label="Publicar"
         >

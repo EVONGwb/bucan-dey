@@ -35,6 +35,7 @@ import { ProfileSkeleton } from "../components/ui/Skeletons.jsx";
 import { useAuth } from "../context/AuthContext.jsx";
 import { getApiErrorMessage } from "../utils/errors.js";
 import { optimizeCloudinaryImage } from "../utils/media.js";
+import { MEDIA_UPLOAD_TIMEOUT_MS } from "../utils/uploads.js";
 
 const tabs = [
   { id: "posts", label: "Publicaciones", icon: Sparkles },
@@ -585,7 +586,7 @@ function ProfilePostGrid({ posts }) {
 function ProfileEditModal({ profileUser, onClose, onPreferencesSaved, onSaved, preferences }) {
   const { completeOnboarding } = useAuth();
   const [activeEditTab, setActiveEditTab] = useState("basic");
-  const [showAvatarUrl, setShowAvatarUrl] = useState(false);
+  const avatarInputRef = useRef(null);
   const [styleForm, setStyleForm] = useState({
     ...DEFAULT_PROFILE_PREFERENCES,
     ...preferences,
@@ -600,6 +601,7 @@ function ProfileEditModal({ profileUser, onClose, onPreferencesSaved, onSaved, p
   });
   const [error, setError] = useState("");
   const [isSaving, setIsSaving] = useState(false);
+  const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
   const avatarPreview = form.avatar_url.trim();
   const fieldClass =
     "h-10 w-full rounded-[0.85rem] border border-white/10 bg-white/7 pl-9 pr-3 text-[12px] font-bold text-white outline-none transition placeholder:text-white/30 focus:border-neonCyan focus:bg-neonCyan/8 sm:h-11 sm:text-sm";
@@ -623,23 +625,67 @@ function ProfileEditModal({ profileUser, onClose, onPreferencesSaved, onSaved, p
     }));
   }
 
+  function getProfilePayload(nextForm = form) {
+    return {
+      ...nextForm,
+      username: nextForm.username.trim().toLowerCase(),
+      display_name: nextForm.display_name.trim(),
+      city: nextForm.city.trim(),
+      country: nextForm.country.trim(),
+      bio: nextForm.bio.trim(),
+      avatar_url: nextForm.avatar_url.trim() || null,
+    };
+  }
+
+  async function saveProfile(nextForm = form) {
+    const updated = await completeOnboarding(getProfilePayload(nextForm));
+    onSaved(updated);
+    return updated;
+  }
+
+  async function handleAvatarFileSelected(event) {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    if (!file) return;
+
+    if (!["image/jpeg", "image/png", "image/webp"].includes(file.type)) {
+      setError("Solo puedes usar imágenes JPG, PNG o WEBP como foto de perfil.");
+      return;
+    }
+
+    if (file.size > 10 * 1024 * 1024) {
+      setError("La foto de perfil debe pesar 10 MB o menos.");
+      return;
+    }
+
+    const formData = new FormData();
+    formData.append("file", file);
+
+    try {
+      setError("");
+      setIsUploadingAvatar(true);
+      const response = await apiClient.post("/media/upload", formData, {
+        headers: { "Content-Type": "multipart/form-data" },
+        timeout: MEDIA_UPLOAD_TIMEOUT_MS,
+      });
+      const nextForm = { ...form, avatar_url: response.data.url };
+      setForm(nextForm);
+      await saveProfile(nextForm);
+    } catch (err) {
+      setError(getApiErrorMessage(err));
+    } finally {
+      setIsUploadingAvatar(false);
+    }
+  }
+
   async function handleSubmit(event) {
     event.preventDefault();
     setError("");
     setIsSaving(true);
 
     try {
-      const updated = await completeOnboarding({
-        ...form,
-        username: form.username.trim().toLowerCase(),
-        display_name: form.display_name.trim(),
-        city: form.city.trim(),
-        country: form.country.trim(),
-        bio: form.bio.trim(),
-        avatar_url: form.avatar_url.trim() || null,
-      });
+      await saveProfile();
       onPreferencesSaved(styleForm);
-      onSaved(updated);
       onClose();
     } catch (err) {
       setError(err.message);
@@ -703,11 +749,19 @@ function ProfileEditModal({ profileUser, onClose, onPreferencesSaved, onSaved, p
                 <button
                   className="mt-2 inline-flex items-center gap-1.5 rounded-full border border-neonCyan/25 bg-neonCyan/10 px-3 py-1.5 text-[11px] font-black text-neonCyan"
                   type="button"
-                  onClick={() => setShowAvatarUrl((current) => !current)}
+                  onClick={() => avatarInputRef.current?.click()}
+                  disabled={isUploadingAvatar}
                 >
                   <Camera className="h-3.5 w-3.5" />
-                  Cambiar foto
+                  {isUploadingAvatar ? "Subiendo..." : "Cambiar foto"}
                 </button>
+                <input
+                  ref={avatarInputRef}
+                  className="hidden"
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp"
+                  onChange={handleAvatarFileSelected}
+                />
               </div>
             </div>
           </div>
@@ -778,21 +832,6 @@ function ProfileEditModal({ profileUser, onClose, onPreferencesSaved, onSaved, p
                 />
               </label>
 
-              {showAvatarUrl ? (
-                <label className="block rounded-[0.95rem] border border-white/8 bg-white/[0.04] p-2.5">
-                  <span className="mb-1 block text-[10px] font-black text-white/72">Avatar URL</span>
-                  <span className="relative block">
-                    <LinkIcon className="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-neonPink" />
-                    <input
-                      className={fieldClass}
-                      name="avatar_url"
-                      value={form.avatar_url}
-                      onChange={updateField}
-                      placeholder="https://..."
-                    />
-                  </span>
-                </label>
-              ) : null}
             </div>
           ) : null}
 

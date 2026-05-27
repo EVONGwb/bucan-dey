@@ -93,11 +93,37 @@ const PROFILE_THEME_OPTIONS = [
 
 const DEFAULT_PROFILE_PREFERENCES = {
   allow_messages: true,
+  cover_filter: "normal",
+  cover_overlay: 62,
+  cover_position: "center",
   cover_url: "",
+  cover_zoom: 100,
   profile_visibility: "public",
   show_online_status: true,
   theme: "neon",
 };
+
+const COVER_POSITION_OPTIONS = [
+  { id: "center", label: "Centro", className: "object-center" },
+  { id: "top", label: "Arriba", className: "object-top" },
+  { id: "bottom", label: "Abajo", className: "object-bottom" },
+];
+
+const COVER_FILTER_OPTIONS = [
+  { id: "normal", label: "Natural", className: "" },
+  { id: "neon", label: "Neón", className: "saturate-150 contrast-110" },
+  { id: "night", label: "Noche", className: "brightness-75 contrast-125 saturate-125" },
+  { id: "warm", label: "Cálido", className: "sepia-[.22] saturate-125 contrast-105" },
+  { id: "soft", label: "Suave", className: "brightness-110 saturate-90" },
+];
+
+function getCoverPositionClass(position) {
+  return COVER_POSITION_OPTIONS.find((item) => item.id === position)?.className || "object-center";
+}
+
+function getCoverFilterClass(filter) {
+  return COVER_FILTER_OPTIONS.find((item) => item.id === filter)?.className || "";
+}
 
 function getProfilePreferenceKey(username) {
   return `bucan-profile-preferences:${username || "me"}`;
@@ -587,6 +613,7 @@ function ProfileEditModal({ profileUser, onClose, onPreferencesSaved, onSaved, p
   const { completeOnboarding } = useAuth();
   const [activeEditTab, setActiveEditTab] = useState("basic");
   const avatarInputRef = useRef(null);
+  const coverInputRef = useRef(null);
   const [styleForm, setStyleForm] = useState({
     ...DEFAULT_PROFILE_PREFERENCES,
     ...preferences,
@@ -602,6 +629,8 @@ function ProfileEditModal({ profileUser, onClose, onPreferencesSaved, onSaved, p
   const [error, setError] = useState("");
   const [isSaving, setIsSaving] = useState(false);
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
+  const [coverUploadProgress, setCoverUploadProgress] = useState(0);
+  const [isUploadingCover, setIsUploadingCover] = useState(false);
   const avatarPreview = form.avatar_url.trim();
   const fieldClass =
     "h-10 w-full rounded-[0.85rem] border border-white/10 bg-white/7 pl-9 pr-3 text-[12px] font-bold text-white outline-none transition placeholder:text-white/30 focus:border-neonCyan focus:bg-neonCyan/8 sm:h-11 sm:text-sm";
@@ -675,6 +704,48 @@ function ProfileEditModal({ profileUser, onClose, onPreferencesSaved, onSaved, p
       setError(getApiErrorMessage(err));
     } finally {
       setIsUploadingAvatar(false);
+    }
+  }
+
+  async function handleCoverFileSelected(event) {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    if (!file) return;
+
+    if (!["image/jpeg", "image/png", "image/webp"].includes(file.type)) {
+      setError("Solo puedes usar imágenes JPG, PNG o WEBP como portada.");
+      return;
+    }
+
+    if (file.size > 10 * 1024 * 1024) {
+      setError("La portada debe pesar 10 MB o menos.");
+      return;
+    }
+
+    const formData = new FormData();
+    formData.append("file", file);
+
+    try {
+      setError("");
+      setCoverUploadProgress(0);
+      setIsUploadingCover(true);
+      const response = await apiClient.post("/media/upload", formData, {
+        headers: { "Content-Type": "multipart/form-data" },
+        timeout: MEDIA_UPLOAD_TIMEOUT_MS,
+        onUploadProgress: (progressEvent) => {
+          if (!progressEvent.total) return;
+          setCoverUploadProgress(Math.round((progressEvent.loaded * 100) / progressEvent.total));
+        },
+      });
+      setStyleForm((current) => ({
+        ...current,
+        cover_url: response.data.url,
+      }));
+      setCoverUploadProgress(100);
+    } catch (err) {
+      setError(getApiErrorMessage(err));
+    } finally {
+      setIsUploadingCover(false);
     }
   }
 
@@ -842,8 +913,11 @@ function ProfileEditModal({ profileUser, onClose, onPreferencesSaved, onSaved, p
                   {styleForm.cover_url ? (
                     <img
                       alt="Portada"
-                      className="absolute inset-0 h-full w-full object-cover"
+                      className={`absolute inset-0 h-full w-full object-cover ${getCoverPositionClass(
+                        styleForm.cover_position
+                      )} ${getCoverFilterClass(styleForm.cover_filter)}`}
                       src={styleForm.cover_url}
+                      style={{ transform: `scale(${Number(styleForm.cover_zoom || 100) / 100})` }}
                     />
                   ) : null}
                   <div
@@ -851,6 +925,7 @@ function ProfileEditModal({ profileUser, onClose, onPreferencesSaved, onSaved, p
                       PROFILE_THEME_OPTIONS.find((theme) => theme.id === styleForm.theme)?.hero ||
                       PROFILE_THEME_OPTIONS[0].hero
                     }`}
+                    style={{ opacity: styleForm.cover_url ? Math.max(0.18, Number(styleForm.cover_overlay) / 100) : 1 }}
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-night/86 to-transparent" />
                   <div className="absolute bottom-3 left-3">
@@ -861,21 +936,138 @@ function ProfileEditModal({ profileUser, onClose, onPreferencesSaved, onSaved, p
                   </div>
                 </div>
                 <div className="p-3">
-                  <span className="relative block">
-                    <LinkIcon className="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-neonPink" />
-                    <input
-                      className={fieldClass}
-                      name="cover_url"
-                      value={styleForm.cover_url}
-                      onChange={(event) => updatePreference("cover_url", event.target.value)}
-                      placeholder="URL de portada personalizada"
-                    />
-                  </span>
-                  <p className="mt-1.5 text-[10px] font-semibold text-white/42">
-                    Temporalmente se guarda en este dispositivo. Luego lo conectamos a Cloudinary/backend.
-                  </p>
+                  <button
+                    className="inline-flex h-10 w-full items-center justify-center gap-2 rounded-full border border-neonCyan/25 bg-neonCyan/10 text-xs font-black text-neonCyan disabled:opacity-60"
+                    type="button"
+                    onClick={() => coverInputRef.current?.click()}
+                    disabled={isUploadingCover}
+                  >
+                    <ImageIcon className="h-4 w-4" />
+                    {isUploadingCover ? "Subiendo portada..." : styleForm.cover_url ? "Cambiar portada" : "Subir portada"}
+                  </button>
+                  <input
+                    ref={coverInputRef}
+                    className="hidden"
+                    type="file"
+                    accept="image/jpeg,image/png,image/webp"
+                    onChange={handleCoverFileSelected}
+                  />
+                  {isUploadingCover || coverUploadProgress > 0 ? (
+                    <div className="mt-3">
+                      <div className="flex items-center justify-between text-[10px] font-black text-white/52">
+                        <span>Carga de imagen</span>
+                        <span>{coverUploadProgress}%</span>
+                      </div>
+                      <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-white/10">
+                        <div
+                          className="h-full rounded-full bg-gradient-to-r from-neonCyan via-fiestaPurple to-neonPink shadow-neon transition-all"
+                          style={{ width: `${coverUploadProgress}%` }}
+                        />
+                      </div>
+                    </div>
+                  ) : null}
                 </div>
               </div>
+
+              {styleForm.cover_url ? (
+                <div className="rounded-[1.2rem] border border-white/10 bg-white/[0.045] p-3">
+                  <div className="flex items-center justify-between">
+                    <p className="text-xs font-black text-white/72">Editar portada</p>
+                    <button
+                      className="text-[10px] font-black text-neonPink"
+                      type="button"
+                      onClick={() =>
+                        setStyleForm((current) => ({
+                          ...current,
+                          cover_filter: "normal",
+                          cover_overlay: 62,
+                          cover_position: "center",
+                          cover_zoom: 100,
+                        }))
+                      }
+                    >
+                      Reset
+                    </button>
+                  </div>
+
+                  <div className="mt-3">
+                    <p className="text-[10px] font-black uppercase tracking-[0.12em] text-white/44">Encuadre</p>
+                    <div className="mt-2 grid grid-cols-3 gap-1 rounded-full border border-white/10 bg-black/20 p-1">
+                      {COVER_POSITION_OPTIONS.map((option) => (
+                        <button
+                          className={`h-8 rounded-full text-[10px] font-black transition ${
+                            styleForm.cover_position === option.id
+                              ? "bg-neonCyan text-night shadow-cyan"
+                              : "text-white/52"
+                          }`}
+                          key={option.id}
+                          type="button"
+                          onClick={() => updatePreference("cover_position", option.id)}
+                        >
+                          {option.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="mt-3">
+                    <p className="text-[10px] font-black uppercase tracking-[0.12em] text-white/44">Filtro</p>
+                    <div className="scrollbar-none mt-2 flex gap-2 overflow-x-auto">
+                      {COVER_FILTER_OPTIONS.map((option) => (
+                        <button
+                          className={`min-w-[4.6rem] rounded-[0.9rem] border p-1.5 transition ${
+                            styleForm.cover_filter === option.id
+                              ? "border-neonPink bg-neonPink/10 shadow-neon"
+                              : "border-white/8 bg-black/20"
+                          }`}
+                          key={option.id}
+                          type="button"
+                          onClick={() => updatePreference("cover_filter", option.id)}
+                        >
+                          <span
+                            className={`block h-8 rounded-[0.6rem] bg-gradient-to-br from-neonPink via-fiestaPurple to-neonCyan ${option.className}`}
+                          />
+                          <span className="mt-1 block text-[9px] font-black text-white/72">{option.label}</span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <label className="mt-3 block">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[10px] font-black uppercase tracking-[0.12em] text-white/44">
+                        Zoom
+                      </span>
+                      <span className="text-[10px] font-black text-neonCyan">{styleForm.cover_zoom}%</span>
+                    </div>
+                    <input
+                      className="mt-2 w-full accent-neonCyan"
+                      type="range"
+                      min="100"
+                      max="135"
+                      value={styleForm.cover_zoom}
+                      onChange={(event) => updatePreference("cover_zoom", Number(event.target.value))}
+                    />
+                  </label>
+
+                  <label className="mt-3 block">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[10px] font-black uppercase tracking-[0.12em] text-white/44">
+                        Fusión con tema
+                      </span>
+                      <span className="text-[10px] font-black text-neonCyan">{styleForm.cover_overlay}%</span>
+                    </div>
+                    <input
+                      className="mt-2 w-full accent-neonPink"
+                      type="range"
+                      min="15"
+                      max="90"
+                      value={styleForm.cover_overlay}
+                      onChange={(event) => updatePreference("cover_overlay", Number(event.target.value))}
+                    />
+                  </label>
+                </div>
+              ) : null}
 
               <div className="rounded-[1.2rem] border border-white/10 bg-white/[0.045] p-3">
                 <p className="text-xs font-black text-white/72">Tema del perfil</p>
@@ -1262,11 +1454,21 @@ function Profile() {
         {profilePreferences.cover_url ? (
           <img
             alt="Portada del perfil"
-            className="absolute inset-0 h-full w-full object-cover"
+            className={`absolute inset-0 h-full w-full object-cover ${getCoverPositionClass(
+              profilePreferences.cover_position
+            )} ${getCoverFilterClass(profilePreferences.cover_filter)}`}
             src={profilePreferences.cover_url}
+            style={{ transform: `scale(${Number(profilePreferences.cover_zoom || 100) / 100})` }}
           />
         ) : null}
-        <div className={`absolute inset-0 ${activeTheme.hero}`} />
+        <div
+          className={`absolute inset-0 ${activeTheme.hero}`}
+          style={{
+            opacity: profilePreferences.cover_url
+              ? Math.max(0.18, Number(profilePreferences.cover_overlay || 62) / 100)
+              : 1,
+          }}
+        />
         <div className="absolute inset-x-0 top-0 h-28 bg-[linear-gradient(115deg,rgba(255,79,216,.26),transparent_26%),linear-gradient(160deg,transparent_0_42%,rgba(0,217,255,.18)_44%,transparent_58%)] blur-[1px] sm:h-44" />
         <div className="absolute bottom-12 left-[31%] right-[16%] flex h-20 items-end justify-around opacity-45 sm:bottom-20 sm:h-28">
           {[34, 56, 42, 74, 50, 88, 38, 68, 48, 76, 55].map((height, index) => (

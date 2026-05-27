@@ -359,7 +359,6 @@ function MoodPill({ icon: Icon, title, detail, color = "pink", to }) {
 
 function AboutCard({ profileUser, isOwnProfile, onEdit }) {
   const aboutLines = [
-    profileUser?.bio || "Creando movimiento en BUCAN DEY.",
     profileUser?.role === "admin" ? "Admin de la comunidad." : "Miembro de la comunidad.",
     profileUser?.is_verified ? "Perfil verificado." : "Perfil social local.",
     [profileUser?.city, profileUser?.country].filter(Boolean).join(", ") || "Guinea Ecuatorial",
@@ -378,7 +377,7 @@ function AboutCard({ profileUser, isOwnProfile, onEdit }) {
       <div className="mt-2.5 space-y-1 text-[10px] font-semibold leading-4 text-white/78 sm:mt-4 sm:space-y-2 sm:text-sm sm:leading-6">
         {aboutLines.map((line, index) => (
           <p className="line-clamp-1 sm:line-clamp-2" key={`${line}-${index}`}>
-            <span className="mr-1.5 sm:mr-2">{["👋", "💼", "✨", "🌍"][index]}</span>
+            <span className="mr-1.5 sm:mr-2">{["💼", "✨", "🌍"][index]}</span>
             {line}
           </p>
         ))}
@@ -1535,6 +1534,11 @@ function Profile() {
                 </>
               ) : null}
             </p>
+            {profileUser?.bio ? (
+              <p className="mt-1.5 line-clamp-2 max-w-[15rem] text-[0.68rem] font-semibold leading-snug text-white/78 sm:mt-2 sm:max-w-[28rem] sm:text-sm">
+                {profileUser.bio}
+              </p>
+            ) : null}
             <div className="mt-4 flex gap-1.5 overflow-x-auto pb-0.5 scrollbar-none sm:mt-5 sm:gap-2 sm:pb-1">
               <MoodPill icon={Sparkles} title="Motivado 😎" color="purple" />
               <MoodPill icon={Music} title="Me Conozco" detail="Roku" color="pink" />

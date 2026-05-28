@@ -7,19 +7,25 @@ import {
   Car,
   Check,
   Compass,
+  Activity,
+  Bell,
   Film,
   Flag,
   Flame,
   Heart,
   Image as ImageIcon,
+  Lock,
   LogOut,
+  Menu,
   MapPin,
   MessageCircle,
   Music,
+  Palette,
   Pencil,
   Play,
   PlusCircle,
   Save,
+  Settings,
   ShieldCheck,
   Sparkles,
   UserPlus,
@@ -100,7 +106,20 @@ const DEFAULT_PROFILE_PREFERENCES = {
   profile_visibility: "public",
   show_online_status: true,
   theme: "neon",
+  vibe_artist: "Roku",
+  vibe_label: "Motivado 😎",
+  vibe_song: "Me Conozco",
+  vibe_type: "mood",
 };
+
+const PROFILE_MOOD_OPTIONS = ["Motivado 😎", "Activo 🔥", "Tranquilo 🌙", "De fiesta 🎉", "Creando 🚀"];
+
+const PROFILE_MUSIC_OPTIONS = [
+  { title: "Me Conozco", artist: "Roku" },
+  { title: "Noche Malabo", artist: "BUCAN Sounds" },
+  { title: "Arena Blanca", artist: "EVO Artists" },
+  { title: "Movimiento", artist: "Bucan Dey" },
+];
 
 const COVER_POSITION_OPTIONS = [
   { id: "center", label: "Centro", className: "object-center" },
@@ -327,6 +346,152 @@ function CompactProfileStats({ stats }) {
         );
       })}
     </motion.div>
+  );
+}
+
+function ProfileVibeBubble({ preferences, canEdit, onEdit }) {
+  const isMusic = preferences.vibe_type === "music";
+  return (
+    <motion.button
+      className={`absolute -top-2 left-12 z-20 max-w-[7.6rem] rounded-full border px-2 py-1 text-left shadow-cyan backdrop-blur-xl sm:-top-3 sm:left-16 sm:max-w-[10rem] sm:px-3 sm:py-1.5 ${
+        isMusic
+          ? "border-neonPink/25 bg-neonPink/14 text-neonPink"
+          : "border-neonCyan/25 bg-night/76 text-neonCyan"
+      } ${canEdit ? "cursor-pointer active:scale-[0.98]" : "cursor-default"}`}
+      type="button"
+      onClick={canEdit ? onEdit : undefined}
+      disabled={!canEdit}
+      whileTap={canEdit ? { scale: 0.96 } : undefined}
+      aria-label={canEdit ? "Editar estado del perfil" : "Estado del perfil"}
+    >
+      <span className="flex min-w-0 items-center gap-1.5">
+        {isMusic ? (
+          <Music className="h-3.5 w-3.5 shrink-0 sm:h-4 sm:w-4" />
+        ) : (
+          <Sparkles className="h-3.5 w-3.5 shrink-0 sm:h-4 sm:w-4" />
+        )}
+        <span className="min-w-0">
+          <span className="block truncate text-[8px] font-black uppercase tracking-[0.12em] text-white/52">
+            {isMusic ? "Sonando" : "Me siento"}
+          </span>
+          <span className="block truncate text-[9px] font-black text-white sm:text-[11px]">
+            {isMusic ? preferences.vibe_song : preferences.vibe_label}
+          </span>
+        </span>
+      </span>
+    </motion.button>
+  );
+}
+
+function VibePickerModal({ preferences, onClose, onSave }) {
+  const [draft, setDraft] = useState({
+    ...DEFAULT_PROFILE_PREFERENCES,
+    ...preferences,
+  });
+
+  function chooseMusic(track) {
+    setDraft((current) => ({
+      ...current,
+      vibe_artist: track.artist,
+      vibe_song: track.title,
+      vibe_type: "music",
+    }));
+  }
+
+  return (
+    <div className="fixed inset-0 z-[60] flex items-end bg-black/70 px-3 pb-3 text-white backdrop-blur-xl sm:items-center sm:justify-center">
+      <motion.div
+        className="w-full max-w-md overflow-hidden rounded-[1.5rem] border border-white/10 bg-night/95 shadow-neon"
+        initial={{ opacity: 0, y: 24, scale: 0.98 }}
+        animate={{ opacity: 1, y: 0, scale: 1 }}
+      >
+        <div className="flex items-center justify-between border-b border-white/8 px-4 py-3">
+          <div>
+            <p className="text-[10px] font-black uppercase tracking-[0.18em] text-neonCyan">Globo</p>
+            <h3 className="text-lg font-black">Estado del perfil</h3>
+          </div>
+          <button
+            className="flex h-9 w-9 items-center justify-center rounded-full border border-white/10 bg-white/7"
+            type="button"
+            onClick={onClose}
+            aria-label="Cerrar"
+          >
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+
+        <div className="space-y-4 p-4">
+          <section>
+            <p className="text-[10px] font-black uppercase tracking-[0.14em] text-white/52">Cómo me siento</p>
+            <div className="mt-2 flex flex-wrap gap-2">
+              {PROFILE_MOOD_OPTIONS.map((mood) => (
+                <button
+                  className={`rounded-full border px-3 py-2 text-xs font-black ${
+                    draft.vibe_type === "mood" && draft.vibe_label === mood
+                      ? "border-neonCyan bg-neonCyan/14 text-neonCyan shadow-cyan"
+                      : "border-white/10 bg-white/7 text-white/72"
+                  }`}
+                  key={mood}
+                  type="button"
+                  onClick={() =>
+                    setDraft((current) => ({
+                      ...current,
+                      vibe_label: mood,
+                      vibe_type: "mood",
+                    }))
+                  }
+                >
+                  {mood}
+                </button>
+              ))}
+            </div>
+          </section>
+
+          <section>
+            <p className="text-[10px] font-black uppercase tracking-[0.14em] text-white/52">
+              Música de artistas BUCAN
+            </p>
+            <div className="mt-2 grid gap-2">
+              {PROFILE_MUSIC_OPTIONS.map((track) => (
+                <button
+                  className={`flex items-center justify-between rounded-[1rem] border px-3 py-2 text-left ${
+                    draft.vibe_type === "music" && draft.vibe_song === track.title
+                      ? "border-neonPink bg-neonPink/12 shadow-neon"
+                      : "border-white/10 bg-white/7"
+                  }`}
+                  key={`${track.title}-${track.artist}`}
+                  type="button"
+                  onClick={() => chooseMusic(track)}
+                >
+                  <span className="min-w-0">
+                    <span className="block truncate text-sm font-black text-white">{track.title}</span>
+                    <span className="block truncate text-xs font-semibold text-white/48">{track.artist}</span>
+                  </span>
+                  <Play className="h-4 w-4 text-neonPink" />
+                </button>
+              ))}
+            </div>
+          </section>
+        </div>
+
+        <div className="grid grid-cols-2 gap-2 border-t border-white/8 p-3">
+          <button
+            className="h-11 rounded-full border border-white/10 bg-white/7 text-sm font-black text-white"
+            type="button"
+            onClick={onClose}
+          >
+            Cancelar
+          </button>
+          <button
+            className="h-11 rounded-full bg-gradient-to-r from-neonCyan via-fiestaPurple to-neonPink text-sm font-black text-white shadow-neon"
+            type="button"
+            onClick={() => onSave(draft)}
+          >
+            Guardar
+          </button>
+        </div>
+      </motion.div>
+    </div>
   );
 }
 
@@ -606,9 +771,9 @@ function ProfilePostGrid({ posts }) {
   );
 }
 
-function ProfileEditModal({ profileUser, onClose, onPreferencesSaved, onSaved, preferences }) {
+function ProfileEditModal({ profileUser, onClose, onPreferencesSaved, onSaved, preferences, initialTab = "basic" }) {
   const { completeOnboarding } = useAuth();
-  const [activeEditTab, setActiveEditTab] = useState("basic");
+  const [activeEditTab, setActiveEditTab] = useState(initialTab);
   const avatarInputRef = useRef(null);
   const coverInputRef = useRef(null);
   const [styleForm, setStyleForm] = useState({
@@ -1298,6 +1463,303 @@ function ReportUserModal({ profileUser, onClose, onReported }) {
   );
 }
 
+function SettingsSection({ icon: Icon, title, children }) {
+  return (
+    <section className="rounded-[1.25rem] border border-white/10 bg-white/[0.045] p-3 shadow-cyan backdrop-blur-xl">
+      <div className="mb-3 flex items-center gap-2">
+        <span className="flex h-8 w-8 items-center justify-center rounded-full border border-neonCyan/20 bg-neonCyan/10 text-neonCyan">
+          <Icon className="h-4 w-4" />
+        </span>
+        <h3 className="text-sm font-black text-white">{title}</h3>
+      </div>
+      <div className="grid gap-2">{children}</div>
+    </section>
+  );
+}
+
+function SettingsAction({ icon: Icon, title, description, onClick, to, danger = false, disabled = false }) {
+  const className = `flex w-full items-center gap-3 rounded-[1rem] border px-3 py-3 text-left transition active:scale-[0.99] ${
+    danger
+      ? "border-liveRed/25 bg-liveRed/10 text-liveRed"
+      : disabled
+        ? "border-white/8 bg-white/[0.03] text-white/42"
+        : "border-white/8 bg-black/18 text-white hover:border-neonCyan/25 hover:bg-neonCyan/8"
+  }`;
+  const content = (
+    <>
+      <span className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full border ${
+        danger ? "border-liveRed/25 bg-liveRed/10" : "border-white/10 bg-white/7"
+      }`}>
+        <Icon className="h-4 w-4" />
+      </span>
+      <span className="min-w-0 flex-1">
+        <span className="block text-sm font-black">{title}</span>
+        {description ? (
+          <span className="mt-0.5 block text-[11px] font-semibold leading-snug text-white/46">{description}</span>
+        ) : null}
+      </span>
+    </>
+  );
+
+  if (to && !disabled) {
+    return (
+      <Link className={className} to={to}>
+        {content}
+      </Link>
+    );
+  }
+
+  return (
+    <button className={className} type="button" onClick={onClick} disabled={disabled}>
+      {content}
+    </button>
+  );
+}
+
+function SettingsToggle({ title, description, enabled, onToggle, disabled = false }) {
+  return (
+    <button
+      className={`flex w-full items-center justify-between gap-3 rounded-[1rem] border border-white/8 bg-black/18 px-3 py-3 text-left ${
+        disabled ? "opacity-45" : ""
+      }`}
+      type="button"
+      onClick={() => onToggle(!enabled)}
+      disabled={disabled}
+    >
+      <span>
+        <span className="block text-sm font-black text-white">{title}</span>
+        {description ? (
+          <span className="mt-0.5 block text-[11px] font-semibold leading-snug text-white/46">{description}</span>
+        ) : null}
+      </span>
+      <span
+        className={`relative h-7 w-12 shrink-0 rounded-full border transition ${
+          enabled ? "border-neonCyan/40 bg-neonCyan/24 shadow-cyan" : "border-white/10 bg-white/8"
+        }`}
+      >
+        <span
+          className={`absolute top-1 h-5 w-5 rounded-full bg-white transition ${enabled ? "left-6" : "left-1"}`}
+        />
+      </span>
+    </button>
+  );
+}
+
+function SettingsChoice({ value, onChange, disabled = false }) {
+  const choices = [
+    ["public", "Público"],
+    ["followers", "Seguidores"],
+    ["private", "Privado"],
+  ];
+  return (
+    <div className="rounded-[1rem] border border-white/8 bg-black/18 p-2">
+      <p className="px-1 text-[11px] font-black uppercase tracking-[0.12em] text-white/46">
+        Visibilidad del perfil
+      </p>
+      <div className="mt-2 grid grid-cols-3 gap-1">
+        {choices.map(([id, label]) => (
+          <button
+            className={`h-9 rounded-[0.78rem] text-[10px] font-black transition ${
+              value === id ? "bg-neonCyan text-night shadow-cyan" : "bg-white/6 text-white/58"
+            }`}
+            key={id}
+            type="button"
+            onClick={() => onChange(id)}
+            disabled={disabled}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function SettingsActivityModal({
+  canManageProfile,
+  isAdmin,
+  onClose,
+  onEditProfile,
+  onLogout,
+  onOpenVibe,
+  onSetProfileTab,
+  onUpdatePreference,
+  preferences,
+  profileUser,
+}) {
+  return (
+    <div className="fixed inset-0 z-50 bg-night text-white">
+      <motion.section
+        className="relative mx-auto flex h-dvh w-full max-w-md flex-col overflow-hidden border-x border-white/8 bg-night shadow-[0_0_42px_rgba(0,217,255,.18),0_0_70px_rgba(255,79,216,.16)]"
+        initial={{ opacity: 0, scale: 0.985 }}
+        animate={{ opacity: 1, scale: 1 }}
+      >
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_16%_0%,rgba(255,79,216,.24),transparent_30%),radial-gradient(circle_at_82%_14%,rgba(0,217,255,.22),transparent_28%)]" />
+        <header className="relative flex shrink-0 items-start justify-between gap-3 border-b border-white/8 bg-night/72 px-4 pb-3 pt-[calc(env(safe-area-inset-top)+0.9rem)] backdrop-blur-2xl">
+          <div>
+            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-neonCyan">Perfil</p>
+            <h2 className="mt-1 text-2xl font-black leading-none text-white">Configuración y actividad</h2>
+            <p className="mt-1 text-xs font-semibold text-white/52">@{profileUser?.username}</p>
+          </div>
+          <button
+            className="flex h-10 w-10 items-center justify-center rounded-full border border-white/10 bg-white/7 text-white"
+            type="button"
+            onClick={onClose}
+            aria-label="Cerrar configuración"
+          >
+            <X className="h-5 w-5" />
+          </button>
+        </header>
+
+        <div className="relative flex-1 space-y-3 overflow-y-auto px-4 pb-8 pt-4">
+          <SettingsSection icon={UserRound} title="Cuenta">
+            <SettingsAction
+              icon={Pencil}
+              title="Editar datos básicos"
+              description="Nombre visible, usuario, ciudad, país y biografía."
+              onClick={() => onEditProfile("basic")}
+              disabled={!canManageProfile}
+            />
+            <SettingsAction
+              icon={Camera}
+              title="Foto y portada"
+              description="Cambiar foto, subir portada y ajustar estilo visual."
+              onClick={() => onEditProfile("style")}
+              disabled={!canManageProfile}
+            />
+            <SettingsAction
+              icon={LogOut}
+              title="Cerrar sesión"
+              description="Salir de esta cuenta en este dispositivo."
+              onClick={onLogout}
+              danger
+            />
+          </SettingsSection>
+
+          <SettingsSection icon={Palette} title="Perfil">
+            <SettingsAction
+              icon={Sparkles}
+              title="Estado y música"
+              description="Editar el globo: cómo te sientes o qué canción escuchas."
+              onClick={onOpenVibe}
+              disabled={!canManageProfile}
+            />
+            <SettingsAction
+              icon={Palette}
+              title="Tema del perfil"
+              description="Colores, portada, filtros y fusión visual."
+              onClick={() => onEditProfile("style")}
+              disabled={!canManageProfile}
+            />
+            <SettingsToggle
+              title="Mostrar estado online"
+              description="Controla si aparece En línea u Oculto en tu perfil."
+              enabled={preferences.show_online_status}
+              onToggle={(value) => onUpdatePreference("show_online_status", value)}
+              disabled={!canManageProfile}
+            />
+          </SettingsSection>
+
+          <SettingsSection icon={Bell} title="Notificaciones">
+            <div className="overflow-hidden rounded-[1rem] border border-white/8 bg-black/18">
+              <PushSettings />
+            </div>
+          </SettingsSection>
+
+          <SettingsSection icon={Lock} title="Privacidad">
+            <SettingsChoice
+              value={preferences.profile_visibility}
+              onChange={(value) => onUpdatePreference("profile_visibility", value)}
+              disabled={!canManageProfile}
+            />
+            <SettingsToggle
+              title="Permitir mensajes"
+              description="Define si otros usuarios pueden escribirte desde el perfil."
+              enabled={preferences.allow_messages}
+              onToggle={(value) => onUpdatePreference("allow_messages", value)}
+              disabled={!canManageProfile}
+            />
+            <SettingsAction
+              icon={ShieldCheck}
+              title="Privacidad avanzada"
+              description="Editar privacidad desde el panel completo del perfil."
+              onClick={() => onEditProfile("privacy")}
+              disabled={!canManageProfile}
+            />
+          </SettingsSection>
+
+          <SettingsSection icon={Activity} title="Actividad">
+            <SettingsAction
+              icon={Sparkles}
+              title="Tus publicaciones"
+              description="Ver publicaciones del perfil."
+              onClick={() => onSetProfileTab("posts")}
+            />
+            <SettingsAction
+              icon={Film}
+              title="Tus reels y media"
+              description="Ver fotos y vídeos publicados."
+              onClick={() => onSetProfileTab("media")}
+            />
+            <SettingsAction
+              icon={Bookmark}
+              title="Guardados"
+              description="Acceso a la pestaña de guardados."
+              onClick={() => onSetProfileTab("saved")}
+            />
+            <SettingsAction
+              icon={MapPin}
+              title="Mapa"
+              description="Ver actividad vinculada a ubicación."
+              onClick={() => onSetProfileTab("map")}
+            />
+            <SettingsAction
+              icon={Heart}
+              title="Likes"
+              description="Ver la pestaña de likes."
+              onClick={() => onSetProfileTab("likes")}
+            />
+          </SettingsSection>
+
+          <SettingsSection icon={ShieldCheck} title="Seguridad">
+            <SettingsAction
+              icon={ShieldCheck}
+              title="Google vinculado"
+              description="La app mantiene el login Google si fue usado en el registro."
+              disabled
+            />
+            <SettingsAction
+              icon={Lock}
+              title="Cambiar contraseña"
+              description="Preparado para cuentas locales. Se activará con el flujo de seguridad."
+              disabled
+            />
+            <SettingsAction
+              icon={X}
+              title="Eliminar cuenta"
+              description="Acción delicada. Se añadirá con confirmación fuerte."
+              disabled
+              danger
+            />
+          </SettingsSection>
+
+          {isAdmin ? (
+            <SettingsSection icon={Settings} title="Admin">
+              <SettingsAction icon={Settings} title="Panel admin" description="Usuarios, posts y reportes." to="/admin" />
+              <SettingsAction
+                icon={Activity}
+                title="Sistema"
+                description="Health, métricas, logs y backups."
+                to="/admin/system"
+              />
+            </SettingsSection>
+          ) : null}
+        </div>
+      </motion.section>
+    </div>
+  );
+}
+
 function Profile() {
   const navigate = useNavigate();
   const { username } = useParams();
@@ -1313,6 +1775,9 @@ function Profile() {
   const [showEditModal, setShowEditModal] = useState(false);
   const [showReportModal, setShowReportModal] = useState(false);
   const [showAchievementsModal, setShowAchievementsModal] = useState(false);
+  const [showSettingsModal, setShowSettingsModal] = useState(false);
+  const [showVibePicker, setShowVibePicker] = useState(false);
+  const [initialEditTab, setInitialEditTab] = useState("basic");
   const [profilePreferences, setProfilePreferences] = useState(DEFAULT_PROFILE_PREFERENCES);
 
   const targetUsername = username || user?.username;
@@ -1350,7 +1815,7 @@ function Profile() {
   }, [targetUsername]);
 
   useEffect(() => {
-    if (!showEditModal) return undefined;
+    if (!showEditModal && !showSettingsModal && !showVibePicker) return undefined;
 
     const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
@@ -1358,12 +1823,35 @@ function Profile() {
     return () => {
       document.body.style.overflow = previousOverflow;
     };
-  }, [showEditModal]);
+  }, [showEditModal, showSettingsModal, showVibePicker]);
 
   function handlePreferencesSaved(nextPreferences) {
     const merged = { ...DEFAULT_PROFILE_PREFERENCES, ...nextPreferences };
     saveProfilePreferences(targetUsername, merged);
     setProfilePreferences(merged);
+  }
+
+  function handleVibeSaved(nextPreferences) {
+    handlePreferencesSaved(nextPreferences);
+    setShowVibePicker(false);
+  }
+
+  function openProfileEditor(tab = "basic") {
+    setInitialEditTab(tab);
+    setShowSettingsModal(false);
+    setShowEditModal(true);
+  }
+
+  function updateProfilePreference(name, value) {
+    handlePreferencesSaved({
+      ...profilePreferences,
+      [name]: value,
+    });
+  }
+
+  function goProfileTab(tab) {
+    setActiveTab(tab);
+    setShowSettingsModal(false);
   }
 
   async function handleStartChat() {
@@ -1429,6 +1917,7 @@ function Profile() {
   const activeTheme =
     PROFILE_THEME_OPTIONS.find((theme) => theme.id === profilePreferences.theme) ||
     PROFILE_THEME_OPTIONS[0];
+  const isAdmin = user?.role === "admin" || profileUser?.role === "admin";
 
   if (isLoading) {
     return (
@@ -1488,8 +1977,22 @@ function Profile() {
         <div className="absolute bottom-[4.45rem] right-6 h-2 w-8 rounded-full bg-liveRed/60 shadow-live sm:bottom-[7.1rem] sm:h-3 sm:w-12" />
         <div className="absolute bottom-11 left-0 right-0 h-16 bg-gradient-to-t from-night via-night/76 to-transparent sm:bottom-20 sm:h-20" />
 
+        <button
+          className="absolute right-3 top-[calc(env(safe-area-inset-top)+0.7rem)] z-20 flex h-10 w-10 items-center justify-center rounded-full border border-white/10 bg-night/72 text-white shadow-cyan backdrop-blur-xl sm:right-5 sm:top-5"
+          type="button"
+          onClick={() => setShowSettingsModal(true)}
+          aria-label="Abrir configuración y actividad"
+        >
+          <Menu className="h-5 w-5" />
+        </button>
+
         <div className="relative px-4 pb-3 pt-12 sm:px-6 sm:pb-5 sm:pt-24">
           <div className="absolute left-4 top-3 sm:left-6 sm:top-5">
+            <ProfileVibeBubble
+              preferences={profilePreferences}
+              canEdit={isOwnProfile}
+              onEdit={() => setShowVibePicker(true)}
+            />
             <ProfileAvatar
               profileUser={profileUser}
               initial={initial}
@@ -1505,7 +2008,7 @@ function Profile() {
               <button
                 className="absolute -right-0 top-0 flex h-7 w-7 items-center justify-center rounded-full border border-white/10 bg-night/82 text-white shadow-cyan backdrop-blur-xl sm:h-9 sm:w-9"
                 type="button"
-                onClick={() => setShowEditModal(true)}
+                onClick={() => openProfileEditor("basic")}
                 aria-label="Editar perfil"
               >
                 <Pencil className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
@@ -1547,8 +2050,36 @@ function Profile() {
               </p>
             ) : null}
             <div className="mt-4 flex gap-1.5 overflow-x-auto pb-0.5 scrollbar-none sm:mt-5 sm:gap-2 sm:pb-1">
-              <MoodPill icon={Sparkles} title="Motivado 😎" color="purple" />
-              <MoodPill icon={Music} title="Me Conozco" detail="Roku" color="pink" />
+              {!isOwnProfile ? (
+                <motion.button
+                  className="inline-flex min-w-[7.25rem] items-center justify-center gap-1.5 rounded-[0.72rem] border border-white/10 bg-white/10 px-2.5 py-1.5 text-[10px] font-black text-white shadow-cyan backdrop-blur-xl transition active:scale-[0.98] disabled:opacity-60 sm:min-w-[8.5rem] sm:gap-2 sm:rounded-[0.85rem] sm:px-3 sm:py-2 sm:text-xs"
+                  type="button"
+                  onClick={handleStartChat}
+                  disabled={isStartingChat}
+                  whileTap={{ scale: 0.96 }}
+                >
+                  <MessageCircle className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                  {isStartingChat ? "..." : "Mensaje"}
+                </motion.button>
+              ) : (
+                <MoodPill icon={Sparkles} title="Motivado 😎" color="purple" />
+              )}
+              {!isOwnProfile ? (
+                <motion.button
+                  className={`inline-flex min-w-[7.25rem] items-center justify-center gap-1.5 rounded-[0.72rem] border px-2.5 py-1.5 text-[10px] font-black text-white transition active:scale-[0.98] sm:min-w-[8.5rem] sm:gap-2 sm:rounded-[0.85rem] sm:px-3 sm:py-2 sm:text-xs ${
+                    profileUser?.is_following
+                      ? "border-neonPink/35 bg-neonPink/10 shadow-neon"
+                      : "border-neonCyan/25 bg-gradient-to-r from-neonCyan/30 via-fiestaPurple/28 to-neonPink/30 shadow-cyan"
+                  }`}
+                  type="button"
+                  onClick={handleToggleFollow}
+                  disabled={isUpdatingFollow}
+                  whileTap={{ scale: 0.96 }}
+                >
+                  <UserPlus className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                  {isUpdatingFollow ? "..." : profileUser?.is_following ? "Dejar de seguir" : "Seguir"}
+                </motion.button>
+              ) : null}
             </div>
           </div>
         </div>
@@ -1566,14 +2097,13 @@ function Profile() {
           </div>
         ) : null}
 
-        <section className="-mt-1 rounded-[1.1rem] border border-white/10 bg-white/[0.055] p-1.5 shadow-cyan backdrop-blur-2xl sm:rounded-[1.6rem] sm:p-2">
-        <div>
-          {isOwnProfile ? (
+        {isOwnProfile ? (
+          <section className="-mt-1 rounded-[1.1rem] border border-white/10 bg-white/[0.055] p-1.5 shadow-cyan backdrop-blur-2xl sm:rounded-[1.6rem] sm:p-2">
             <div className="grid grid-cols-4 gap-2">
               <motion.button
                 className="col-span-2 h-9 rounded-[0.78rem] bg-gradient-to-r from-neonCyan via-fiestaPurple to-neonPink text-[10px] font-black text-white shadow-cyan sm:h-12 sm:rounded-[1rem] sm:text-xs"
                 type="button"
-                onClick={() => setShowEditModal(true)}
+                onClick={() => openProfileEditor("basic")}
                 whileTap={{ scale: 0.96 }}
               >
                 <span className="inline-flex items-center gap-2">
@@ -1598,49 +2128,8 @@ function Profile() {
                 <LogOut className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
               </motion.button>
             </div>
-          ) : (
-            <div className="grid grid-cols-[1fr_1fr_3.25rem] gap-2">
-              <motion.button
-                className={`h-9 rounded-[0.78rem] text-[10px] font-black disabled:opacity-60 sm:h-12 sm:rounded-[1rem] sm:text-xs ${
-                  profileUser?.is_following
-                    ? "border border-neonPink/40 bg-neonPink/10 text-white"
-                    : "bg-gradient-to-r from-neonCyan via-fiestaPurple to-neonPink text-white shadow-cyan"
-                }`}
-                type="button"
-                onClick={handleToggleFollow}
-                disabled={isUpdatingFollow}
-                whileTap={{ scale: 0.96 }}
-              >
-                <span className="inline-flex items-center gap-1.5">
-                  <UserPlus className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-                  {isUpdatingFollow ? "..." : profileUser?.is_following ? "Dejar" : "Seguir"}
-                </span>
-              </motion.button>
-              <motion.button
-                className="h-9 rounded-[0.78rem] border border-white/10 bg-white/7 text-[10px] font-black text-white disabled:opacity-60 sm:h-12 sm:rounded-[1rem] sm:text-xs"
-                type="button"
-                onClick={handleStartChat}
-                disabled={isStartingChat}
-                whileTap={{ scale: 0.96 }}
-              >
-                <span className="inline-flex items-center gap-1.5">
-                  <MessageCircle className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-                  {isStartingChat ? "..." : "Mensaje"}
-                </span>
-              </motion.button>
-              <motion.button
-                className="flex h-9 items-center justify-center rounded-[0.78rem] border border-white/10 bg-white/7 text-white sm:h-12 sm:rounded-[1rem]"
-                type="button"
-                aria-label="Reportar usuario"
-                onClick={() => (isAuthenticated ? setShowReportModal(true) : navigate("/login"))}
-                whileTap={{ scale: 0.96 }}
-              >
-                <Flag className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-              </motion.button>
-            </div>
-          )}
-        </div>
-        </section>
+          </section>
+        ) : null}
 
         <section className="mt-2 rounded-[1.15rem] border border-white/10 bg-white/[0.055] p-1.5 shadow-cyan backdrop-blur-2xl sm:mt-4 sm:rounded-[1.6rem] sm:p-3">
           <div className="grid gap-1.5 sm:gap-3">
@@ -1648,7 +2137,7 @@ function Profile() {
               <AboutCard
                 profileUser={profileUser}
                 isOwnProfile={isOwnProfile}
-                onEdit={() => setShowEditModal(true)}
+                onEdit={() => openProfileEditor("basic")}
               />
               <LocationCard profileUser={profileUser} />
             </div>
@@ -1717,6 +2206,7 @@ function Profile() {
       {showEditModal ? (
         <ProfileEditModal
           profileUser={profileUser}
+          initialTab={initialEditTab}
           preferences={profilePreferences}
           onClose={() => setShowEditModal(false)}
           onPreferencesSaved={handlePreferencesSaved}
@@ -1734,6 +2224,32 @@ function Profile() {
 
       {showAchievementsModal ? (
         <AchievementsModal badges={badges} onClose={() => setShowAchievementsModal(false)} />
+      ) : null}
+
+      {showVibePicker ? (
+        <VibePickerModal
+          preferences={profilePreferences}
+          onClose={() => setShowVibePicker(false)}
+          onSave={handleVibeSaved}
+        />
+      ) : null}
+
+      {showSettingsModal ? (
+        <SettingsActivityModal
+          canManageProfile={isOwnProfile}
+          isAdmin={isAdmin}
+          preferences={profilePreferences}
+          profileUser={profileUser}
+          onClose={() => setShowSettingsModal(false)}
+          onEditProfile={openProfileEditor}
+          onLogout={logout}
+          onOpenVibe={() => {
+            setShowSettingsModal(false);
+            setShowVibePicker(true);
+          }}
+          onSetProfileTab={goProfileTab}
+          onUpdatePreference={updateProfilePreference}
+        />
       ) : null}
     </section>
   );

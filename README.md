@@ -112,6 +112,16 @@ VITE_GOOGLE_CLIENT_ID=TU_GOOGLE_CLIENT_ID
 
 Guía completa: [docs/deployment.md](docs/deployment.md).
 
+### Botón local para subir a producción
+
+Para evitar subir cambios por accidente, usa el script interactivo:
+
+```bash
+./scripts/deploy-production.sh "Mensaje del commit"
+```
+
+El script muestra el estado de Git, compila el frontend y pide escribir `SUBIR` antes de hacer commit y push a producción.
+
 ## Seguridad
 
 - No subir `.env`, claves ni tokens.

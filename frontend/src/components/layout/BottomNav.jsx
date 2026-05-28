@@ -15,11 +15,11 @@ function BottomNav() {
   const isPublishPage = location.pathname === "/create";
 
   return (
-    <nav className="fixed inset-x-0 bottom-0 z-20 px-3 pb-[calc(0.55rem+env(safe-area-inset-bottom))] pt-1.5 sm:pb-[calc(0.7rem+env(safe-area-inset-bottom))] sm:pt-2">
+    <nav className="fixed inset-x-0 bottom-0 z-20 border-t border-white/10 bg-night/95 pb-[env(safe-area-inset-bottom)] shadow-[0_-16px_38px_rgba(0,0,0,.36)] backdrop-blur-2xl">
       <div
         className={[
-          "glass-panel mx-auto grid grid-cols-5 gap-1 rounded-[1.45rem] p-1 sm:rounded-[1.7rem] sm:p-1.5",
-          isPublishPage ? "max-w-5xl" : "max-w-md",
+          "mx-auto grid grid-cols-5 gap-1 px-2 py-1.5 sm:px-4 sm:py-2",
+          isPublishPage ? "max-w-5xl" : "max-w-2xl",
         ].join(" ")}
       >
         {navItems.map((item) => {

@@ -103,6 +103,9 @@ const DEFAULT_PROFILE_PREFERENCES = {
   cover_position: "center",
   cover_url: "",
   cover_zoom: 100,
+  promo_platform: "youtube",
+  promo_title: "",
+  promo_url: "",
   profile_visibility: "public",
   show_online_status: true,
   theme: "neon",
@@ -119,6 +122,14 @@ const PROFILE_MUSIC_OPTIONS = [
   { title: "Noche Malabo", artist: "BUCAN Sounds" },
   { title: "Arena Blanca", artist: "EVO Artists" },
   { title: "Movimiento", artist: "Bucan Dey" },
+];
+
+const PROMO_PLATFORM_OPTIONS = [
+  { id: "youtube", label: "YouTube", color: "text-liveRed" },
+  { id: "spotify", label: "Spotify", color: "text-green-400" },
+  { id: "soundcloud", label: "SoundCloud", color: "text-neonOrange" },
+  { id: "audiomack", label: "Audiomack", color: "text-neonYellow" },
+  { id: "link", label: "Otro link", color: "text-neonCyan" },
 ];
 
 const COVER_POSITION_OPTIONS = [
@@ -163,6 +174,17 @@ function saveProfilePreferences(username, preferences) {
     getProfilePreferenceKey(username),
     JSON.stringify({ ...DEFAULT_PROFILE_PREFERENCES, ...preferences })
   );
+}
+
+function normalizePromoUrl(url) {
+  const value = String(url || "").trim();
+  if (!value) return "";
+  if (/^https?:\/\//i.test(value)) return value;
+  return `https://${value}`;
+}
+
+function getPromoPlatform(platformId) {
+  return PROMO_PLATFORM_OPTIONS.find((item) => item.id === platformId) || PROMO_PLATFORM_OPTIONS[0];
 }
 
 function EmptyState({ title, description }) {
@@ -323,14 +345,14 @@ function ProfileAvatar({ profileUser, initial, size = "large", canCreateStory = 
 function CompactProfileStats({ stats }) {
   return (
     <motion.div
-      className="mt-1 grid w-[8.15rem] grid-cols-2 gap-1 sm:w-44"
+      className="grid w-full grid-cols-3 gap-1"
       initial={{ opacity: 0, y: 14 }}
       animate={{ opacity: 1, y: 0 }}
     >
       {stats.map((stat) => {
         const content = (
-          <div className="rounded-[0.7rem] border border-white/10 bg-night/74 px-1.5 py-1 text-center shadow-[0_0_14px_rgba(0,217,255,.12)] backdrop-blur-xl sm:rounded-[0.85rem] sm:px-2 sm:py-1.5">
-            <p className="text-[10px] font-black leading-none text-white sm:text-sm">{formatCompact(stat.value)}</p>
+          <div className="rounded-[0.68rem] border border-white/10 bg-night/74 px-1.5 py-1.5 text-center shadow-[0_0_14px_rgba(0,217,255,.12)] backdrop-blur-xl sm:rounded-[0.85rem] sm:px-2 sm:py-2">
+            <p className="text-[0.72rem] font-black leading-none text-white sm:text-base">{formatCompact(stat.value)}</p>
             <p className="mt-0.5 truncate text-[6.5px] font-black uppercase tracking-[0.04em] text-white/48 sm:text-[9px]">
               {stat.label}
             </p>
@@ -486,6 +508,152 @@ function VibePickerModal({ preferences, onClose, onSave }) {
             className="h-11 rounded-full bg-gradient-to-r from-neonCyan via-fiestaPurple to-neonPink text-sm font-black text-white shadow-neon"
             type="button"
             onClick={() => onSave(draft)}
+          >
+            Guardar
+          </button>
+        </div>
+      </motion.div>
+    </div>
+  );
+}
+
+function MusicPromoModal({ preferences, onClose, onSave }) {
+  const [draft, setDraft] = useState({
+    ...DEFAULT_PROFILE_PREFERENCES,
+    ...preferences,
+  });
+  const [error, setError] = useState("");
+
+  function updateDraft(name, value) {
+    setDraft((current) => ({
+      ...current,
+      [name]: value,
+    }));
+  }
+
+  function handleSave() {
+    const nextUrl = normalizePromoUrl(draft.promo_url);
+    if (nextUrl) {
+      try {
+        const parsed = new URL(nextUrl);
+        if (!["http:", "https:"].includes(parsed.protocol)) {
+          setError("Usa un enlace válido de YouTube, Spotify u otra plataforma.");
+          return;
+        }
+      } catch {
+        setError("El enlace no parece válido.");
+        return;
+      }
+    }
+
+    onSave({
+      ...draft,
+      promo_title: draft.promo_title.trim(),
+      promo_url: nextUrl,
+    });
+  }
+
+  return (
+    <div className="fixed inset-0 z-[60] flex items-end bg-black/70 px-3 pb-3 text-white backdrop-blur-xl sm:items-center sm:justify-center">
+      <motion.div
+        className="w-full max-w-md overflow-hidden rounded-[1.5rem] border border-white/10 bg-night/95 shadow-neon"
+        initial={{ opacity: 0, y: 24, scale: 0.98 }}
+        animate={{ opacity: 1, y: 0, scale: 1 }}
+      >
+        <div className="flex items-center justify-between border-b border-white/8 px-4 py-3">
+          <div>
+            <p className="text-[10px] font-black uppercase tracking-[0.18em] text-neonPink">Promo musical</p>
+            <h3 className="text-lg font-black">Link destacado</h3>
+          </div>
+          <button
+            className="flex h-9 w-9 items-center justify-center rounded-full border border-white/10 bg-white/7"
+            type="button"
+            onClick={onClose}
+            aria-label="Cerrar"
+          >
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+
+        <div className="space-y-4 p-4">
+          <section>
+            <p className="text-[10px] font-black uppercase tracking-[0.14em] text-white/52">Plataforma</p>
+            <div className="mt-2 grid grid-cols-2 gap-2">
+              {PROMO_PLATFORM_OPTIONS.map((platform) => (
+                <button
+                  className={`rounded-[0.95rem] border px-3 py-2 text-left text-xs font-black ${
+                    draft.promo_platform === platform.id
+                      ? "border-neonPink bg-neonPink/12 text-white shadow-neon"
+                      : "border-white/10 bg-white/7 text-white/62"
+                  }`}
+                  key={platform.id}
+                  type="button"
+                  onClick={() => updateDraft("promo_platform", platform.id)}
+                >
+                  <span className={platform.color}>{platform.label}</span>
+                </button>
+              ))}
+            </div>
+          </section>
+
+          <label className="block">
+            <span className="text-[10px] font-black uppercase tracking-[0.14em] text-white/52">Título visible</span>
+            <input
+              className="mt-2 h-11 w-full rounded-[0.95rem] border border-white/10 bg-white/7 px-3 text-sm font-bold text-white outline-none placeholder:text-white/30 focus:border-neonPink"
+              value={draft.promo_title}
+              onChange={(event) => updateDraft("promo_title", event.target.value)}
+              placeholder="Nuevo tema, videoclip, playlist..."
+              maxLength={42}
+            />
+          </label>
+
+          <label className="block">
+            <span className="text-[10px] font-black uppercase tracking-[0.14em] text-white/52">Enlace</span>
+            <input
+              className="mt-2 h-11 w-full rounded-[0.95rem] border border-white/10 bg-white/7 px-3 text-sm font-bold text-white outline-none placeholder:text-white/30 focus:border-neonPink"
+              value={draft.promo_url}
+              onChange={(event) => updateDraft("promo_url", event.target.value)}
+              placeholder="youtube.com/... o open.spotify.com/..."
+              inputMode="url"
+            />
+          </label>
+
+          <div className="rounded-[1rem] border border-neonPink/15 bg-neonPink/8 p-3">
+            <p className="text-[10px] font-black uppercase tracking-[0.14em] text-neonPink">Vista previa</p>
+            <div className="mt-2 flex items-center gap-2">
+              <span className="flex h-9 w-9 items-center justify-center rounded-full bg-gradient-to-br from-neonPink/24 to-neonCyan/18">
+                <Play className={`h-4 w-4 ${getPromoPlatform(draft.promo_platform).color}`} />
+              </span>
+              <span className="min-w-0">
+                <span className="block truncate text-xs font-black text-white">
+                  {draft.promo_title || "Añade un título"}
+                </span>
+                <span className="block truncate text-[10px] font-bold text-white/48">
+                  {getPromoPlatform(draft.promo_platform).label}
+                </span>
+              </span>
+            </div>
+          </div>
+
+          {error ? (
+            <div className="rounded-[0.95rem] border border-liveRed/30 bg-liveRed/10 px-3 py-2 text-xs font-bold text-white">
+              {error}
+            </div>
+          ) : null}
+        </div>
+
+        <div className="grid grid-cols-2 gap-2 border-t border-white/8 p-3">
+          <button
+            className="h-11 rounded-full border border-white/10 bg-white/7 text-sm font-black text-white"
+            type="button"
+            onClick={onClose}
+          >
+            Cancelar
+          </button>
+          <button
+            className="h-11 rounded-full bg-gradient-to-r from-neonCyan via-fiestaPurple to-neonPink text-sm font-black text-white shadow-neon"
+            type="button"
+            onClick={handleSave}
           >
             Guardar
           </button>
@@ -654,6 +822,48 @@ function CompactAchievementsButton({ badges, onClick }) {
             </span>
           );
         })}
+      </span>
+    </motion.button>
+  );
+}
+
+function CompactMusicPromoButton({ canEdit, preferences, onEdit }) {
+  const promoUrl = normalizePromoUrl(preferences.promo_url);
+  const hasPromo = Boolean(promoUrl);
+  const platform = getPromoPlatform(preferences.promo_platform);
+  const title = preferences.promo_title?.trim() || platform.label;
+
+  function handleClick() {
+    if (canEdit) {
+      onEdit();
+      return;
+    }
+
+    if (hasPromo && typeof window !== "undefined") {
+      window.open(promoUrl, "_blank", "noopener,noreferrer");
+    }
+  }
+
+  if (!canEdit && !hasPromo) return null;
+
+  return (
+    <motion.button
+      className="mt-1 grid w-full grid-cols-[auto_1fr] items-center gap-1.5 rounded-full border border-neonPink/15 bg-night/74 px-2 py-1 text-left shadow-[0_0_16px_rgba(255,79,216,.16)] backdrop-blur-xl active:scale-[0.98]"
+      type="button"
+      onClick={handleClick}
+      whileTap={{ scale: 0.97 }}
+      aria-label={hasPromo ? "Abrir promoción musical" : "Añadir promoción musical"}
+    >
+      <span className="flex h-7 w-7 items-center justify-center rounded-full bg-gradient-to-br from-neonPink/24 via-fiestaPurple/24 to-neonCyan/18">
+        {hasPromo ? <Play className={`h-3.5 w-3.5 ${platform.color}`} /> : <Music className="h-3.5 w-3.5 text-neonPink" />}
+      </span>
+      <span className="min-w-0">
+        <span className="block truncate text-[8px] font-black uppercase tracking-[0.14em] text-neonPink">
+          {hasPromo ? platform.label : "Promo"}
+        </span>
+        <span className="block truncate text-[9px] font-black text-white">
+          {hasPromo ? title : "+ Añadir música"}
+        </span>
       </span>
     </motion.button>
   );
@@ -1777,6 +1987,7 @@ function Profile() {
   const [showAchievementsModal, setShowAchievementsModal] = useState(false);
   const [showSettingsModal, setShowSettingsModal] = useState(false);
   const [showVibePicker, setShowVibePicker] = useState(false);
+  const [showMusicPromoModal, setShowMusicPromoModal] = useState(false);
   const [initialEditTab, setInitialEditTab] = useState("basic");
   const [profilePreferences, setProfilePreferences] = useState(DEFAULT_PROFILE_PREFERENCES);
 
@@ -1815,7 +2026,7 @@ function Profile() {
   }, [targetUsername]);
 
   useEffect(() => {
-    if (!showEditModal && !showSettingsModal && !showVibePicker) return undefined;
+    if (!showEditModal && !showSettingsModal && !showVibePicker && !showMusicPromoModal) return undefined;
 
     const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
@@ -1823,7 +2034,7 @@ function Profile() {
     return () => {
       document.body.style.overflow = previousOverflow;
     };
-  }, [showEditModal, showSettingsModal, showVibePicker]);
+  }, [showEditModal, showSettingsModal, showVibePicker, showMusicPromoModal]);
 
   function handlePreferencesSaved(nextPreferences) {
     const merged = { ...DEFAULT_PROFILE_PREFERENCES, ...nextPreferences };
@@ -1834,6 +2045,11 @@ function Profile() {
   function handleVibeSaved(nextPreferences) {
     handlePreferencesSaved(nextPreferences);
     setShowVibePicker(false);
+  }
+
+  function handleMusicPromoSaved(nextPreferences) {
+    handlePreferencesSaved(nextPreferences);
+    setShowMusicPromoModal(false);
   }
 
   function openProfileEditor(tab = "basic") {
@@ -1912,6 +2128,11 @@ function Profile() {
       label: "Seguidores",
       value: profileUser?.followers_count || 0,
       to: `/users/${profileUser?.username}/followers`,
+    },
+    {
+      label: "Seguidos",
+      value: profileUser?.following_count || 0,
+      to: `/users/${profileUser?.username}/following`,
     },
   ];
   const activeTheme =
@@ -2003,7 +2224,11 @@ function Profile() {
               badges={badges}
               onClick={() => setShowAchievementsModal(true)}
             />
-            <CompactProfileStats stats={profileStats} />
+            <CompactMusicPromoButton
+              canEdit={isOwnProfile}
+              preferences={profilePreferences}
+              onEdit={() => setShowMusicPromoModal(true)}
+            />
             {isOwnProfile ? (
               <button
                 className="absolute -right-0 top-0 flex h-7 w-7 items-center justify-center rounded-full border border-white/10 bg-night/82 text-white shadow-cyan backdrop-blur-xl sm:h-9 sm:w-9"
@@ -2045,12 +2270,15 @@ function Profile() {
               ) : null}
             </p>
             {profileUser?.bio ? (
-              <p className="mt-1.5 line-clamp-2 max-w-[15rem] text-[0.68rem] font-semibold leading-snug text-white/78 sm:mt-2 sm:max-w-[28rem] sm:text-sm">
+              <p className="mt-1.5 line-clamp-2 h-[2.05rem] max-w-[15rem] overflow-hidden break-words text-[0.68rem] font-semibold leading-snug text-white/78 sm:mt-2 sm:h-10 sm:max-w-[28rem] sm:text-sm">
                 {profileUser.bio}
               </p>
             ) : null}
-            <div className="mt-4 flex gap-1.5 overflow-x-auto pb-0.5 scrollbar-none sm:mt-5 sm:gap-2 sm:pb-1">
-              {!isOwnProfile ? (
+            <div className="mt-3 grid max-w-[18rem] sm:mt-5 sm:max-w-[24rem]">
+              <CompactProfileStats stats={profileStats} />
+            </div>
+            {!isOwnProfile ? (
+              <div className="mt-3 flex gap-1.5 overflow-x-auto pb-0.5 scrollbar-none sm:mt-4 sm:gap-2 sm:pb-1">
                 <motion.button
                   className="inline-flex min-w-[7.25rem] items-center justify-center gap-1.5 rounded-[0.72rem] border border-white/10 bg-white/10 px-2.5 py-1.5 text-[10px] font-black text-white shadow-cyan backdrop-blur-xl transition active:scale-[0.98] disabled:opacity-60 sm:min-w-[8.5rem] sm:gap-2 sm:rounded-[0.85rem] sm:px-3 sm:py-2 sm:text-xs"
                   type="button"
@@ -2061,10 +2289,6 @@ function Profile() {
                   <MessageCircle className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                   {isStartingChat ? "..." : "Mensaje"}
                 </motion.button>
-              ) : (
-                <MoodPill icon={Sparkles} title="Motivado 😎" color="purple" />
-              )}
-              {!isOwnProfile ? (
                 <motion.button
                   className={`inline-flex min-w-[7.25rem] items-center justify-center gap-1.5 rounded-[0.72rem] border px-2.5 py-1.5 text-[10px] font-black text-white transition active:scale-[0.98] sm:min-w-[8.5rem] sm:gap-2 sm:rounded-[0.85rem] sm:px-3 sm:py-2 sm:text-xs ${
                     profileUser?.is_following
@@ -2079,8 +2303,8 @@ function Profile() {
                   <UserPlus className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                   {isUpdatingFollow ? "..." : profileUser?.is_following ? "Dejar de seguir" : "Seguir"}
                 </motion.button>
-              ) : null}
-            </div>
+              </div>
+            ) : null}
           </div>
         </div>
       </motion.header>
@@ -2095,40 +2319,6 @@ function Profile() {
           <div className="mt-4 rounded-[1.2rem] border border-neonCyan/30 bg-neonCyan/10 px-4 py-3 text-sm font-semibold text-white">
             {notice}
           </div>
-        ) : null}
-
-        {isOwnProfile ? (
-          <section className="-mt-1 rounded-[1.1rem] border border-white/10 bg-white/[0.055] p-1.5 shadow-cyan backdrop-blur-2xl sm:rounded-[1.6rem] sm:p-2">
-            <div className="grid grid-cols-4 gap-2">
-              <motion.button
-                className="col-span-2 h-9 rounded-[0.78rem] bg-gradient-to-r from-neonCyan via-fiestaPurple to-neonPink text-[10px] font-black text-white shadow-cyan sm:h-12 sm:rounded-[1rem] sm:text-xs"
-                type="button"
-                onClick={() => openProfileEditor("basic")}
-                whileTap={{ scale: 0.96 }}
-              >
-                <span className="inline-flex items-center gap-2">
-                  <Pencil className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-                  Editar perfil
-                </span>
-              </motion.button>
-              <Link
-                className="flex h-9 items-center justify-center rounded-[0.78rem] border border-white/10 bg-white/7 text-white sm:h-12 sm:rounded-[1rem]"
-                to="/stories/create"
-                aria-label="Crear story"
-              >
-                <Film className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-              </Link>
-              <motion.button
-                className="flex h-9 items-center justify-center rounded-[0.78rem] border border-liveRed/35 bg-liveRed/10 text-liveRed sm:h-12 sm:rounded-[1rem]"
-                type="button"
-                onClick={logout}
-                whileTap={{ scale: 0.96 }}
-                aria-label="Salir"
-              >
-                <LogOut className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-              </motion.button>
-            </div>
-          </section>
         ) : null}
 
         <section className="mt-2 rounded-[1.15rem] border border-white/10 bg-white/[0.055] p-1.5 shadow-cyan backdrop-blur-2xl sm:mt-4 sm:rounded-[1.6rem] sm:p-3">
@@ -2231,6 +2421,14 @@ function Profile() {
           preferences={profilePreferences}
           onClose={() => setShowVibePicker(false)}
           onSave={handleVibeSaved}
+        />
+      ) : null}
+
+      {showMusicPromoModal ? (
+        <MusicPromoModal
+          preferences={profilePreferences}
+          onClose={() => setShowMusicPromoModal(false)}
+          onSave={handleMusicPromoSaved}
         />
       ) : null}
 

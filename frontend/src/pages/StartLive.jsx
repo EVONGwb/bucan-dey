@@ -10,6 +10,7 @@ function StartLive() {
   const videoRef = useRef(null);
   const roomRef = useRef(null);
   const tracksRef = useRef([]);
+  const localVideoTrackRef = useRef(null);
   const heartbeatRef = useRef(null);
   const [form, setForm] = useState({
     title: "",
@@ -40,6 +41,96 @@ function StartLive() {
     };
   }, []);
 
+  useEffect(() => {
+    if (!live || !localVideoTrackRef.current || !videoRef.current) return;
+    attachLocalVideoTrack(localVideoTrackRef.current);
+  }, [live]);
+
+  function getVideoCaptureOptions() {
+    const options = {
+      low: {
+        facingMode: "user",
+        width: { ideal: 360 },
+        height: { ideal: 640 },
+        frameRate: { ideal: 15, max: 20 },
+      },
+      medium: {
+        facingMode: "user",
+        width: { ideal: 540 },
+        height: { ideal: 960 },
+        frameRate: { ideal: 24, max: 30 },
+      },
+      high: {
+        facingMode: "user",
+        width: { ideal: 720 },
+        height: { ideal: 1280 },
+        frameRate: { ideal: 30, max: 30 },
+      },
+      auto: {
+        facingMode: "user",
+        width: { ideal: 540 },
+        height: { ideal: 960 },
+        frameRate: { ideal: 24, max: 30 },
+      },
+    };
+
+    return options[form.bitrate_mode] || options.auto;
+  }
+
+  function stopLocalTracks() {
+    tracksRef.current.forEach((track) => track.stop());
+    tracksRef.current = [];
+    localVideoTrackRef.current = null;
+  }
+
+  function attachLocalVideoTrack(track) {
+    if (!track || !videoRef.current) return;
+    const element = videoRef.current;
+    element.muted = true;
+    element.autoplay = true;
+    element.playsInline = true;
+    track.attach(element);
+    element.play?.().catch(() => {});
+  }
+
+  function getLiveStartErrorMessage(err) {
+    if (err?.name === "NotAllowedError" || err?.name === "PermissionDeniedError") {
+      return "Permite el acceso a la cámara y al micrófono para iniciar el directo.";
+    }
+
+    if (err?.name === "NotFoundError" || err?.name === "DevicesNotFoundError") {
+      return "No se encontró cámara o micrófono en este dispositivo.";
+    }
+
+    if (err?.name === "NotReadableError" || err?.name === "TrackStartError") {
+      return "La cámara está ocupada por otra app. Ciérrala e inténtalo de nuevo.";
+    }
+
+    if (err?.message?.toLowerCase().includes("permission")) {
+      return "Permite el acceso a cámara y micrófono para iniciar el directo.";
+    }
+
+    return getApiErrorMessage(err);
+  }
+
+  async function createMobileFriendlyLocalTracks() {
+    try {
+      return await createLocalTracks({
+        audio: true,
+        video: getVideoCaptureOptions(),
+      });
+    } catch (err) {
+      if (err?.name !== "OverconstrainedError" && err?.name !== "ConstraintNotSatisfiedError") {
+        throw err;
+      }
+
+      return createLocalTracks({
+        audio: true,
+        video: true,
+      });
+    }
+  }
+
   function updateField(field, value) {
     setForm((current) => ({ ...current, [field]: value }));
   }
@@ -48,8 +139,14 @@ function StartLive() {
     event.preventDefault();
     setError("");
     setIsStarting(true);
+    let createdLive = null;
 
     try {
+      stopLocalTracks();
+      const tracks = await createMobileFriendlyLocalTracks();
+      tracksRef.current = tracks;
+      localVideoTrackRef.current = tracks.find((track) => track.kind === "video") || null;
+
       const response = await apiClient.post("/lives/start", {
         title: form.title,
         description: form.description,
@@ -64,37 +161,29 @@ function StartLive() {
           show_on_map: form.show_on_map,
         },
       });
+      createdLive = response.data.live;
 
       const room = new Room({ adaptiveStream: true, dynacast: true });
       roomRef.current = room;
       room.on(RoomEvent.Disconnected, () => setViewersCount(0));
 
       await room.connect(response.data.livekit_url, response.data.token);
-      const videoOptions = {
-        low: { resolution: { width: 360, height: 640 }, frameRate: 15 },
-        medium: { resolution: { width: 540, height: 960 }, frameRate: 24 },
-        high: { resolution: { width: 720, height: 1280 }, frameRate: 30 },
-        auto: true,
-      };
-      const tracks = await createLocalTracks({
-        audio: true,
-        video: videoOptions[form.bitrate_mode] || true,
-      });
-      tracksRef.current = tracks;
       for (const track of tracks) {
         await room.localParticipant.publishTrack(track);
-        if (track.kind === "video" && videoRef.current) {
-          track.attach(videoRef.current);
-        }
       }
 
-      setLive(response.data.live);
-      setViewersCount(response.data.live.viewers_count || 0);
+      setLive(createdLive);
+      setViewersCount(createdLive.viewers_count || 0);
       heartbeatRef.current = window.setInterval(() => {
-        apiClient.post(`/lives/${response.data.live.id}/heartbeat`, { role: "streamer" }).catch(() => {});
+        apiClient.post(`/lives/${createdLive.id}/heartbeat`, { role: "streamer" }).catch(() => {});
       }, 20000);
     } catch (err) {
-      setError(getApiErrorMessage(err));
+      if (createdLive?.id) {
+        apiClient.post(`/lives/${createdLive.id}/end`, { ended_reason: "network" }).catch(() => {});
+      }
+      roomRef.current?.disconnect();
+      stopLocalTracks();
+      setError(getLiveStartErrorMessage(err));
     } finally {
       setIsStarting(false);
     }
@@ -105,7 +194,7 @@ function StartLive() {
     try {
       await apiClient.post(`/lives/${live.id}/end`);
       window.clearInterval(heartbeatRef.current);
-      tracksRef.current.forEach((track) => track.stop());
+      stopLocalTracks();
       roomRef.current?.disconnect();
       navigate(`/lives/${live.id}`);
     } catch (err) {

@@ -15,10 +15,10 @@ function BottomNav() {
   const isPublishPage = location.pathname === "/create";
 
   return (
-    <nav className="fixed inset-x-0 bottom-0 z-20 border-t border-white/10 bg-night/95 pb-[env(safe-area-inset-bottom)] shadow-[0_-16px_38px_rgba(0,0,0,.36)] backdrop-blur-2xl">
+    <nav className="fixed inset-x-0 bottom-0 z-20 border-t border-white/10 bg-night/95 pb-[env(safe-area-inset-bottom)] shadow-[0_-16px_38px_rgba(0,0,0,.36)] backdrop-blur-2xl lg:inset-y-0 lg:left-0 lg:right-auto lg:w-24 lg:border-r lg:border-t-0 lg:pb-0 lg:shadow-[18px_0_42px_rgba(0,0,0,.34)]">
       <div
         className={[
-          "mx-auto grid grid-cols-5 gap-1 px-2 py-1.5 sm:px-4 sm:py-2",
+          "mx-auto grid grid-cols-5 gap-1 px-2 py-1.5 sm:px-4 sm:py-2 lg:flex lg:h-full lg:max-w-none lg:grid-cols-none lg:flex-col lg:items-stretch lg:justify-center lg:gap-3 lg:px-3 lg:py-8",
           isPublishPage ? "max-w-5xl" : "max-w-2xl",
         ].join(" ")}
       >
@@ -31,7 +31,7 @@ function BottomNav() {
               to={item.to}
               className={({ isActive }) =>
                 [
-                  "relative flex touch-manipulation flex-col items-center justify-center rounded-[1.05rem] font-extrabold transition active:scale-[0.96] sm:rounded-[1.2rem]",
+                  "relative flex touch-manipulation flex-col items-center justify-center rounded-[1.05rem] font-extrabold transition active:scale-[0.96] sm:rounded-[1.2rem] lg:min-h-[4.6rem] lg:rounded-[1.35rem]",
                   isPublishPage ? "min-h-12 text-[10px] sm:min-h-14 sm:text-[11px]" : "min-h-14 text-[11px]",
                   isActive
                     ? "bg-white/12 text-white shadow-cyan"
@@ -43,7 +43,7 @@ function BottomNav() {
                 <>
                   {isActive ? (
                     <motion.span
-                      className="absolute inset-x-4 top-1 h-0.5 rounded-full bg-gradient-to-r from-neonCyan to-neonPink"
+                      className="absolute inset-x-4 top-1 h-0.5 rounded-full bg-gradient-to-r from-neonCyan to-neonPink lg:inset-x-auto lg:inset-y-4 lg:left-1 lg:h-auto lg:w-0.5 lg:bg-gradient-to-b"
                       layoutId="bottom-nav-active"
                     />
                   ) : null}

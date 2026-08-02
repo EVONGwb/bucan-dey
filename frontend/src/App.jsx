@@ -238,14 +238,30 @@ const appRoutes = [
 
 function App() {
   const location = useLocation();
-  const isPublishPage = location.pathname === "/create";
+  const pathname = location.pathname;
+  const isPublishPage = pathname === "/create";
+  const isAuthPage = ["/login", "/register", "/onboarding"].includes(pathname);
+  const isProfilePage = pathname === "/profile" || pathname.startsWith("/users/");
+  const isAdminPage = pathname.startsWith("/admin");
+  const isMapPage = pathname === "/map";
+  const isImmersivePage =
+    pathname.startsWith("/stories/") || (pathname.startsWith("/lives/") && pathname !== "/lives/start");
+
+  const shellWidth = (() => {
+    if (isImmersivePage) return "max-w-none";
+    if (isAuthPage) return "max-w-md sm:max-w-lg";
+    if (isPublishPage) return "max-w-md sm:max-w-2xl md:max-w-4xl lg:max-w-6xl";
+    if (isProfilePage) return "max-w-md sm:max-w-3xl lg:max-w-5xl xl:max-w-6xl";
+    if (isMapPage || isAdminPage) return "max-w-md sm:max-w-3xl md:max-w-5xl lg:max-w-7xl xl:max-w-[92rem]";
+    return "max-w-md sm:max-w-2xl md:max-w-4xl lg:max-w-6xl xl:max-w-7xl";
+  })();
 
   return (
     <div className="min-h-screen bg-night text-white">
       <main
         className={[
-          "mx-auto min-h-screen w-full px-4 pb-36 pt-5",
-          isPublishPage ? "max-w-6xl" : "max-w-md",
+          "mx-auto min-h-screen w-full px-4 pb-32 pt-5 sm:px-5 md:px-6 lg:pb-10 lg:pl-28 lg:pr-8 lg:pt-8",
+          shellWidth,
         ].join(" ")}
       >
         <Routes>

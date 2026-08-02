@@ -31,6 +31,8 @@ def build_user_document(
         "bio": "",
         "city": city or "",
         "country": country or "",
+        "profile_type": "person",
+        "social_links": {},
         "auth_provider": auth_provider,
         "providers": providers or [auth_provider],
         "onboarding_completed": onboarding_completed,

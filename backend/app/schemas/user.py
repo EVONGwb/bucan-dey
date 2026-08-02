@@ -52,6 +52,8 @@ class UserOnboardingUpdate(BaseModel):
     country: str = Field(..., min_length=1, max_length=80)
     bio: str = Field(default="", max_length=300)
     avatar_url: str | None = Field(default=None, max_length=400)
+    profile_type: Literal["artist", "music_group", "business", "person", "creator", "venue"] = "person"
+    social_links: dict[str, str] = Field(default_factory=dict)
 
     @field_validator("username")
     @classmethod
@@ -71,6 +73,20 @@ class UserOnboardingUpdate(BaseModel):
     def strip_avatar_url(cls, value: str | None) -> str | None:
         return value.strip() if value else None
 
+    @field_validator("social_links")
+    @classmethod
+    def normalize_social_links(cls, value: dict[str, str]) -> dict[str, str]:
+        allowed = {"instagram", "tiktok", "youtube", "spotify", "website", "whatsapp"}
+        cleaned: dict[str, str] = {}
+        for key, raw in (value or {}).items():
+            normalized_key = key.strip().lower()
+            if normalized_key not in allowed:
+                continue
+            link = str(raw or "").strip()
+            if link:
+                cleaned[normalized_key] = link[:400]
+        return cleaned
+
 
 class UserUpdate(BaseModel):
     display_name: str | None = Field(default=None, min_length=1, max_length=80)
@@ -78,6 +94,8 @@ class UserUpdate(BaseModel):
     bio: str | None = Field(default=None, max_length=220)
     city: str | None = Field(default=None, max_length=80)
     country: str | None = Field(default=None, max_length=80)
+    profile_type: Literal["artist", "music_group", "business", "person", "creator", "venue"] | None = None
+    social_links: dict[str, str] | None = None
 
 
 class UserOut(BaseModel):
@@ -89,6 +107,8 @@ class UserOut(BaseModel):
     bio: str = ""
     city: str = ""
     country: str = ""
+    profile_type: Literal["artist", "music_group", "business", "person", "creator", "venue"] = "person"
+    social_links: dict[str, str] = Field(default_factory=dict)
     role: Literal["user", "admin"] = "user"
     google_id: str | None = None
     auth_provider: Literal["local", "google", "apple"] = "local"
@@ -132,3 +152,30 @@ class FollowUserOut(BaseModel):
 class FollowListResponse(BaseModel):
     items: list[FollowUserOut]
     next_cursor: str | None = None
+
+
+class UserRankingMetrics(BaseModel):
+    followers_count: int = 0
+    following_count: int = 0
+    posts_count: int = 0
+    likes_received: int = 0
+    comments_received: int = 0
+    reposts_received: int = 0
+    shares_received: int = 0
+    views_received: int = 0
+
+
+class UserRankingOut(BaseModel):
+    username: str
+    display_name: str
+    city: str = ""
+    country: str = ""
+    score: float
+    rank_label: str
+    level: int
+    progress: int
+    global_rank: int
+    global_total: int
+    city_rank: int
+    city_total: int
+    metrics: UserRankingMetrics

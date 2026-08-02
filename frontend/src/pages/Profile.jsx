@@ -115,6 +115,8 @@ const DEFAULT_PROFILE_PREFERENCES = {
   vibe_type: "mood",
 };
 
+const PRESTIGE_BADGE_POSITION = { x: 48, y: 0 };
+
 const PROFILE_MOOD_OPTIONS = ["Motivado 😎", "Activo 🔥", "Tranquilo 🌙", "De fiesta 🎉", "Creando 🚀"];
 
 const PROFILE_MUSIC_OPTIONS = [
@@ -131,6 +133,33 @@ const PROMO_PLATFORM_OPTIONS = [
   { id: "audiomack", label: "Audiomack", color: "text-neonYellow" },
   { id: "link", label: "Otro link", color: "text-neonCyan" },
 ];
+
+const PROFILE_TYPE_OPTIONS = [
+  { id: "artist", label: "Artista", detail: "Música, shows y comunidad", icon: Music, tone: "text-neonPink" },
+  { id: "music_group", label: "Grupo musical", detail: "Banda, colectivo o dúo", icon: Music, tone: "text-neonCyan" },
+  { id: "business", label: "Empresa", detail: "Servicios, marca o negocio", icon: ShieldCheck, tone: "text-neonYellow" },
+  { id: "person", label: "Persona física", detail: "Perfil personal", icon: UserRound, tone: "text-white" },
+  { id: "creator", label: "Creador", detail: "Contenido, eventos y comunidad", icon: Sparkles, tone: "text-neonCyan" },
+  { id: "venue", label: "Bar / Local", detail: "Ambiente, eventos y reservas", icon: MapPin, tone: "text-neonPink" },
+];
+
+const SOCIAL_LINK_OPTIONS = [
+  { id: "instagram", label: "Instagram", icon: AtSign },
+  { id: "tiktok", label: "TikTok", icon: Sparkles },
+  { id: "youtube", label: "YouTube", icon: Play },
+  { id: "spotify", label: "Spotify", icon: Music },
+  { id: "website", label: "Web", icon: AtSign },
+  { id: "whatsapp", label: "WhatsApp", icon: MessageCircle },
+];
+
+const PROFILE_TYPE_SOCIALS = {
+  artist: ["instagram", "tiktok", "spotify"],
+  music_group: ["youtube", "spotify", "instagram"],
+  business: ["website", "whatsapp", "instagram"],
+  person: ["instagram", "tiktok", "website"],
+  creator: ["instagram", "tiktok", "youtube"],
+  venue: ["instagram", "whatsapp", "website"],
+};
 
 const COVER_POSITION_OPTIONS = [
   { id: "center", label: "Centro", className: "object-center" },
@@ -181,6 +210,19 @@ function normalizePromoUrl(url) {
   if (!value) return "";
   if (/^https?:\/\//i.test(value)) return value;
   return `https://${value}`;
+}
+
+function normalizeSocialUrl(platform, value) {
+  const raw = String(value || "").trim();
+  if (!raw) return "";
+  if (/^https?:\/\//i.test(raw)) return raw;
+  const handle = raw.replace(/^@/, "");
+  if (platform === "instagram") return `https://instagram.com/${handle}`;
+  if (platform === "tiktok") return `https://tiktok.com/@${handle}`;
+  if (platform === "youtube") return raw.startsWith("@") ? `https://youtube.com/${raw}` : `https://youtube.com/${handle}`;
+  if (platform === "spotify") return `https://open.spotify.com/search/${encodeURIComponent(handle)}`;
+  if (platform === "whatsapp") return `https://wa.me/${handle.replace(/[^0-9]/g, "")}`;
+  return normalizePromoUrl(raw);
 }
 
 function getPromoPlatform(platformId) {
@@ -262,12 +304,26 @@ function formatCompact(value) {
   }).format(Number(value || 0));
 }
 
+function formatActivityTime(value) {
+  if (!value) return "Ahora";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "Ahora";
+  const seconds = Math.max(1, Math.floor((Date.now() - date.getTime()) / 1000));
+  if (seconds < 60) return "Ahora";
+  const minutes = Math.floor(seconds / 60);
+  if (minutes < 60) return `${minutes} min`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours} h`;
+  const days = Math.floor(hours / 24);
+  if (days < 7) return `${days} d`;
+  return date.toLocaleDateString("es", { day: "numeric", month: "short" });
+}
+
 function ProfileAvatar({ profileUser, initial, size = "large", canCreateStory = false, onCreateStory }) {
   const holdTimerRef = useRef(null);
   const didLongPressRef = useRef(false);
   const isHero = size === "large";
   const sizeClass = isHero ? "h-[8.15rem] w-[8.15rem] sm:h-44 sm:w-44" : "h-11 w-11";
-  const AvatarShell = canCreateStory ? "button" : "div";
 
   function clearCreateStoryHold() {
     if (holdTimerRef.current) {
@@ -301,13 +357,22 @@ function ProfileAvatar({ profileUser, initial, size = "large", canCreateStory = 
     }
   }
 
+  function handleCreateStoryButtonClick(event) {
+    event.preventDefault();
+    event.stopPropagation();
+    clearCreateStoryHold();
+    didLongPressRef.current = false;
+    onCreateStory?.();
+  }
+
   return (
-    <AvatarShell
+    <div
       aria-label={canCreateStory ? "Mantener pulsado para crear estado" : undefined}
+      role={canCreateStory ? "button" : undefined}
+      tabIndex={canCreateStory ? 0 : undefined}
       className={`relative flex ${sizeClass} items-center justify-center rounded-full bg-gradient-to-br from-neonPink via-fiestaPurple to-neonCyan p-[3px] shadow-[0_0_24px_rgba(255,79,216,.5),0_0_34px_rgba(0,217,255,.26)] transition active:scale-[0.98] sm:p-1 ${
         canCreateStory ? "cursor-pointer select-none" : ""
       }`}
-      type={canCreateStory ? "button" : undefined}
       onClick={canCreateStory ? handleAvatarClick : undefined}
       onContextMenu={canCreateStory ? (event) => event.preventDefault() : undefined}
       onKeyDown={canCreateStory ? handleAvatarKeyDown : undefined}
@@ -333,12 +398,17 @@ function ProfileAvatar({ profileUser, initial, size = "large", canCreateStory = 
         </div>
       )}
       {canCreateStory ? (
-        <span className="absolute -left-0.5 bottom-2 flex h-7 w-7 items-center justify-center rounded-full border-[3px] border-night bg-neonPink text-white shadow-[0_0_18px_rgba(255,79,216,.82)] sm:h-8 sm:w-8">
+        <button
+          className="absolute right-1 bottom-2 z-10 flex h-7 w-7 items-center justify-center rounded-full border-[3px] border-night bg-neonPink text-white shadow-[0_0_18px_rgba(255,79,216,.82)] transition active:scale-95 sm:right-2 sm:bottom-3 sm:h-8 sm:w-8"
+          type="button"
+          onClick={handleCreateStoryButtonClick}
+          onPointerDown={(event) => event.stopPropagation()}
+          aria-label="Crear estado"
+        >
           <PlusCircle className="h-4 w-4 sm:h-[1.1rem] sm:w-[1.1rem]" />
-        </span>
+        </button>
       ) : null}
-      <span className="absolute right-2 bottom-3 h-4 w-4 rounded-full border-[3px] border-night bg-green-400 shadow-[0_0_18px_rgba(34,197,94,.85)] sm:h-5 sm:w-5" />
-    </AvatarShell>
+    </div>
   );
 }
 
@@ -684,35 +754,37 @@ function MoodPill({ icon: Icon, title, detail, color = "pink", to }) {
 }
 
 function AboutCard({ profileUser, isOwnProfile, onEdit }) {
-  const aboutLines = [
-    profileUser?.role === "admin" ? "Admin de la comunidad." : "Miembro de la comunidad.",
-    profileUser?.is_verified ? "Perfil verificado." : "Perfil social local.",
-    [profileUser?.city, profileUser?.country].filter(Boolean).join(", ") || "Guinea Ecuatorial",
-  ];
+  const identityTitle = profileUser?.role === "admin" ? "Admin local · Comunidad" : "Creador local · Comunidad";
+  const identityDetail =
+    profileUser?.bio?.trim() ||
+    `Disponible para eventos, música y conexiones en ${profileUser?.city || "Guinea Ecuatorial"}.`;
+  const identityTags = profileUser?.role === "admin"
+    ? ["Admin", "Comunidad", "Verificado"]
+    : ["Emprendedor", "Creador", "Visionario"];
 
   return (
     <section className="h-full rounded-[1rem] border border-white/8 bg-black/20 p-3 backdrop-blur-xl sm:rounded-[1.2rem] sm:p-4">
       <div className="flex items-center justify-between gap-3">
-        <h2 className="text-[10px] font-black uppercase tracking-[0.12em] text-white/72 sm:text-xs">Sobre mí</h2>
+        <h2 className="text-[10px] font-black uppercase tracking-[0.16em] text-white/72 sm:text-xs">Identidad</h2>
         {isOwnProfile ? (
           <button className="text-[10px] font-black text-neonCyan sm:text-xs" type="button" onClick={onEdit}>
             Editar
           </button>
         ) : null}
       </div>
-      <div className="mt-2.5 space-y-1 text-[10px] font-semibold leading-4 text-white/78 sm:mt-4 sm:space-y-2 sm:text-sm sm:leading-6">
-        {aboutLines.map((line, index) => (
-          <p className="line-clamp-1 sm:line-clamp-2" key={`${line}-${index}`}>
-            <span className="mr-1.5 sm:mr-2">{["💼", "✨", "🌍"][index]}</span>
-            {line}
-          </p>
-        ))}
+      <div className="mt-2 space-y-1 sm:mt-3">
+        <p className="line-clamp-1 text-[11px] font-black leading-4 text-white sm:text-sm sm:leading-5">
+          {identityTitle}
+        </p>
+        <p className="line-clamp-2 text-[10px] font-semibold leading-4 text-white/62 sm:text-xs sm:leading-5">
+          {identityDetail}
+        </p>
       </div>
-      <div className="mt-2 flex flex-wrap gap-1 sm:mt-5 sm:gap-2">
-        {["Emprendedor", "Creador digital", "Visionario"].map((tag, index) => (
+      <div className="mt-2 flex flex-wrap gap-1 sm:mt-3 sm:gap-1.5">
+        {identityTags.map((tag, index) => (
           <span
             className={[
-              "rounded-[0.55rem] border px-1.5 py-0.5 text-[8px] font-black sm:rounded-[0.75rem] sm:px-3 sm:py-1.5 sm:text-xs",
+              "rounded-[0.55rem] border px-1.5 py-0.5 text-[8px] font-black sm:rounded-[0.7rem] sm:px-2.5 sm:py-1 sm:text-[10px]",
               index === 0
                 ? "border-neonCyan/20 bg-neonCyan/10 text-neonCyan"
                 : index === 1
@@ -723,6 +795,159 @@ function AboutCard({ profileUser, isOwnProfile, onEdit }) {
           >
             {tag}
           </span>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function ActivityBubble({ icon: Icon, label, title, detail, meta, tone = "cyan", to, onClick }) {
+  const toneClass =
+    tone === "pink"
+      ? "border-neonPink/22 bg-neonPink/9 text-neonPink shadow-[0_0_18px_rgba(255,79,216,.14)]"
+      : tone === "yellow"
+        ? "border-neonYellow/22 bg-neonYellow/9 text-neonYellow shadow-[0_0_18px_rgba(255,216,77,.12)]"
+        : tone === "red"
+          ? "border-liveRed/22 bg-liveRed/9 text-liveRed shadow-[0_0_18px_rgba(255,48,64,.14)]"
+          : "border-neonCyan/22 bg-neonCyan/9 text-neonCyan shadow-[0_0_18px_rgba(0,217,255,.12)]";
+  const content = (
+    <>
+      <span className={`grid h-9 w-9 shrink-0 place-items-center rounded-full border ${toneClass} sm:h-10 sm:w-10`}>
+        <Icon className="h-4 w-4 sm:h-[1.05rem] sm:w-[1.05rem]" />
+      </span>
+      <span className="min-w-0 flex-1">
+        <span className="flex items-center justify-between gap-2">
+          <span className="truncate text-[8px] font-black uppercase tracking-[0.16em] text-white/45 sm:text-[9px]">
+            {label}
+          </span>
+          {meta ? <span className="shrink-0 text-[8px] font-black text-white/38 sm:text-[9px]">{meta}</span> : null}
+        </span>
+        <span className="mt-0.5 block truncate text-[10px] font-black leading-3.5 text-white sm:text-xs sm:leading-4">
+          {title}
+        </span>
+        {detail ? (
+          <span className="mt-0.5 block truncate text-[8px] font-bold leading-3 text-white/54 sm:text-[10px] sm:leading-4">
+            {detail}
+          </span>
+        ) : null}
+      </span>
+    </>
+  );
+  const className =
+    "inline-flex h-[3.6rem] min-w-[10.6rem] max-w-[13rem] items-center gap-2 rounded-full border border-white/8 bg-black/28 px-2.5 text-left backdrop-blur-xl transition active:scale-[0.98] sm:h-16 sm:min-w-[12rem] sm:max-w-[16rem] sm:px-3";
+
+  if (to) {
+    return (
+      <Link className={className} to={to}>
+        {content}
+      </Link>
+    );
+  }
+
+  return (
+    <button className={className} type="button" onClick={onClick}>
+      {content}
+    </button>
+  );
+}
+
+function ProfileInfoBlock({
+  profileUser,
+  posts,
+  likesReceived,
+  ranking,
+  preferences,
+  canEdit,
+  onMusicPromo,
+  onRanking,
+}) {
+  const sortedPosts = [...posts].sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0));
+  const latestPost = sortedPosts[0];
+  const latestMediaPost = sortedPosts.find((post) => post.media?.length);
+  const latestMedia = latestMediaPost?.media?.[0];
+  const promoUrl = normalizePromoUrl(preferences?.promo_url);
+  const promoPlatform = getPromoPlatform(preferences?.promo_platform);
+  const promoTitle = preferences?.promo_title?.trim() || (promoUrl ? promoPlatform.label : "Añadir música");
+  const city = profileUser?.city || "Malabo";
+  const globalRank = ranking?.globalRank || ranking?.position || 1;
+  const cityRank = ranking?.cityRank || ranking?.position || 1;
+  const bubbles = [
+    {
+      icon: latestPost?.type === "live" ? Activity : Sparkles,
+      label: "Último",
+      title: latestPost ? latestPost.type === "evento" ? "Publicó evento" : "Nueva publicación" : "Sin publicaciones",
+      detail: latestPost?.text || "Cuando publique, aparecerá aquí.",
+      meta: latestPost ? formatActivityTime(latestPost.created_at) : "Nuevo",
+      tone: latestPost?.type === "live" ? "red" : "pink",
+      to: latestPost ? `/posts/${latestPost.id}` : "/create",
+    },
+    {
+      icon: latestMedia?.type === "video" ? Film : ImageIcon,
+      label: "Media",
+      title: latestMedia ? (latestMedia.type === "video" ? "Subió vídeo" : "Subió foto") : "Sin media",
+      detail: latestMedia ? latestMediaPost?.text || "Ver publicación" : "Fotos y vídeos del perfil.",
+      meta: latestMedia ? formatActivityTime(latestMediaPost.created_at) : "Abrir",
+      tone: "cyan",
+      to: latestMedia ? `/posts/${latestMediaPost.id}` : `/users/${profileUser?.username || ""}`,
+    },
+    {
+      icon: MapPin,
+      label: "Ubicación",
+      title: city,
+      detail: "Ver actividad en el mapa.",
+      meta: "Mapa",
+      tone: "yellow",
+      to: "/map",
+    },
+    {
+      icon: Music,
+      label: promoUrl ? promoPlatform.label : "Promo",
+      title: promoTitle,
+      detail: promoUrl ? "Abrir promoción musical." : "Añade tu tema o link.",
+      meta: promoUrl ? "Play" : canEdit ? "Editar" : "",
+      tone: "pink",
+      onClick: () => {
+        if (promoUrl) {
+          window.open(promoUrl, "_blank", "noopener,noreferrer");
+          return;
+        }
+        if (canEdit) onMusicPromo?.();
+      },
+    },
+    {
+      icon: Flame,
+      label: "Ranking",
+      title: `#${cityRank} ${city}`,
+      detail: `#${globalRank} BUCAN · ¿Vas a quedarte ahí?`,
+      meta: `${formatCompact(ranking?.score || 0)} pts`,
+      tone: "red",
+      onClick: onRanking,
+    },
+    {
+      icon: Heart,
+      label: "Reacción",
+      title: `${formatCompact(likesReceived)} me gusta`,
+      detail: "Interacciones recibidas.",
+      meta: "Likes",
+      tone: "cyan",
+      to: `/users/${profileUser?.username || ""}`,
+    },
+  ];
+
+  return (
+    <section className="mt-2 overflow-hidden rounded-[1.15rem] border border-white/10 bg-[linear-gradient(135deg,rgba(255,255,255,.07),rgba(255,255,255,.025)),radial-gradient(circle_at_12%_20%,rgba(0,217,255,.12),transparent_30%),radial-gradient(circle_at_92%_10%,rgba(255,79,216,.11),transparent_30%)] px-2 py-2 shadow-cyan backdrop-blur-2xl sm:mt-4 sm:rounded-[1.6rem] sm:px-3 sm:py-3">
+      <div className="flex items-center justify-between gap-2 px-1">
+        <div className="min-w-0">
+          <p className="text-[9px] font-black uppercase tracking-[0.18em] text-neonCyan sm:text-xs">Último movimiento</p>
+          <p className="truncate text-[10px] font-bold text-white/54 sm:text-xs">Lo más reciente que hizo este usuario</p>
+        </div>
+        <span className="rounded-full border border-white/8 bg-black/26 px-2 py-1 text-[8px] font-black uppercase tracking-[0.12em] text-white/48 sm:text-[10px]">
+          Vivo
+        </span>
+      </div>
+      <div className="scrollbar-none mt-2 flex gap-2 overflow-x-auto pb-0.5 sm:mt-3 sm:grid sm:grid-cols-3 sm:overflow-visible sm:pb-0">
+        {bubbles.map((bubble) => (
+          <ActivityBubble key={`${bubble.label}-${bubble.title}`} {...bubble} />
         ))}
       </div>
     </section>
@@ -797,37 +1022,118 @@ function badgeTone(color) {
   return "from-neonPink/26 to-fiestaPurple/18 text-neonPink";
 }
 
-function CompactAchievementsButton({ badges, onClick }) {
+function getPrestigeRank(level, profileUser) {
+  if (profileUser?.role === "admin" || profileUser?.is_verified) {
+    return {
+      label: "Premium",
+      tone: "border-neonYellow/45 bg-neonYellow/10 text-neonYellow shadow-[0_0_22px_rgba(255,216,77,.26)]",
+      line: "from-neonYellow via-neonPink to-neonCyan",
+    };
+  }
+  if (level >= 8) {
+    return {
+      label: "Top BUCAN",
+      tone: "border-liveRed/45 bg-liveRed/12 text-liveRed shadow-live",
+      line: "from-liveRed via-neonPink to-neonYellow",
+    };
+  }
+  if (level >= 5) {
+    return {
+      label: "Popular",
+      tone: "border-neonYellow/40 bg-neonYellow/10 text-neonYellow shadow-[0_0_22px_rgba(255,216,77,.22)]",
+      line: "from-neonYellow via-neonOrange to-neonPink",
+    };
+  }
+  if (level >= 3) {
+    return {
+      label: "Creador",
+      tone: "border-neonPink/40 bg-neonPink/10 text-neonPink shadow-neon",
+      line: "from-neonPink via-fiestaPurple to-neonCyan",
+    };
+  }
+  return {
+    label: "Explorador",
+    tone: "border-neonCyan/38 bg-neonCyan/10 text-neonCyan shadow-cyan",
+    line: "from-neonCyan via-fiestaPurple to-neonPink",
+  };
+}
+
+function getProfileRanking(profileUser, posts, likesReceived, serverRanking = null) {
+  if (serverRanking) {
+    return {
+      label: serverRanking.rank_label || "Explorador",
+      position: serverRanking.city_rank || serverRanking.global_rank || 1,
+      cityRank: serverRanking.city_rank || serverRanking.global_rank || 1,
+      globalRank: serverRanking.global_rank || serverRanking.city_rank || 1,
+      city: serverRanking.city || profileUser?.city || "BUCAN",
+      score: Number(serverRanking.score || 0),
+      level: Number(serverRanking.level || 1),
+      progress: Number(serverRanking.progress || 12),
+    };
+  }
+
+  const followers = Number(profileUser?.followers_count || 0);
+  const following = Number(profileUser?.following_count || 0);
+  const postsCount = posts.length;
+  const score = followers * 12 + likesReceived * 4 + postsCount * 8 + following;
+  const cityPosition = Math.max(1, Math.min(999, Math.round(320 - score / 2)));
+  const fallbackRanking = {
+    cityRank: cityPosition,
+    globalRank: cityPosition,
+    position: cityPosition,
+    score,
+  };
+
+  if (score >= 900 || followers >= 500) {
+    return { ...fallbackRanking, label: "Top Local", level: 8 };
+  }
+  if (score >= 420 || followers >= 150) {
+    return { ...fallbackRanking, label: "Popular", level: 5 };
+  }
+  if (score >= 160 || postsCount >= 12) {
+    return { ...fallbackRanking, label: "Creador", level: 3 };
+  }
+  if (score >= 45 || postsCount >= 3) {
+    return { ...fallbackRanking, label: "Activo", level: 2 };
+  }
+  return { ...fallbackRanking, label: "Explorador", level: 1 };
+}
+
+function CompactAchievementsButton({ badges, ranking, profileUser, onClick, className = "" }) {
   const topLevel = Math.max(...badges.map((badge) => badge.level));
+  const rank = getPrestigeRank(Math.max(topLevel, ranking.level), profileUser);
+  const progress = Math.min(100, Math.max(12, ranking.progress || ranking.level * 12 + ranking.score / 18));
+  const city = ranking.city || profileUser?.city || "BUCAN";
+  const rankingTicker = `#${ranking.cityRank || ranking.position} ${city} · #${ranking.globalRank || ranking.position} BUCAN · ¿Vas a quedarte ahí?`;
+
   return (
     <motion.button
-      className="mt-1.5 grid w-full grid-cols-[1fr_auto] items-center gap-1 rounded-full border border-white/10 bg-night/72 px-2 py-1 text-left shadow-cyan backdrop-blur-xl active:scale-[0.98]"
+      className={`relative grid w-full items-center overflow-hidden rounded-full border px-2 py-1 text-left backdrop-blur-xl active:scale-[0.98] ${rank.tone} ${className}`}
       type="button"
       onClick={onClick}
       whileTap={{ scale: 0.97 }}
+      aria-label={`Ranking de ${profileUser?.username || "usuario"}: número ${ranking.cityRank || ranking.position} en ${city}, número ${ranking.globalRank || ranking.position} en BUCAN, ${ranking.label}`}
     >
+      <span
+        className={`pointer-events-none absolute inset-x-2 bottom-0 h-0.5 rounded-full bg-gradient-to-r ${rank.line}`}
+        style={{ width: `calc(${progress}% - 1rem)` }}
+      />
       <span className="min-w-0">
-        <span className="block text-[8px] font-black uppercase tracking-[0.14em] text-neonCyan">Logros</span>
-        <span className="block truncate text-[9px] font-black text-white">Nivel {topLevel}</span>
-      </span>
-      <span className="flex -space-x-1">
-        {badges.slice(0, 3).map((badge) => {
-          const Icon = badge.icon;
-          return (
-            <span
-              className={`flex h-6 w-6 items-center justify-center rounded-full border border-white/10 bg-gradient-to-br ${badgeTone(badge.color)} shadow-neon`}
-              key={badge.label}
-            >
-              <Icon className="h-3 w-3" />
-            </span>
-          );
-        })}
+        <span className="block truncate text-[7px] font-black uppercase tracking-[0.12em] text-white/60">
+          @{profileUser?.username || "usuario"}
+        </span>
+        <span className="relative block h-3 overflow-hidden text-[9px] font-black text-white">
+          <span className="prestige-marquee absolute left-0 top-0 inline-flex min-w-full whitespace-nowrap">
+            <span className="pr-5">{rankingTicker}</span>
+            <span className="pr-5" aria-hidden="true">{rankingTicker}</span>
+          </span>
+        </span>
       </span>
     </motion.button>
   );
 }
 
-function CompactMusicPromoButton({ canEdit, preferences, onEdit }) {
+function CompactMusicPromoButton({ canEdit, preferences, onEdit, className = "" }) {
   const promoUrl = normalizePromoUrl(preferences.promo_url);
   const hasPromo = Boolean(promoUrl);
   const platform = getPromoPlatform(preferences.promo_platform);
@@ -848,7 +1154,7 @@ function CompactMusicPromoButton({ canEdit, preferences, onEdit }) {
 
   return (
     <motion.button
-      className="mt-1 grid w-full grid-cols-[auto_1fr] items-center gap-1.5 rounded-full border border-neonPink/15 bg-night/74 px-2 py-1 text-left shadow-[0_0_16px_rgba(255,79,216,.16)] backdrop-blur-xl active:scale-[0.98]"
+      className={`grid w-full grid-cols-[auto_1fr] items-center gap-1.5 rounded-full border border-neonPink/15 bg-night/74 px-2 py-1 text-left shadow-[0_0_16px_rgba(255,79,216,.16)] backdrop-blur-xl active:scale-[0.98] ${className}`}
       type="button"
       onClick={handleClick}
       whileTap={{ scale: 0.97 }}
@@ -869,18 +1175,181 @@ function CompactMusicPromoButton({ canEdit, preferences, onEdit }) {
   );
 }
 
-function AchievementsModal({ badges, onClose }) {
+function ProfileTypeCard({ profileUser, canEdit, onEdit }) {
+  const profileType = PROFILE_TYPE_OPTIONS.find((item) => item.id === profileUser?.profile_type) || PROFILE_TYPE_OPTIONS[3];
+  const TypeIcon = profileType.icon;
+  const socialLinks = profileUser?.social_links || {};
+  const socialIds = PROFILE_TYPE_SOCIALS[profileType.id] || PROFILE_TYPE_SOCIALS.person;
+
+  function openSocialLink(event, platform, url) {
+    event.stopPropagation();
+    const targetUrl = normalizeSocialUrl(platform, url);
+    if (targetUrl && typeof window !== "undefined") {
+      window.open(targetUrl, "_blank", "noopener,noreferrer");
+    }
+  }
+
+  return (
+    <motion.button
+      className="mt-1 grid w-[8.15rem] rounded-[0.85rem] border border-white/8 bg-night/74 p-1.5 text-left shadow-[0_0_18px_rgba(0,217,255,.12)] backdrop-blur-xl transition active:scale-[0.98] sm:w-44 sm:rounded-[1.05rem] sm:p-2"
+      type="button"
+      onClick={canEdit ? onEdit : undefined}
+      whileTap={{ scale: 0.97 }}
+      aria-label={`Tipo de perfil: ${profileType.label}`}
+    >
+      <span className="grid grid-cols-[auto_1fr] items-center gap-1.5">
+        <span className={`grid h-6 w-6 place-items-center rounded-full border border-white/10 bg-white/7 ${profileType.tone} sm:h-7 sm:w-7`}>
+          <TypeIcon className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+        </span>
+        <span className="min-w-0">
+          <span className="block truncate text-[8px] font-black uppercase tracking-[0.12em] text-neonCyan sm:text-[9px]">
+            {profileType.label}
+          </span>
+          <span className="block truncate text-[8px] font-bold text-white/54 sm:text-[10px]">
+            {profileType.detail}
+          </span>
+        </span>
+      </span>
+      <span className="mt-1 grid grid-cols-3 gap-1">
+        {socialIds.map((id) => {
+          const option = SOCIAL_LINK_OPTIONS.find((item) => item.id === id) || SOCIAL_LINK_OPTIONS[0];
+          const Icon = option.icon;
+          const url = socialLinks[id];
+          return (
+            <span
+              className={`grid h-7 place-items-center rounded-[0.55rem] border text-[8px] font-black transition sm:h-8 sm:rounded-[0.7rem] ${
+                url
+                  ? "border-neonPink/24 bg-neonPink/10 text-white"
+                  : "border-white/8 bg-white/5 text-white/38"
+              }`}
+              key={id}
+              role="button"
+              tabIndex={-1}
+              onClick={(event) => (url ? openSocialLink(event, id, url) : undefined)}
+              title={url ? option.label : canEdit ? `Añadir ${option.label}` : option.label}
+            >
+              <Icon className="h-3.5 w-3.5" />
+            </span>
+          );
+        })}
+      </span>
+    </motion.button>
+  );
+}
+
+const RANK_TIERS = [
+  { label: "Explorador", min: 0, next: 45 },
+  { label: "Activo", min: 45, next: 160 },
+  { label: "Creador", min: 160, next: 420 },
+  { label: "Popular", min: 420, next: 900 },
+  { label: "Top Local", min: 900, next: null },
+];
+
+function getRankingGuide(ranking, rankingData, profileUser, posts, likesReceived) {
+  const localMetrics = {
+    followers_count: Number(profileUser?.followers_count || 0),
+    following_count: Number(profileUser?.following_count || 0),
+    posts_count: posts.length,
+    likes_received: likesReceived,
+    comments_received: posts.reduce((total, post) => total + Number(post.stats?.comments_count || 0), 0),
+    reposts_received: posts.reduce((total, post) => total + Number(post.stats?.reposts_count || 0), 0),
+    shares_received: posts.reduce((total, post) => total + Number(post.stats?.shares_count || 0), 0),
+    views_received: posts.reduce((total, post) => total + Number(post.stats?.views_count || 0), 0),
+  };
+  const metrics = rankingData?.metrics || localMetrics;
+  const score = Number(rankingData?.score ?? ranking.score ?? 0);
+  const currentTier =
+    RANK_TIERS.find((tier, index) => {
+      const nextTier = RANK_TIERS[index + 1];
+      return score >= tier.min && (!nextTier || score < nextTier.min);
+    }) || RANK_TIERS[0];
+  const nextTier = RANK_TIERS.find((tier) => tier.min > score);
+  const pointsToNext = nextTier ? Math.max(0, Math.ceil(nextTier.min - score)) : 0;
+  const progress = nextTier
+    ? Math.min(99, Math.max(8, Math.round(((score - currentTier.min) / (nextTier.min - currentTier.min)) * 100)))
+    : 100;
+
+  return {
+    metrics,
+    score,
+    progress,
+    currentTier,
+    nextTier,
+    pointsToNext,
+    cityRank: rankingData?.city_rank || ranking.position,
+    cityTotal: rankingData?.city_total || null,
+    globalRank: rankingData?.global_rank || ranking.position,
+    globalTotal: rankingData?.global_total || null,
+  };
+}
+
+function AchievementsModal({
+  badges,
+  likesReceived,
+  posts,
+  profileRanking,
+  profileRankingData,
+  profileUser,
+  onClose,
+}) {
+  const guide = getRankingGuide(profileRanking, profileRankingData, profileUser, posts, likesReceived);
+  const city = profileRanking.city || profileUser?.city || "BUCAN";
+  const pointCards = [
+    {
+      label: "Seguidores",
+      value: guide.metrics.followers_count,
+      points: guide.metrics.followers_count * 12,
+      hint: "+12 pts c/u",
+    },
+    {
+      label: "Publicaciones",
+      value: guide.metrics.posts_count,
+      points: guide.metrics.posts_count * 8,
+      hint: "+8 pts c/u",
+    },
+    {
+      label: "Likes",
+      value: guide.metrics.likes_received,
+      points: guide.metrics.likes_received * 4,
+      hint: "+4 pts c/u",
+    },
+    {
+      label: "Comentarios",
+      value: guide.metrics.comments_received,
+      points: guide.metrics.comments_received * 3,
+      hint: "+3 pts c/u",
+    },
+    {
+      label: "Reposts",
+      value: guide.metrics.reposts_received,
+      points: guide.metrics.reposts_received * 5,
+      hint: "+5 pts c/u",
+    },
+    {
+      label: "Views",
+      value: guide.metrics.views_received,
+      points: guide.metrics.views_received * 0.1,
+      hint: "+0.1 pts c/u",
+    },
+  ];
+  const nextActions = [
+    `Consigue ${Math.max(1, Math.ceil(guide.pointsToNext / 12))} seguidores nuevos.`,
+    `Publica ${Math.max(1, Math.ceil(guide.pointsToNext / 8))} veces con contenido real de tu ciudad.`,
+    `Recibe ${Math.max(1, Math.ceil(guide.pointsToNext / 4))} likes o interacciones.`,
+  ];
+
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/72 px-4 pb-4 backdrop-blur-xl sm:items-center sm:pb-0">
       <motion.section
-        className="w-full max-w-md rounded-[1.6rem] border border-white/10 bg-night/96 p-4 text-white shadow-neon"
+        className="max-h-[88vh] w-full max-w-md overflow-y-auto rounded-[1.6rem] border border-white/10 bg-night/96 p-4 text-white shadow-neon"
         initial={{ opacity: 0, y: 28, scale: 0.96 }}
         animate={{ opacity: 1, y: 0, scale: 1 }}
       >
         <div className="flex items-center justify-between">
           <div>
-            <p className="text-[10px] font-black uppercase tracking-[0.18em] text-neonCyan">Progreso</p>
-            <h2 className="mt-1 text-2xl font-black">Tus logros</h2>
+            <p className="text-[10px] font-black uppercase tracking-[0.18em] text-neonCyan">Prestigio social</p>
+            <h2 className="mt-1 text-2xl font-black">Ranking BUCAN</h2>
+            <p className="mt-1 text-xs font-bold text-white/56">@{profileUser?.username}</p>
           </div>
           <button
             className="flex h-10 w-10 items-center justify-center rounded-full border border-white/10 bg-white/7 text-xl font-light"
@@ -892,32 +1361,91 @@ function AchievementsModal({ badges, onClose }) {
           </button>
         </div>
 
-        <div className="mt-4 space-y-2.5">
-          {badges.map((badge) => {
-            const Icon = badge.icon;
-            const percent = Math.min(100, Math.max(20, badge.level * 20));
-            return (
-              <div className="rounded-[1.1rem] border border-white/8 bg-white/[0.045] p-3" key={badge.label}>
-                <div className="flex items-center gap-3">
-                  <div className={`flex h-11 w-11 items-center justify-center rounded-[0.9rem] border border-white/10 bg-gradient-to-br ${badgeTone(badge.color)} shadow-neon`}>
-                    <Icon className="h-5 w-5" />
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-center justify-between gap-3">
-                      <p className="truncate text-sm font-black">{badge.label}</p>
-                      <p className="text-xs font-black text-white/64">Nivel {badge.level}/5</p>
-                    </div>
-                    <div className="mt-2 h-2 overflow-hidden rounded-full bg-white/8">
-                      <div
-                        className="h-full rounded-full bg-gradient-to-r from-neonCyan via-fiestaPurple to-neonPink shadow-neon"
-                        style={{ width: `${percent}%` }}
-                      />
-                    </div>
-                  </div>
+        <div className="mt-4 rounded-[1.25rem] border border-neonCyan/18 bg-gradient-to-br from-neonCyan/10 via-fiestaPurple/10 to-neonPink/10 p-3 shadow-cyan">
+          <div className="grid grid-cols-2 gap-2">
+            <div className="rounded-2xl border border-white/8 bg-black/20 p-3">
+              <p className="text-[9px] font-black uppercase tracking-[0.16em] text-white/42">En {city}</p>
+              <p className="mt-1 text-2xl font-black text-neonCyan">#{guide.cityRank}</p>
+              {guide.cityTotal ? <p className="text-[10px] font-bold text-white/46">de {guide.cityTotal}</p> : null}
+            </div>
+            <div className="rounded-2xl border border-white/8 bg-black/20 p-3">
+              <p className="text-[9px] font-black uppercase tracking-[0.16em] text-white/42">Global</p>
+              <p className="mt-1 text-2xl font-black text-neonPink">#{guide.globalRank}</p>
+              {guide.globalTotal ? <p className="text-[10px] font-bold text-white/46">de {guide.globalTotal}</p> : null}
+            </div>
+          </div>
+          <div className="mt-3 flex items-end justify-between gap-3">
+            <div>
+              <p className="text-[10px] font-black uppercase tracking-[0.16em] text-white/46">Rango actual</p>
+              <p className="text-xl font-black">{profileRanking.label}</p>
+            </div>
+            <p className="text-right text-xs font-black text-neonYellow">{formatCompact(guide.score)} pts</p>
+          </div>
+          <div className="mt-2 h-2.5 overflow-hidden rounded-full bg-white/10">
+            <div
+              className="h-full rounded-full bg-gradient-to-r from-neonCyan via-fiestaPurple to-neonPink shadow-neon"
+              style={{ width: `${guide.progress}%` }}
+            />
+          </div>
+          <p className="mt-2 text-xs font-semibold text-white/62">
+            {guide.nextTier
+              ? `Te faltan ${formatCompact(guide.pointsToNext)} puntos para llegar a ${guide.nextTier.label}.`
+              : "Estás en el rango más alto de BUCAN DEY."}
+          </p>
+          <p className="mt-2 rounded-2xl border border-neonPink/18 bg-neonPink/10 px-3 py-2 text-xs font-black text-white shadow-neon">
+            Estás #{guide.cityRank} en {city}. ¿Vas a quedarte ahí?
+          </p>
+        </div>
+
+        <div className="mt-3 rounded-[1.25rem] border border-white/8 bg-white/[0.045] p-3">
+          <p className="text-[10px] font-black uppercase tracking-[0.16em] text-neonCyan">Cómo subes</p>
+          <div className="mt-2 grid grid-cols-2 gap-2">
+            {pointCards.map((card) => (
+              <div className="rounded-2xl border border-white/8 bg-black/18 p-2" key={card.label}>
+                <div className="flex items-center justify-between gap-2">
+                  <p className="truncate text-[10px] font-black text-white/58">{card.label}</p>
+                  <p className="text-xs font-black text-white">{formatCompact(card.value)}</p>
                 </div>
+                <p className="mt-1 text-[11px] font-black text-neonPink">+{formatCompact(card.points)} pts</p>
+                <p className="text-[9px] font-bold text-white/38">{card.hint}</p>
               </div>
-            );
-          })}
+            ))}
+          </div>
+        </div>
+
+        <div className="mt-3 rounded-[1.25rem] border border-neonPink/14 bg-neonPink/7 p-3">
+          <p className="text-[10px] font-black uppercase tracking-[0.16em] text-neonPink">Próximo paso</p>
+          <div className="mt-2 space-y-1.5">
+            {nextActions.map((action) => (
+              <p className="rounded-xl border border-white/8 bg-black/16 px-3 py-2 text-xs font-bold text-white/72" key={action}>
+                {action}
+              </p>
+            ))}
+          </div>
+        </div>
+
+        <div className="mt-3">
+          <div className="flex items-center justify-between">
+            <p className="text-[10px] font-black uppercase tracking-[0.16em] text-white/52">Logros desbloqueados</p>
+            <p className="text-[10px] font-black text-neonCyan">{badges.length} activos</p>
+          </div>
+          <div className="mt-2 grid grid-cols-5 gap-1.5">
+            {badges.map((badge) => {
+              const Icon = badge.icon;
+              return (
+                <div
+                  className="grid place-items-center rounded-2xl border border-white/8 bg-white/[0.045] p-2 text-center"
+                  key={badge.label}
+                  title={`${badge.label} nivel ${badge.level}`}
+                >
+                  <div className={`flex h-8 w-8 items-center justify-center rounded-xl border border-white/10 bg-gradient-to-br ${badgeTone(badge.color)} shadow-neon`}>
+                    <Icon className="h-4 w-4" />
+                  </div>
+                  <p className="mt-1 max-w-full truncate text-[8px] font-black text-white/56">N{badge.level}</p>
+                </div>
+              );
+            })}
+          </div>
         </div>
       </motion.section>
     </div>
@@ -997,6 +1525,15 @@ function ProfileEditModal({ profileUser, onClose, onPreferencesSaved, onSaved, p
     country: profileUser.country || "",
     bio: profileUser.bio || "",
     avatar_url: profileUser.avatar_url || "",
+    profile_type: profileUser.profile_type || "person",
+    social_links: {
+      instagram: profileUser.social_links?.instagram || "",
+      tiktok: profileUser.social_links?.tiktok || "",
+      youtube: profileUser.social_links?.youtube || "",
+      spotify: profileUser.social_links?.spotify || "",
+      website: profileUser.social_links?.website || "",
+      whatsapp: profileUser.social_links?.whatsapp || "",
+    },
   });
   const [error, setError] = useState("");
   const [isSaving, setIsSaving] = useState(false);
@@ -1019,6 +1556,16 @@ function ProfileEditModal({ profileUser, onClose, onPreferencesSaved, onSaved, p
     }));
   }
 
+  function updateSocialLink(name, value) {
+    setForm((current) => ({
+      ...current,
+      social_links: {
+        ...current.social_links,
+        [name]: value,
+      },
+    }));
+  }
+
   function updatePreference(name, value) {
     setStyleForm((current) => ({
       ...current,
@@ -1035,6 +1582,10 @@ function ProfileEditModal({ profileUser, onClose, onPreferencesSaved, onSaved, p
       country: nextForm.country.trim(),
       bio: nextForm.bio.trim(),
       avatar_url: nextForm.avatar_url.trim() || null,
+      profile_type: nextForm.profile_type || "person",
+      social_links: Object.fromEntries(
+        Object.entries(nextForm.social_links || {}).map(([key, value]) => [key, String(value || "").trim()])
+      ),
     };
   }
 
@@ -1274,6 +1825,66 @@ function ProfileEditModal({ profileUser, onClose, onPreferencesSaved, onSaved, p
                   placeholder="Cuéntale algo a tu gente."
                 />
               </label>
+
+              <div className="rounded-[1.15rem] border border-white/10 bg-white/[0.045] p-3">
+                <div className="flex items-center justify-between gap-2">
+                  <div>
+                    <p className="text-xs font-black text-white">Identidad pública</p>
+                    <p className="mt-0.5 text-[10px] font-semibold text-white/46">
+                      Define cómo aparece tu perfil en BUCAN DEY.
+                    </p>
+                  </div>
+                  <span className="rounded-full border border-neonCyan/18 bg-neonCyan/8 px-2 py-1 text-[9px] font-black text-neonCyan">
+                    Real
+                  </span>
+                </div>
+
+                <div className="scrollbar-none mt-3 flex gap-2 overflow-x-auto">
+                  {PROFILE_TYPE_OPTIONS.map((option) => {
+                    const Icon = option.icon;
+                    const isSelected = form.profile_type === option.id;
+                    return (
+                      <button
+                        className={`grid min-w-[6.8rem] rounded-[0.95rem] border p-2 text-left transition ${
+                          isSelected
+                            ? "border-neonPink bg-neonPink/10 shadow-neon"
+                            : "border-white/8 bg-black/20"
+                        }`}
+                        key={option.id}
+                        type="button"
+                        onClick={() => setForm((current) => ({ ...current, profile_type: option.id }))}
+                      >
+                        <Icon className={`h-4 w-4 ${option.tone}`} />
+                        <span className="mt-1 truncate text-[10px] font-black text-white">{option.label}</span>
+                        <span className="mt-0.5 line-clamp-2 text-[8px] font-semibold leading-3 text-white/44">
+                          {option.detail}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+
+                <div className="mt-3 grid grid-cols-2 gap-2">
+                  {SOCIAL_LINK_OPTIONS.map((option) => {
+                    const Icon = option.icon;
+                    return (
+                      <label className="min-w-0" key={option.id}>
+                        <span className="mb-1 flex items-center gap-1 text-[9px] font-black text-white/56">
+                          <Icon className="h-3 w-3 text-neonCyan" />
+                          {option.label}
+                        </span>
+                        <input
+                          className="h-9 w-full rounded-[0.75rem] border border-white/10 bg-white/7 px-2 text-[11px] font-bold text-white outline-none transition placeholder:text-white/28 focus:border-neonCyan focus:bg-neonCyan/8"
+                          value={form.social_links[option.id] || ""}
+                          onChange={(event) => updateSocialLink(option.id, event.target.value)}
+                          placeholder="@usuario o enlace"
+                          inputMode={option.id === "whatsapp" ? "tel" : "url"}
+                        />
+                      </label>
+                    );
+                  })}
+                </div>
+              </div>
 
             </div>
           ) : null}
@@ -1990,6 +2601,7 @@ function Profile() {
   const [showMusicPromoModal, setShowMusicPromoModal] = useState(false);
   const [initialEditTab, setInitialEditTab] = useState("basic");
   const [profilePreferences, setProfilePreferences] = useState(DEFAULT_PROFILE_PREFERENCES);
+  const [profileRankingData, setProfileRankingData] = useState(null);
 
   const targetUsername = username || user?.username;
   const isOwnProfile = useMemo(
@@ -2004,13 +2616,22 @@ function Profile() {
       try {
         setIsLoading(true);
         setError("");
-        const [profileResponse, postsResponse] = await Promise.all([
+        const [profileResult, postsResult, rankingResult] = await Promise.allSettled([
           apiClient.get(`/users/${targetUsername}`),
           apiClient.get(`/users/${targetUsername}/posts`),
+          apiClient.get(`/users/${targetUsername}/ranking`),
         ]);
+
+        if (profileResult.status === "rejected") throw profileResult.reason;
+        if (postsResult.status === "rejected") throw postsResult.reason;
+
+        const profileResponse = profileResult.value;
+        const postsResponse = postsResult.value;
         setProfileUser(profileResponse.data);
         setPosts(postsResponse.data);
+        setProfileRankingData(rankingResult.status === "fulfilled" ? rankingResult.value.data : null);
       } catch (err) {
+        setProfileRankingData(null);
         setError(getApiErrorMessage(err));
       } finally {
         setIsLoading(false);
@@ -2122,6 +2743,7 @@ function Profile() {
   );
   const mediaCount = posts.reduce((total, post) => total + (post.media?.length || 0), 0);
   const badges = getProfileBadges(posts, profileUser, likesReceived);
+  const profileRanking = getProfileRanking(profileUser, posts, likesReceived, profileRankingData);
   const profileStats = [
     { label: "Publicaciones", value: posts.length },
     {
@@ -2208,6 +2830,20 @@ function Profile() {
         </button>
 
         <div className="relative px-4 pb-3 pt-12 sm:px-6 sm:pb-5 sm:pt-24">
+          <div
+            className="absolute left-1/2 top-3 z-20 w-[7.4rem] sm:top-5 sm:w-36"
+            style={{
+              transform: `translate(calc(-50% + ${PRESTIGE_BADGE_POSITION.x}px), ${PRESTIGE_BADGE_POSITION.y}px)`,
+            }}
+          >
+            <CompactAchievementsButton
+              badges={badges}
+              ranking={profileRanking}
+              profileUser={profileUser}
+              onClick={() => setShowAchievementsModal(true)}
+            />
+          </div>
+
           <div className="absolute left-4 top-3 sm:left-6 sm:top-5">
             <ProfileVibeBubble
               preferences={profilePreferences}
@@ -2220,14 +2856,10 @@ function Profile() {
               canCreateStory={isOwnProfile}
               onCreateStory={() => navigate("/stories/create")}
             />
-            <CompactAchievementsButton
-              badges={badges}
-              onClick={() => setShowAchievementsModal(true)}
-            />
-            <CompactMusicPromoButton
+            <ProfileTypeCard
+              profileUser={profileUser}
               canEdit={isOwnProfile}
-              preferences={profilePreferences}
-              onEdit={() => setShowMusicPromoModal(true)}
+              onEdit={() => openProfileEditor("basic")}
             />
             {isOwnProfile ? (
               <button
@@ -2253,7 +2885,6 @@ function Profile() {
               ) : null}
             </div>
             <div className="mt-1 flex flex-wrap items-center gap-1.5 sm:mt-1 sm:gap-2">
-              <p className="text-[0.8rem] font-bold text-white/72 sm:text-sm">@{profileUser?.username}</p>
               <span className="inline-flex items-center gap-1 rounded-full border border-green-400/20 bg-green-400/12 px-1.5 py-0.5 text-[8px] font-black text-green-300 sm:px-2 sm:text-[10px]">
                 <span className="h-1.5 w-1.5 rounded-full bg-green-400 shadow-[0_0_12px_rgba(34,197,94,.9)]" />
                 {profilePreferences.show_online_status ? "En línea" : "Oculto"}
@@ -2269,13 +2900,15 @@ function Profile() {
                 </>
               ) : null}
             </p>
-            {profileUser?.bio ? (
-              <p className="mt-1.5 line-clamp-2 h-[2.05rem] max-w-[15rem] overflow-hidden break-words text-[0.68rem] font-semibold leading-snug text-white/78 sm:mt-2 sm:h-10 sm:max-w-[28rem] sm:text-sm">
-                {profileUser.bio}
-              </p>
-            ) : null}
-            <div className="mt-3 grid max-w-[18rem] sm:mt-5 sm:max-w-[24rem]">
+            <div className="mt-2 grid max-w-[18rem] sm:mt-4 sm:max-w-[24rem]">
               <CompactProfileStats stats={profileStats} />
+            </div>
+            <div className="mt-1.5 grid max-w-[18rem] sm:mt-2 sm:max-w-[24rem]">
+              <CompactMusicPromoButton
+                canEdit={isOwnProfile}
+                preferences={profilePreferences}
+                onEdit={() => setShowMusicPromoModal(true)}
+              />
             </div>
             {!isOwnProfile ? (
               <div className="mt-3 flex gap-1.5 overflow-x-auto pb-0.5 scrollbar-none sm:mt-4 sm:gap-2 sm:pb-1">
@@ -2321,19 +2954,16 @@ function Profile() {
           </div>
         ) : null}
 
-        <section className="mt-2 rounded-[1.15rem] border border-white/10 bg-white/[0.055] p-1.5 shadow-cyan backdrop-blur-2xl sm:mt-4 sm:rounded-[1.6rem] sm:p-3">
-          <div className="grid gap-1.5 sm:gap-3">
-            <div className="grid grid-cols-[minmax(0,1fr)_minmax(7.4rem,0.82fr)] items-stretch gap-1.5 sm:grid-cols-[minmax(0,1fr)_minmax(13rem,0.82fr)] sm:gap-3">
-              <AboutCard
-                profileUser={profileUser}
-                isOwnProfile={isOwnProfile}
-                onEdit={() => openProfileEditor("basic")}
-              />
-              <LocationCard profileUser={profileUser} />
-            </div>
-            <MusicCard />
-          </div>
-        </section>
+        <ProfileInfoBlock
+          profileUser={profileUser}
+          posts={posts}
+          likesReceived={likesReceived}
+          ranking={profileRanking}
+          preferences={profilePreferences}
+          canEdit={isOwnProfile}
+          onMusicPromo={() => setShowMusicPromoModal(true)}
+          onRanking={() => setShowAchievementsModal(true)}
+        />
 
         <div className="sticky top-0 z-10 -mx-3 mt-2 border-y border-white/8 bg-night/82 px-2 py-1 backdrop-blur-2xl sm:mx-0 sm:mt-3 sm:rounded-[1.2rem] sm:border sm:px-4 sm:py-2">
           <div className="scrollbar-none flex gap-1 overflow-x-auto">
@@ -2413,7 +3043,15 @@ function Profile() {
       ) : null}
 
       {showAchievementsModal ? (
-        <AchievementsModal badges={badges} onClose={() => setShowAchievementsModal(false)} />
+        <AchievementsModal
+          badges={badges}
+          likesReceived={likesReceived}
+          posts={posts}
+          profileRanking={profileRanking}
+          profileRankingData={profileRankingData}
+          profileUser={profileUser}
+          onClose={() => setShowAchievementsModal(false)}
+        />
       ) : null}
 
       {showVibePicker ? (

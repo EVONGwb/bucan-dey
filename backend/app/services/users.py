@@ -31,6 +31,8 @@ def serialize_user(user: dict, is_following: bool = False) -> dict:
         "bio": user.get("bio", ""),
         "city": user.get("city", ""),
         "country": user.get("country", ""),
+        "profile_type": user.get("profile_type", "person"),
+        "social_links": user.get("social_links", {}),
         "role": user.get("role", "user"),
         "google_id": user.get("google_id"),
         "auth_provider": user.get("auth_provider", "local"),
@@ -44,6 +46,195 @@ def serialize_user(user: dict, is_following: bool = False) -> dict:
         "is_active": user.get("is_active", True),
         "created_at": user["created_at"],
         "updated_at": user["updated_at"],
+    }
+
+
+def _normalize_rank_city(value: str | None) -> str:
+    return (value or "").strip().lower()
+
+
+def _rank_label(score: float, followers_count: int, posts_count: int) -> tuple[str, int]:
+    if score >= 900 or followers_count >= 500:
+        return "Top Local", 8
+    if score >= 420 or followers_count >= 150:
+        return "Popular", 5
+    if score >= 160 or posts_count >= 12:
+        return "Creador", 3
+    if score >= 45 or posts_count >= 3:
+        return "Activo", 2
+    return "Explorador", 1
+
+
+def _rank_progress(score: float) -> int:
+    thresholds = [0, 45, 160, 420, 900]
+    if score >= thresholds[-1]:
+        return 100
+
+    current = thresholds[0]
+    next_threshold = thresholds[-1]
+    for index, threshold in enumerate(thresholds[:-1]):
+        if threshold <= score < thresholds[index + 1]:
+            current = threshold
+            next_threshold = thresholds[index + 1]
+            break
+
+    progress = ((score - current) / max(1, next_threshold - current)) * 100
+    return int(max(8, min(99, round(progress))))
+
+
+def _ranking_score(metrics: dict) -> float:
+    return round(
+        metrics["followers_count"] * 12
+        + metrics["posts_count"] * 8
+        + metrics["likes_received"] * 4
+        + metrics["comments_received"] * 3
+        + metrics["reposts_received"] * 5
+        + metrics["shares_received"] * 2
+        + metrics["views_received"] * 0.1
+        + metrics["following_count"],
+        2,
+    )
+
+
+async def get_user_ranking(user: dict) -> dict:
+    db = get_database()
+    active_users = await db.users.find(
+        {"is_active": True},
+        {
+            "username": 1,
+            "display_name": 1,
+            "city": 1,
+            "country": 1,
+            "followers_count": 1,
+            "following_count": 1,
+            "created_at": 1,
+        },
+    ).to_list(5000)
+
+    post_metrics = await db.posts.aggregate(
+        [
+            {"$match": {"is_deleted": False, "is_hidden": False}},
+            {
+                "$group": {
+                    "_id": "$author_id",
+                    "posts_count": {"$sum": 1},
+                    "likes_received": {"$sum": {"$ifNull": ["$stats.likes_count", 0]}},
+                    "comments_received": {"$sum": {"$ifNull": ["$stats.comments_count", 0]}},
+                    "reposts_received": {"$sum": {"$ifNull": ["$stats.reposts_count", 0]}},
+                    "shares_received": {"$sum": {"$ifNull": ["$stats.shares_count", 0]}},
+                    "views_received": {"$sum": {"$ifNull": ["$stats.views_count", 0]}},
+                }
+            },
+        ]
+    ).to_list(5000)
+    post_metrics_by_author = {item["_id"]: item for item in post_metrics}
+
+    ranked_users: list[dict] = []
+    for item in active_users:
+        user_id = str(item["_id"])
+        user_post_metrics = post_metrics_by_author.get(user_id, {})
+        metrics = {
+            "followers_count": max(0, int(item.get("followers_count", 0))),
+            "following_count": max(0, int(item.get("following_count", 0))),
+            "posts_count": max(0, int(user_post_metrics.get("posts_count", 0))),
+            "likes_received": max(0, int(user_post_metrics.get("likes_received", 0))),
+            "comments_received": max(0, int(user_post_metrics.get("comments_received", 0))),
+            "reposts_received": max(0, int(user_post_metrics.get("reposts_received", 0))),
+            "shares_received": max(0, int(user_post_metrics.get("shares_received", 0))),
+            "views_received": max(0, int(user_post_metrics.get("views_received", 0))),
+        }
+        score = _ranking_score(metrics)
+        label, level = _rank_label(
+            score,
+            metrics["followers_count"],
+            metrics["posts_count"],
+        )
+        ranked_users.append(
+            {
+                "id": user_id,
+                "username": item["username"],
+                "display_name": item["display_name"],
+                "city": item.get("city", ""),
+                "country": item.get("country", ""),
+                "city_key": _normalize_rank_city(item.get("city")),
+                "created_at": item.get("created_at") or datetime.now(timezone.utc),
+                "score": score,
+                "rank_label": label,
+                "level": level,
+                "progress": _rank_progress(score),
+                "metrics": metrics,
+            }
+        )
+
+    ranked_users.sort(
+        key=lambda item: (
+            -item["score"],
+            -item["metrics"]["followers_count"],
+            -item["metrics"]["posts_count"],
+            item["created_at"],
+        )
+    )
+
+    target_id = str(user["_id"])
+    target_rank = next(
+        (index + 1 for index, item in enumerate(ranked_users) if item["id"] == target_id),
+        len(ranked_users) or 1,
+    )
+    target_item = next((item for item in ranked_users if item["id"] == target_id), None)
+
+    if target_item is None:
+        metrics = {
+            "followers_count": max(0, int(user.get("followers_count", 0))),
+            "following_count": max(0, int(user.get("following_count", 0))),
+            "posts_count": 0,
+            "likes_received": 0,
+            "comments_received": 0,
+            "reposts_received": 0,
+            "shares_received": 0,
+            "views_received": 0,
+        }
+        score = _ranking_score(metrics)
+        label, level = _rank_label(score, metrics["followers_count"], 0)
+        target_item = {
+            "username": user["username"],
+            "display_name": user["display_name"],
+            "city": user.get("city", ""),
+            "country": user.get("country", ""),
+            "city_key": _normalize_rank_city(user.get("city")),
+            "score": score,
+            "rank_label": label,
+            "level": level,
+            "progress": _rank_progress(score),
+            "metrics": metrics,
+        }
+
+    same_city = [
+        item
+        for item in ranked_users
+        if target_item["city_key"] and item["city_key"] == target_item["city_key"]
+    ]
+    if not same_city:
+        same_city = ranked_users
+
+    city_rank = next(
+        (index + 1 for index, item in enumerate(same_city) if item["id"] == target_id),
+        target_rank,
+    )
+
+    return {
+        "username": target_item["username"],
+        "display_name": target_item["display_name"],
+        "city": target_item["city"],
+        "country": target_item["country"],
+        "score": target_item["score"],
+        "rank_label": target_item["rank_label"],
+        "level": target_item["level"],
+        "progress": target_item["progress"],
+        "global_rank": target_rank,
+        "global_total": len(ranked_users),
+        "city_rank": city_rank,
+        "city_total": len(same_city),
+        "metrics": target_item["metrics"],
     }
 
 
@@ -123,6 +314,8 @@ async def complete_user_onboarding(user: dict, payload: UserOnboardingUpdate) ->
         "country": payload.country,
         "bio": payload.bio,
         "avatar_url": payload.avatar_url,
+        "profile_type": payload.profile_type,
+        "social_links": payload.social_links,
         "onboarding_completed": True,
         "onboarding_completed_at": now,
         "updated_at": now,

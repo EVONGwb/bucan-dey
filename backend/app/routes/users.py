@@ -2,7 +2,13 @@ from fastapi import APIRouter, Depends, HTTPException, status
 
 from app.core.security import get_optional_current_user, require_active_user
 from app.schemas.post import PostOut
-from app.schemas.user import FollowListResponse, FollowResponse, UserOnboardingUpdate, UserOut
+from app.schemas.user import (
+    FollowListResponse,
+    FollowResponse,
+    UserOnboardingUpdate,
+    UserOut,
+    UserRankingOut,
+)
 from app.services.follows import (
     follow_user,
     is_following_user,
@@ -15,6 +21,7 @@ from app.services.posts import add_interaction_flags, get_profile_posts, seriali
 from app.services.users import (
     complete_user_onboarding,
     get_user_by_id,
+    get_user_ranking,
     get_user_by_username,
     serialize_user,
 )
@@ -79,6 +86,15 @@ async def unfollow_user_endpoint(
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from None
 
     return FollowResponse(**result)
+
+
+@router.get("/{username}/ranking", response_model=UserRankingOut)
+async def get_user_ranking_endpoint(username: str) -> UserRankingOut:
+    user = await get_user_by_username(username)
+    if user is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found.")
+
+    return UserRankingOut(**await get_user_ranking(user))
 
 
 @router.get("/{username}", response_model=UserOut)

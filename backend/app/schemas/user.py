@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Literal
+from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict, EmailStr, Field, field_validator
 
@@ -54,6 +54,7 @@ class UserOnboardingUpdate(BaseModel):
     avatar_url: str | None = Field(default=None, max_length=400)
     profile_type: Literal["artist", "music_group", "business", "person", "creator", "venue"] = "person"
     social_links: dict[str, str] = Field(default_factory=dict)
+    profile_preferences: dict[str, Any] = Field(default_factory=dict)
 
     @field_validator("username")
     @classmethod
@@ -96,6 +97,11 @@ class UserUpdate(BaseModel):
     country: str | None = Field(default=None, max_length=80)
     profile_type: Literal["artist", "music_group", "business", "person", "creator", "venue"] | None = None
     social_links: dict[str, str] | None = None
+    profile_preferences: dict[str, Any] | None = None
+
+
+class ProfilePreferencesUpdate(BaseModel):
+    profile_preferences: dict[str, Any] = Field(default_factory=dict)
 
 
 class UserOut(BaseModel):
@@ -109,6 +115,7 @@ class UserOut(BaseModel):
     country: str = ""
     profile_type: Literal["artist", "music_group", "business", "person", "creator", "venue"] = "person"
     social_links: dict[str, str] = Field(default_factory=dict)
+    profile_preferences: dict[str, Any] = Field(default_factory=dict)
     role: Literal["user", "admin"] = "user"
     google_id: str | None = None
     auth_provider: Literal["local", "google", "apple"] = "local"

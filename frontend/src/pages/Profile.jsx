@@ -5,6 +5,8 @@ import {
   Bookmark,
   Camera,
   Car,
+  ChevronLeft,
+  ChevronRight,
   Check,
   Compass,
   Activity,
@@ -25,6 +27,7 @@ import {
   Play,
   PlusCircle,
   Save,
+  Search,
   Settings,
   ShieldCheck,
   Sparkles,
@@ -1586,6 +1589,10 @@ function ProfileEditModal({ profileUser, onClose, onPreferencesSaved, onSaved, p
       social_links: Object.fromEntries(
         Object.entries(nextForm.social_links || {}).map(([key, value]) => [key, String(value || "").trim()])
       ),
+      profile_preferences: {
+        ...DEFAULT_PROFILE_PREFERENCES,
+        ...styleForm,
+      },
     };
   }
 
@@ -1678,8 +1685,8 @@ function ProfileEditModal({ profileUser, onClose, onPreferencesSaved, onSaved, p
     setIsSaving(true);
 
     try {
-      await saveProfile();
-      onPreferencesSaved(styleForm);
+      const updated = await saveProfile();
+      onPreferencesSaved(updated.profile_preferences || styleForm);
       onClose();
     } catch (err) {
       setError(err.message);
@@ -2286,20 +2293,20 @@ function ReportUserModal({ profileUser, onClose, onReported }) {
 
 function SettingsSection({ icon: Icon, title, children }) {
   return (
-    <section className="rounded-[1.25rem] border border-white/10 bg-white/[0.045] p-3 shadow-cyan backdrop-blur-xl">
-      <div className="mb-3 flex items-center gap-2">
-        <span className="flex h-8 w-8 items-center justify-center rounded-full border border-neonCyan/20 bg-neonCyan/10 text-neonCyan">
-          <Icon className="h-4 w-4" />
+    <section className="overflow-hidden rounded-[1.15rem] border border-white/10 bg-white/[0.045] p-2 shadow-[0_0_18px_rgba(0,217,255,.08)] backdrop-blur-xl">
+      <div className="mb-1.5 flex items-center gap-2 px-1.5 pt-1">
+        <span className="flex h-7 w-7 items-center justify-center rounded-full border border-neonCyan/20 bg-neonCyan/10 text-neonCyan">
+          <Icon className="h-3.5 w-3.5" />
         </span>
-        <h3 className="text-sm font-black text-white">{title}</h3>
+        <h3 className="text-xs font-black uppercase tracking-[0.12em] text-white/78">{title}</h3>
       </div>
-      <div className="grid gap-2">{children}</div>
+      <div className="grid gap-1.5">{children}</div>
     </section>
   );
 }
 
-function SettingsAction({ icon: Icon, title, description, onClick, to, danger = false, disabled = false }) {
-  const className = `flex w-full items-center gap-3 rounded-[1rem] border px-3 py-3 text-left transition active:scale-[0.99] ${
+function SettingsAction({ icon: Icon, title, description, onClick, to, danger = false, disabled = false, trailing }) {
+  const className = `flex w-full items-center gap-3 rounded-[0.95rem] border px-3 py-2.5 text-left transition active:scale-[0.99] ${
     danger
       ? "border-liveRed/25 bg-liveRed/10 text-liveRed"
       : disabled
@@ -2319,6 +2326,7 @@ function SettingsAction({ icon: Icon, title, description, onClick, to, danger = 
           <span className="mt-0.5 block text-[11px] font-semibold leading-snug text-white/46">{description}</span>
         ) : null}
       </span>
+      {trailing ?? (!disabled && !danger ? <ChevronRight className="h-4 w-4 shrink-0 text-white/34" /> : null)}
     </>
   );
 
@@ -2340,7 +2348,7 @@ function SettingsAction({ icon: Icon, title, description, onClick, to, danger = 
 function SettingsToggle({ title, description, enabled, onToggle, disabled = false }) {
   return (
     <button
-      className={`flex w-full items-center justify-between gap-3 rounded-[1rem] border border-white/8 bg-black/18 px-3 py-3 text-left ${
+      className={`flex w-full items-center justify-between gap-3 rounded-[0.95rem] border border-white/8 bg-black/18 px-3 py-2.5 text-left ${
         disabled ? "opacity-45" : ""
       }`}
       type="button"
@@ -2373,7 +2381,7 @@ function SettingsChoice({ value, onChange, disabled = false }) {
     ["private", "Privado"],
   ];
   return (
-    <div className="rounded-[1rem] border border-white/8 bg-black/18 p-2">
+    <div className="rounded-[0.95rem] border border-white/8 bg-black/18 p-2">
       <p className="px-1 text-[11px] font-black uppercase tracking-[0.12em] text-white/46">
         Visibilidad del perfil
       </p>
@@ -2408,172 +2416,274 @@ function SettingsActivityModal({
   preferences,
   profileUser,
 }) {
+  const [query, setQuery] = useState("");
+  const [panel, setPanel] = useState("home");
+  const normalizedQuery = query.trim().toLowerCase();
+
+  const closeAndEdit = (tab) => {
+    onEditProfile(tab);
+  };
+
+  const openTabAndClose = (tab) => {
+    onSetProfileTab(tab);
+    onClose();
+  };
+
+  const searchActions = [
+    {
+      icon: Pencil,
+      title: "Editar datos básicos",
+      description: "Nombre, usuario, ciudad, país y biografía.",
+      action: () => closeAndEdit("basic"),
+      disabled: !canManageProfile,
+    },
+    {
+      icon: Camera,
+      title: "Foto y portada",
+      description: "Cambiar avatar, portada y estilo visual.",
+      action: () => closeAndEdit("style"),
+      disabled: !canManageProfile,
+    },
+    {
+      icon: UserRound,
+      title: "Tipo de perfil y redes",
+      description: "Artista, grupo, empresa, persona y enlaces sociales.",
+      action: () => closeAndEdit("basic"),
+      disabled: !canManageProfile,
+    },
+    {
+      icon: Sparkles,
+      title: "Estado y música",
+      description: "Editar cómo te sientes y qué canción promocionas.",
+      action: onOpenVibe,
+      disabled: !canManageProfile,
+    },
+    {
+      icon: Bell,
+      title: "Notificaciones",
+      description: "Push, mensajes, likes, comentarios y actividad.",
+      action: () => setPanel("notifications"),
+    },
+    {
+      icon: Lock,
+      title: "Privacidad",
+      description: "Visibilidad, mensajes y estado online.",
+      action: () => setPanel("privacy"),
+    },
+    {
+      icon: Activity,
+      title: "Actividad",
+      description: "Posts, reels, guardados, mapa y likes.",
+      action: () => setPanel("activity"),
+    },
+    {
+      icon: ShieldCheck,
+      title: "Seguridad",
+      description: "Sesión, Google, contraseña y cuenta.",
+      action: () => setPanel("security"),
+    },
+  ];
+
+  const filteredActions = normalizedQuery
+    ? searchActions.filter((item) => `${item.title} ${item.description}`.toLowerCase().includes(normalizedQuery))
+    : [];
+
+  const panelTitle = {
+    home: "Configuración y actividad",
+    notifications: "Notificaciones",
+    privacy: "Privacidad",
+    activity: "Actividad",
+    security: "Seguridad",
+    admin: "Admin",
+  }[panel];
+
   return (
     <div className="fixed inset-0 z-50 bg-night text-white">
       <motion.section
-        className="relative mx-auto flex h-dvh w-full max-w-md flex-col overflow-hidden border-x border-white/8 bg-night shadow-[0_0_42px_rgba(0,217,255,.18),0_0_70px_rgba(255,79,216,.16)]"
+        className="relative mx-auto flex h-dvh w-full max-w-md flex-col overflow-hidden border-x border-white/8 bg-night shadow-[0_0_42px_rgba(0,217,255,.18),0_0_70px_rgba(255,79,216,.16)] md:max-w-2xl"
         initial={{ opacity: 0, scale: 0.985 }}
         animate={{ opacity: 1, scale: 1 }}
       >
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_16%_0%,rgba(255,79,216,.24),transparent_30%),radial-gradient(circle_at_82%_14%,rgba(0,217,255,.22),transparent_28%)]" />
-        <header className="relative flex shrink-0 items-start justify-between gap-3 border-b border-white/8 bg-night/72 px-4 pb-3 pt-[calc(env(safe-area-inset-top)+0.9rem)] backdrop-blur-2xl">
-          <div>
-            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-neonCyan">Perfil</p>
-            <h2 className="mt-1 text-2xl font-black leading-none text-white">Configuración y actividad</h2>
-            <p className="mt-1 text-xs font-semibold text-white/52">@{profileUser?.username}</p>
+        <header className="relative shrink-0 border-b border-white/8 bg-night/72 px-4 pb-3 pt-[calc(env(safe-area-inset-top)+0.8rem)] backdrop-blur-2xl">
+          <div className="flex items-start justify-between gap-3">
+            <div className="min-w-0">
+              <div className="flex items-center gap-2">
+                {panel !== "home" ? (
+                  <button
+                    className="flex h-8 w-8 items-center justify-center rounded-full border border-white/10 bg-white/7 text-white"
+                    type="button"
+                    onClick={() => setPanel("home")}
+                    aria-label="Volver a configuración"
+                  >
+                    <ChevronLeft className="h-4 w-4" />
+                  </button>
+                ) : null}
+                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-neonCyan">Perfil</p>
+              </div>
+              <h2 className="mt-1 text-[1.65rem] font-black leading-none text-white sm:text-3xl">{panelTitle}</h2>
+              <p className="mt-1 truncate text-xs font-semibold text-white/52">@{profileUser?.username}</p>
+            </div>
+            <button
+              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-white/10 bg-white/7 text-white"
+              type="button"
+              onClick={onClose}
+              aria-label="Cerrar configuración"
+            >
+              <X className="h-5 w-5" />
+            </button>
           </div>
-          <button
-            className="flex h-10 w-10 items-center justify-center rounded-full border border-white/10 bg-white/7 text-white"
-            type="button"
-            onClick={onClose}
-            aria-label="Cerrar configuración"
-          >
-            <X className="h-5 w-5" />
-          </button>
+          {panel === "home" ? (
+            <label className="mt-3 flex h-10 items-center gap-2 rounded-full border border-white/10 bg-black/24 px-3">
+              <Search className="h-4 w-4 text-neonCyan" />
+              <input
+                className="min-w-0 flex-1 bg-transparent text-sm font-semibold text-white outline-none placeholder:text-white/34"
+                value={query}
+                onChange={(event) => setQuery(event.target.value)}
+                placeholder="Buscar ajustes"
+              />
+            </label>
+          ) : null}
         </header>
 
-        <div className="relative flex-1 space-y-3 overflow-y-auto px-4 pb-8 pt-4">
-          <SettingsSection icon={UserRound} title="Cuenta">
-            <SettingsAction
-              icon={Pencil}
-              title="Editar datos básicos"
-              description="Nombre visible, usuario, ciudad, país y biografía."
-              onClick={() => onEditProfile("basic")}
-              disabled={!canManageProfile}
-            />
-            <SettingsAction
-              icon={Camera}
-              title="Foto y portada"
-              description="Cambiar foto, subir portada y ajustar estilo visual."
-              onClick={() => onEditProfile("style")}
-              disabled={!canManageProfile}
-            />
-            <SettingsAction
-              icon={LogOut}
-              title="Cerrar sesión"
-              description="Salir de esta cuenta en este dispositivo."
-              onClick={onLogout}
-              danger
-            />
-          </SettingsSection>
+        <div className="relative flex-1 overflow-y-auto px-4 pb-8 pt-3">
+          {panel === "home" ? (
+            <div className="space-y-3">
+              <div className="grid grid-cols-3 gap-2">
+                <button
+                  className="rounded-[1rem] border border-neonPink/25 bg-neonPink/12 px-2 py-2.5 text-center shadow-neon transition active:scale-[0.98] disabled:opacity-50"
+                  type="button"
+                  onClick={() => closeAndEdit("basic")}
+                  disabled={!canManageProfile}
+                >
+                  <Pencil className="mx-auto h-4 w-4 text-neonPink" />
+                  <span className="mt-1 block text-[11px] font-black">Editar</span>
+                </button>
+                <button
+                  className="rounded-[1rem] border border-neonCyan/25 bg-neonCyan/10 px-2 py-2.5 text-center transition active:scale-[0.98]"
+                  type="button"
+                  onClick={() => setPanel("notifications")}
+                >
+                  <Bell className="mx-auto h-4 w-4 text-neonCyan" />
+                  <span className="mt-1 block text-[11px] font-black">Avisos</span>
+                </button>
+                <button
+                  className="rounded-[1rem] border border-white/10 bg-white/7 px-2 py-2.5 text-center transition active:scale-[0.98]"
+                  type="button"
+                  onClick={() => setPanel("privacy")}
+                >
+                  <Lock className="mx-auto h-4 w-4 text-white" />
+                  <span className="mt-1 block text-[11px] font-black">Privacidad</span>
+                </button>
+              </div>
 
-          <SettingsSection icon={Palette} title="Perfil">
-            <SettingsAction
-              icon={Sparkles}
-              title="Estado y música"
-              description="Editar el globo: cómo te sientes o qué canción escuchas."
-              onClick={onOpenVibe}
-              disabled={!canManageProfile}
-            />
-            <SettingsAction
-              icon={Palette}
-              title="Tema del perfil"
-              description="Colores, portada, filtros y fusión visual."
-              onClick={() => onEditProfile("style")}
-              disabled={!canManageProfile}
-            />
-            <SettingsToggle
-              title="Mostrar estado online"
-              description="Controla si aparece En línea u Oculto en tu perfil."
-              enabled={preferences.show_online_status}
-              onToggle={(value) => onUpdatePreference("show_online_status", value)}
-              disabled={!canManageProfile}
-            />
-          </SettingsSection>
+              {normalizedQuery ? (
+                <SettingsSection icon={Search} title="Resultados">
+                  {filteredActions.length ? (
+                    filteredActions.map((item) => (
+                      <SettingsAction
+                        key={item.title}
+                        icon={item.icon}
+                        title={item.title}
+                        description={item.description}
+                        onClick={item.action}
+                        disabled={item.disabled}
+                      />
+                    ))
+                  ) : (
+                    <div className="rounded-[0.95rem] border border-white/8 bg-black/18 px-3 py-4 text-sm font-bold text-white/52">
+                      No encontré ajustes con ese nombre.
+                    </div>
+                  )}
+                </SettingsSection>
+              ) : (
+                <>
+                  <SettingsSection icon={UserRound} title="Tu cuenta">
+                    <SettingsAction icon={Pencil} title="Editar datos básicos" description="Nombre, usuario, ciudad, país y biografía." onClick={() => closeAndEdit("basic")} disabled={!canManageProfile} />
+                    <SettingsAction icon={Camera} title="Foto y portada" description="Cambiar foto, subir portada y ajustar estilo." onClick={() => closeAndEdit("style")} disabled={!canManageProfile} />
+                    <SettingsAction icon={UserRound} title="Tipo de perfil y redes" description="Artista, grupo, empresa, persona y enlaces." onClick={() => closeAndEdit("basic")} disabled={!canManageProfile} />
+                  </SettingsSection>
 
-          <SettingsSection icon={Bell} title="Notificaciones">
-            <div className="overflow-hidden rounded-[1rem] border border-white/8 bg-black/18">
-              <PushSettings />
+                  <SettingsSection icon={Sparkles} title="Cómo te ven">
+                    <SettingsAction icon={Sparkles} title="Estado y música" description="Editar cómo te sientes y qué canción promocionas." onClick={onOpenVibe} disabled={!canManageProfile} />
+                    <SettingsAction icon={Palette} title="Tema del perfil" description="Colores, portada, filtros y estilo visual." onClick={() => closeAndEdit("style")} disabled={!canManageProfile} />
+                    <SettingsAction icon={Lock} title="Privacidad del perfil" description="Visibilidad, mensajes y estado online." onClick={() => setPanel("privacy")} />
+                  </SettingsSection>
+
+                  <SettingsSection icon={Activity} title="Actividad">
+                    <SettingsAction icon={Activity} title="Tu actividad" description="Publicaciones, reels, guardados, mapa y likes." onClick={() => setPanel("activity")} />
+                    <SettingsAction icon={Bell} title="Notificaciones" description="Push y avisos internos." onClick={() => setPanel("notifications")} />
+                  </SettingsSection>
+
+                  <SettingsSection icon={ShieldCheck} title="Acceso y seguridad">
+                    <SettingsAction icon={ShieldCheck} title="Seguridad" description="Sesión, Google, contraseña y cuenta." onClick={() => setPanel("security")} />
+                    <SettingsAction icon={LogOut} title="Cerrar sesión" description="Salir de esta cuenta en este dispositivo." onClick={onLogout} danger />
+                  </SettingsSection>
+
+                  {isAdmin ? (
+                    <SettingsSection icon={Settings} title="Admin">
+                      <SettingsAction icon={Settings} title="Herramientas admin" description="Panel, sistema, métricas y moderación." onClick={() => setPanel("admin")} />
+                    </SettingsSection>
+                  ) : null}
+                </>
+              )}
             </div>
-          </SettingsSection>
+          ) : null}
 
-          <SettingsSection icon={Lock} title="Privacidad">
-            <SettingsChoice
-              value={preferences.profile_visibility}
-              onChange={(value) => onUpdatePreference("profile_visibility", value)}
-              disabled={!canManageProfile}
-            />
-            <SettingsToggle
-              title="Permitir mensajes"
-              description="Define si otros usuarios pueden escribirte desde el perfil."
-              enabled={preferences.allow_messages}
-              onToggle={(value) => onUpdatePreference("allow_messages", value)}
-              disabled={!canManageProfile}
-            />
-            <SettingsAction
-              icon={ShieldCheck}
-              title="Privacidad avanzada"
-              description="Editar privacidad desde el panel completo del perfil."
-              onClick={() => onEditProfile("privacy")}
-              disabled={!canManageProfile}
-            />
-          </SettingsSection>
+          {panel === "notifications" ? (
+            <div className="space-y-3">
+              <div className="rounded-[1.15rem] border border-white/10 bg-white/[0.045] p-3 text-sm font-semibold text-white/58">
+                Controla qué avisos recibe este perfil. Las push siguen siendo opcionales y solo se activan si el usuario lo permite.
+              </div>
+              <div className="overflow-hidden rounded-[1.15rem] border border-white/10 bg-black/20 p-2">
+                <PushSettings />
+              </div>
+            </div>
+          ) : null}
 
-          <SettingsSection icon={Activity} title="Actividad">
-            <SettingsAction
-              icon={Sparkles}
-              title="Tus publicaciones"
-              description="Ver publicaciones del perfil."
-              onClick={() => onSetProfileTab("posts")}
-            />
-            <SettingsAction
-              icon={Film}
-              title="Tus reels y media"
-              description="Ver fotos y vídeos publicados."
-              onClick={() => onSetProfileTab("media")}
-            />
-            <SettingsAction
-              icon={Bookmark}
-              title="Guardados"
-              description="Acceso a la pestaña de guardados."
-              onClick={() => onSetProfileTab("saved")}
-            />
-            <SettingsAction
-              icon={MapPin}
-              title="Mapa"
-              description="Ver actividad vinculada a ubicación."
-              onClick={() => onSetProfileTab("map")}
-            />
-            <SettingsAction
-              icon={Heart}
-              title="Likes"
-              description="Ver la pestaña de likes."
-              onClick={() => onSetProfileTab("likes")}
-            />
-          </SettingsSection>
+          {panel === "privacy" ? (
+            <div className="space-y-3">
+              <SettingsSection icon={Lock} title="Privacidad">
+                <SettingsChoice value={preferences.profile_visibility} onChange={(value) => onUpdatePreference("profile_visibility", value)} disabled={!canManageProfile} />
+                <SettingsToggle title="Permitir mensajes" description="Define si otros usuarios pueden escribirte desde el perfil." enabled={preferences.allow_messages} onToggle={(value) => onUpdatePreference("allow_messages", value)} disabled={!canManageProfile} />
+                <SettingsToggle title="Mostrar estado online" description="Controla si aparece En línea u Oculto en tu perfil." enabled={preferences.show_online_status} onToggle={(value) => onUpdatePreference("show_online_status", value)} disabled={!canManageProfile} />
+              </SettingsSection>
+              <SettingsSection icon={ShieldCheck} title="Más privacidad">
+                <SettingsAction icon={ShieldCheck} title="Panel completo" description="Editar opciones avanzadas del perfil." onClick={() => closeAndEdit("privacy")} disabled={!canManageProfile} />
+              </SettingsSection>
+            </div>
+          ) : null}
 
-          <SettingsSection icon={ShieldCheck} title="Seguridad">
-            <SettingsAction
-              icon={ShieldCheck}
-              title="Google vinculado"
-              description="La app mantiene el login Google si fue usado en el registro."
-              disabled
-            />
-            <SettingsAction
-              icon={Lock}
-              title="Cambiar contraseña"
-              description="Preparado para cuentas locales. Se activará con el flujo de seguridad."
-              disabled
-            />
-            <SettingsAction
-              icon={X}
-              title="Eliminar cuenta"
-              description="Acción delicada. Se añadirá con confirmación fuerte."
-              disabled
-              danger
-            />
-          </SettingsSection>
+          {panel === "activity" ? (
+            <div className="space-y-3">
+              <SettingsSection icon={Activity} title="Tu contenido">
+                <SettingsAction icon={Sparkles} title="Publicaciones" description="Ver publicaciones del perfil." onClick={() => openTabAndClose("posts")} />
+                <SettingsAction icon={Film} title="Reels y media" description="Ver fotos y vídeos publicados." onClick={() => openTabAndClose("media")} />
+                <SettingsAction icon={Bookmark} title="Guardados" description="Acceso a la pestaña de guardados." onClick={() => openTabAndClose("saved")} />
+                <SettingsAction icon={MapPin} title="Mapa" description="Actividad vinculada a ubicación." onClick={() => openTabAndClose("map")} />
+                <SettingsAction icon={Heart} title="Likes" description="Ver la pestaña de likes." onClick={() => openTabAndClose("likes")} />
+              </SettingsSection>
+            </div>
+          ) : null}
 
-          {isAdmin ? (
-            <SettingsSection icon={Settings} title="Admin">
-              <SettingsAction icon={Settings} title="Panel admin" description="Usuarios, posts y reportes." to="/admin" />
-              <SettingsAction
-                icon={Activity}
-                title="Sistema"
-                description="Health, métricas, logs y backups."
-                to="/admin/system"
-              />
-            </SettingsSection>
+          {panel === "security" ? (
+            <div className="space-y-3">
+              <SettingsSection icon={ShieldCheck} title="Seguridad">
+                <SettingsAction icon={ShieldCheck} title="Google vinculado" description="La app mantiene el login Google si fue usado en el registro." disabled />
+                <SettingsAction icon={Lock} title="Cambiar contraseña" description="Preparado para cuentas locales. Se activará con el flujo de seguridad." disabled />
+                <SettingsAction icon={X} title="Eliminar cuenta" description="Acción delicada. Se añadirá con confirmación fuerte." disabled danger />
+                <SettingsAction icon={LogOut} title="Cerrar sesión" description="Salir de esta cuenta en este dispositivo." onClick={onLogout} danger />
+              </SettingsSection>
+            </div>
+          ) : null}
+
+          {panel === "admin" && isAdmin ? (
+            <div className="space-y-3">
+              <SettingsSection icon={Settings} title="Admin">
+                <SettingsAction icon={Settings} title="Panel admin" description="Usuarios, posts y reportes." to="/admin" />
+                <SettingsAction icon={Activity} title="Sistema" description="Health, métricas, logs y backups." to="/admin/system" />
+              </SettingsSection>
+            </div>
           ) : null}
         </div>
       </motion.section>
@@ -2627,7 +2737,14 @@ function Profile() {
 
         const profileResponse = profileResult.value;
         const postsResponse = postsResult.value;
+        const nextPreferences = {
+          ...DEFAULT_PROFILE_PREFERENCES,
+          ...loadProfilePreferences(targetUsername),
+          ...(profileResponse.data.profile_preferences || {}),
+        };
         setProfileUser(profileResponse.data);
+        setProfilePreferences(nextPreferences);
+        saveProfilePreferences(targetUsername, nextPreferences);
         setPosts(postsResponse.data);
         setProfileRankingData(rankingResult.status === "fulfilled" ? rankingResult.value.data : null);
       } catch (err) {
@@ -2657,19 +2774,41 @@ function Profile() {
     };
   }, [showEditModal, showSettingsModal, showVibePicker, showMusicPromoModal]);
 
-  function handlePreferencesSaved(nextPreferences) {
+  async function persistProfilePreferences(mergedPreferences) {
+    if (!isOwnProfile) return;
+
+    try {
+      const response = await apiClient.patch("/users/me/preferences", {
+        profile_preferences: mergedPreferences,
+      });
+      const serverPreferences = {
+        ...DEFAULT_PROFILE_PREFERENCES,
+        ...(response.data.profile_preferences || mergedPreferences),
+      };
+      setProfileUser(response.data);
+      setProfilePreferences(serverPreferences);
+      saveProfilePreferences(targetUsername, serverPreferences);
+    } catch (err) {
+      setError(getApiErrorMessage(err));
+    }
+  }
+
+  function handlePreferencesSaved(nextPreferences, options = {}) {
     const merged = { ...DEFAULT_PROFILE_PREFERENCES, ...nextPreferences };
     saveProfilePreferences(targetUsername, merged);
     setProfilePreferences(merged);
+    if (options.persist) {
+      void persistProfilePreferences(merged);
+    }
   }
 
   function handleVibeSaved(nextPreferences) {
-    handlePreferencesSaved(nextPreferences);
+    handlePreferencesSaved(nextPreferences, { persist: true });
     setShowVibePicker(false);
   }
 
   function handleMusicPromoSaved(nextPreferences) {
-    handlePreferencesSaved(nextPreferences);
+    handlePreferencesSaved(nextPreferences, { persist: true });
     setShowMusicPromoModal(false);
   }
 
@@ -2683,7 +2822,7 @@ function Profile() {
     handlePreferencesSaved({
       ...profilePreferences,
       [name]: value,
-    });
+    }, { persist: true });
   }
 
   function goProfileTab(tab) {
@@ -2863,9 +3002,14 @@ function Profile() {
             />
             {isOwnProfile ? (
               <button
-                className="absolute -right-0 top-0 flex h-7 w-7 items-center justify-center rounded-full border border-white/10 bg-night/82 text-white shadow-cyan backdrop-blur-xl sm:h-9 sm:w-9"
+                className="absolute -right-0 top-0 z-40 flex h-7 w-7 items-center justify-center rounded-full border border-white/10 bg-night/82 text-white shadow-cyan backdrop-blur-xl sm:h-9 sm:w-9"
                 type="button"
-                onClick={() => openProfileEditor("basic")}
+                onClick={(event) => {
+                  event.preventDefault();
+                  event.stopPropagation();
+                  openProfileEditor("basic");
+                }}
+                onPointerDown={(event) => event.stopPropagation()}
                 aria-label="Editar perfil"
               >
                 <Pencil className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
@@ -2935,6 +3079,21 @@ function Profile() {
                 >
                   <UserPlus className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                   {isUpdatingFollow ? "..." : profileUser?.is_following ? "Dejar de seguir" : "Seguir"}
+                </motion.button>
+                <motion.button
+                  className="inline-flex h-[1.8rem] w-[2.85rem] shrink-0 items-center justify-center rounded-[0.72rem] border border-white/10 bg-white/8 text-white/72 shadow-cyan backdrop-blur-xl transition active:scale-[0.98] sm:h-[2.25rem] sm:w-[3.25rem]"
+                  type="button"
+                  onClick={() => {
+                    if (!isAuthenticated) {
+                      navigate("/login");
+                      return;
+                    }
+                    setShowReportModal(true);
+                  }}
+                  whileTap={{ scale: 0.96 }}
+                  aria-label="Reportar usuario"
+                >
+                  <Flag className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                 </motion.button>
               </div>
             ) : null}

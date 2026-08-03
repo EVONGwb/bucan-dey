@@ -5,6 +5,7 @@ from app.schemas.post import PostOut
 from app.schemas.user import (
     FollowListResponse,
     FollowResponse,
+    ProfilePreferencesUpdate,
     UserOnboardingUpdate,
     UserOut,
     UserRankingOut,
@@ -24,6 +25,7 @@ from app.services.users import (
     get_user_ranking,
     get_user_by_username,
     serialize_user,
+    update_user_profile_preferences,
 )
 
 router = APIRouter()
@@ -42,6 +44,15 @@ async def complete_onboarding(
             detail=str(exc),
         ) from None
 
+    return UserOut(**serialize_user(user))
+
+
+@router.patch("/me/preferences", response_model=UserOut)
+async def update_my_profile_preferences(
+    payload: ProfilePreferencesUpdate,
+    current_user: dict = Depends(require_active_user),
+) -> UserOut:
+    user = await update_user_profile_preferences(current_user, payload.profile_preferences)
     return UserOut(**serialize_user(user))
 
 

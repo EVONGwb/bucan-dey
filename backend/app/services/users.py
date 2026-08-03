@@ -10,6 +10,81 @@ from app.models.user import build_user_document
 from app.schemas.user import UserCreate, UserOnboardingUpdate
 
 
+PROFILE_PREFERENCE_DEFAULTS = {
+    "allow_messages": True,
+    "cover_filter": "normal",
+    "cover_overlay": 62,
+    "cover_position": "center",
+    "cover_url": "",
+    "cover_zoom": 100,
+    "promo_platform": "youtube",
+    "promo_title": "",
+    "promo_url": "",
+    "profile_visibility": "public",
+    "show_online_status": True,
+    "theme": "neon",
+    "vibe_artist": "Roku",
+    "vibe_label": "Motivado 😎",
+    "vibe_song": "Me Conozco",
+    "vibe_type": "mood",
+}
+
+PROFILE_PREFERENCE_ENUMS = {
+    "cover_filter": {"normal", "neon", "night", "warm", "soft"},
+    "cover_position": {"center", "top", "bottom"},
+    "promo_platform": {"youtube", "spotify", "soundcloud", "audiomack", "link"},
+    "profile_visibility": {"public", "followers", "private"},
+    "theme": {"neon", "africa", "gold", "evo", "dark"},
+    "vibe_type": {"mood", "music"},
+}
+
+PROFILE_PREFERENCE_TEXT_LIMITS = {
+    "cover_url": 600,
+    "promo_title": 120,
+    "promo_url": 600,
+    "vibe_artist": 80,
+    "vibe_label": 80,
+    "vibe_song": 80,
+}
+
+
+def sanitize_profile_preferences(preferences: dict | None) -> dict:
+    if not isinstance(preferences, dict):
+        return {}
+
+    cleaned: dict = {}
+    for key, default in PROFILE_PREFERENCE_DEFAULTS.items():
+        if key not in preferences:
+            continue
+        value = preferences.get(key)
+
+        if isinstance(default, bool):
+            cleaned[key] = bool(value)
+            continue
+
+        if key in {"cover_overlay", "cover_zoom"}:
+            try:
+                number = int(value)
+            except (TypeError, ValueError):
+                continue
+            if key == "cover_overlay":
+                cleaned[key] = max(18, min(100, number))
+            else:
+                cleaned[key] = max(100, min(140, number))
+            continue
+
+        if key in PROFILE_PREFERENCE_ENUMS:
+            text_value = str(value or "").strip()
+            if text_value in PROFILE_PREFERENCE_ENUMS[key]:
+                cleaned[key] = text_value
+            continue
+
+        if key in PROFILE_PREFERENCE_TEXT_LIMITS:
+            cleaned[key] = str(value or "").strip()[: PROFILE_PREFERENCE_TEXT_LIMITS[key]]
+
+    return cleaned
+
+
 def has_complete_profile(user: dict) -> bool:
     return all(
         str(user.get(field, "")).strip()
@@ -33,6 +108,7 @@ def serialize_user(user: dict, is_following: bool = False) -> dict:
         "country": user.get("country", ""),
         "profile_type": user.get("profile_type", "person"),
         "social_links": user.get("social_links", {}),
+        "profile_preferences": user.get("profile_preferences", {}),
         "role": user.get("role", "user"),
         "google_id": user.get("google_id"),
         "auth_provider": user.get("auth_provider", "local"),
@@ -316,6 +392,7 @@ async def complete_user_onboarding(user: dict, payload: UserOnboardingUpdate) ->
         "avatar_url": payload.avatar_url,
         "profile_type": payload.profile_type,
         "social_links": payload.social_links,
+        "profile_preferences": sanitize_profile_preferences(payload.profile_preferences),
         "onboarding_completed": True,
         "onboarding_completed_at": now,
         "updated_at": now,
@@ -329,6 +406,33 @@ async def complete_user_onboarding(user: dict, payload: UserOnboardingUpdate) ->
     updated_user = await db.users.find_one({"_id": user["_id"]})
     if updated_user is None:
         raise RuntimeError("User was updated but could not be loaded.")
+
+    return updated_user
+
+
+async def update_user_profile_preferences(user: dict, preferences: dict) -> dict:
+    db = get_database()
+    now = datetime.now(timezone.utc)
+    current_preferences = user.get("profile_preferences") or {}
+    cleaned_preferences = sanitize_profile_preferences(preferences)
+    merged_preferences = {
+        **sanitize_profile_preferences(current_preferences),
+        **cleaned_preferences,
+    }
+
+    await db.users.update_one(
+        {"_id": user["_id"]},
+        {
+            "$set": {
+                "profile_preferences": merged_preferences,
+                "updated_at": now,
+            }
+        },
+    )
+
+    updated_user = await db.users.find_one({"_id": user["_id"]})
+    if updated_user is None:
+        raise RuntimeError("User preferences were updated but could not be loaded.")
 
     return updated_user
 

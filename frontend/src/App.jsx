@@ -16,6 +16,7 @@ const CreateStory = lazy(() => import("./pages/CreateStory.jsx"));
 const EventPage = lazy(() => import("./pages/EventPage.jsx"));
 const Events = lazy(() => import("./pages/Events.jsx"));
 const FollowList = lazy(() => import("./pages/FollowList.jsx"));
+const GoogleCallback = lazy(() => import("./pages/GoogleCallback.jsx"));
 const LivePage = lazy(() => import("./pages/LivePage.jsx"));
 const Login = lazy(() => import("./pages/Login.jsx"));
 const Map = lazy(() => import("./pages/Map.jsx"));
@@ -132,6 +133,14 @@ const appRoutes = [
           <Profile />
         </LazyPage>
       </ProtectedRoute>
+    ),
+  },
+  {
+    path: "/auth/google/callback",
+    element: (
+      <LazyPage>
+        <GoogleCallback />
+      </LazyPage>
     ),
   },
   {

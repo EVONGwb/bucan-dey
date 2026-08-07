@@ -1,27 +1,43 @@
-import { GoogleLogin } from "@react-oauth/google";
-import { useEffect, useRef, useState } from "react";
+function getGoogleRedirectOrigin() {
+  const { hostname } = window.location;
 
-function GoogleAuthButton({ disabled = false, onError, onSuccess }) {
+  if (hostname === "127.0.0.1" || hostname === "localhost") {
+    return "http://localhost:5173";
+  }
+
+  return window.location.origin;
+}
+
+function createNonce() {
+  const bytes = new Uint8Array(16);
+  window.crypto?.getRandomValues(bytes);
+  return Array.from(bytes, (byte) => byte.toString(16).padStart(2, "0")).join("");
+}
+
+function GoogleAuthButton({ disabled = false, onError }) {
   const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
-  const containerRef = useRef(null);
-  const [buttonWidth, setButtonWidth] = useState(null);
 
-  useEffect(() => {
-    const element = containerRef.current;
-    if (!element) return undefined;
-
-    function updateWidth() {
-      const nextWidth = Math.floor(element.getBoundingClientRect().width);
-      const normalizedWidth = Math.max(240, Math.min(400, nextWidth || 320));
-      setButtonWidth((current) => (current === normalizedWidth ? current : normalizedWidth));
+  function startGoogleRedirect() {
+    if (!googleClientId) {
+      onError?.("Google estará disponible cuando se configure el Client ID.");
+      return;
     }
 
-    updateWidth();
-    const observer = new ResizeObserver(updateWidth);
-    observer.observe(element);
+    const redirectOrigin = getGoogleRedirectOrigin();
+    const redirectUri = `${redirectOrigin}/auth/google/callback`;
+    const nonce = createNonce();
+    sessionStorage.setItem("bucan_google_oauth_nonce", nonce);
 
-    return () => observer.disconnect();
-  }, []);
+    const authUrl = new URL("https://accounts.google.com/o/oauth2/v2/auth");
+    authUrl.searchParams.set("client_id", googleClientId);
+    authUrl.searchParams.set("redirect_uri", redirectUri);
+    authUrl.searchParams.set("response_type", "id_token");
+    authUrl.searchParams.set("scope", "openid email profile");
+    authUrl.searchParams.set("nonce", nonce);
+    authUrl.searchParams.set("prompt", "select_account");
+
+    window.location.assign(authUrl.toString());
+  }
 
   if (!googleClientId) {
     return (
@@ -32,33 +48,17 @@ function GoogleAuthButton({ disabled = false, onError, onSuccess }) {
   }
 
   return (
-    <div
-      ref={containerRef}
-      className={`min-h-[40px] w-full overflow-hidden rounded-lg ${disabled ? "pointer-events-none opacity-60" : ""}`}
+    <button
+      className="flex h-11 w-full items-center justify-center gap-3 rounded-lg border border-white/10 bg-white/10 px-4 text-sm font-black text-white shadow-[0_0_22px_rgba(255,255,255,0.06)] transition hover:border-white/20 hover:bg-white/14 active:scale-[0.99] disabled:opacity-60"
+      type="button"
+      disabled={disabled}
+      onClick={startGoogleRedirect}
     >
-      {buttonWidth ? (
-        <GoogleLogin
-          onSuccess={(credentialResponse) => {
-            if (credentialResponse.credential) {
-              onSuccess(credentialResponse.credential);
-            } else {
-              onError("Google no devolvió una credencial válida.");
-            }
-          }}
-          onError={() => onError("No se pudo completar el acceso con Google.")}
-          shape="rectangular"
-          size="large"
-          text="continue_with"
-          theme="filled_black"
-          useOneTap={false}
-          width={buttonWidth}
-        />
-      ) : (
-        <div className="grid h-10 w-full place-items-center rounded-lg border border-white/10 bg-white/5 text-sm font-black text-white/70">
-          Continuar con Google
-        </div>
-      )}
-    </div>
+      <span className="grid h-7 w-7 place-items-center rounded-md bg-white text-base font-black text-[#4285F4]">
+        G
+      </span>
+      Continuar con Google
+    </button>
   );
 }
 
